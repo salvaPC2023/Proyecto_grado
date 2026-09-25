@@ -1,0 +1,38 @@
+# ── Python / backend ─────────────────────────────
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+.env
+backend/.env
+
+# ── Flutter / mobile ─────────────────────────────
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+build/
+.idea/
+*.iml
+mobile/android/local.properties
+mobile/ios/Flutter/Flutter.framework
+mobile/ios/Pods/
+*.g.dart.lock
+
+# ── Editor / OS ──────────────────────────────────
+.vscode/
+.DS_Store
+Thumbs.db
+
+# ── Docs (archivos temporales de Office/edicion) ─
+docs/**/~$*
+*.tmp
+
+# ── Claude Code (config/sesion local) ────────────
+.claude/
+
+# ── Secretos ─────────────────────────────────────
+*.pem
+*.key
+secrets/

@@ -1,0 +1,110 @@
+CREATE TABLE Usuarios (
+    id                      UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    auth_user_id            VARCHAR(100) UNIQUE,
+    nombre                  VARCHAR(100) NOT NULL,
+    apellido_paterno        VARCHAR(100) NOT NULL,
+    apellido_materno        VARCHAR(100),
+    nombre_usuario          VARCHAR(50) NOT NULL UNIQUE,
+	password_hash 			VARCHAR(255) NOT NULL,
+    fecha_nacimiento        DATE,
+    numero_celular          VARCHAR(20),
+    activo                  BOOLEAN NOT NULL DEFAULT TRUE,
+    genero                  VARCHAR(20),
+    debe_cambiar_password BOOLEAN NOT NULL DEFAULT TRUE,
+    fecha_creado            TIMESTAMP NOT NULL DEFAULT now(),
+    fecha_modificacion      TIMESTAMP NOT NULL DEFAULT now()
+);
+
+CREATE TABLE Supervisores (
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    usuario_id      UUID NOT NULL UNIQUE REFERENCES usuarios(id),
+    horario_entrada TIME NOT NULL,
+    horario_salida  TIME NOT NULL,
+    area_designada  VARCHAR(100),
+    creado_por_id   UUID REFERENCES usuarios(id)
+);
+
+CREATE TABLE Grupo (
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    nombre_de_grupo VARCHAR(100) NOT NULL,
+    supervisor_id   UUID NOT NULL REFERENCES supervisores(id),
+    horario_entrada TIME NOT NULL,
+    horario_salida  TIME NOT NULL,
+    area_designada  VARCHAR(100),
+    activo          BOOLEAN NOT NULL DEFAULT TRUE
+);
+
+CREATE TYPE profesion_enum AS ENUM ('electrico', 'mecanico', 'electromecanico');
+
+CREATE TABLE tecnicos (
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    usuario_id      UUID NOT NULL UNIQUE REFERENCES usuarios(id),
+    grupo_id        UUID NOT NULL REFERENCES grupo(id),
+    profesion       profesion_enum NOT NULL,
+    especializacion VARCHAR(100),
+    creado_por_id   UUID REFERENCES usuarios(id)
+);
+
+CREATE TABLE Ubicaciones_tecnicas (
+    id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    sector              VARCHAR(100) NOT NULL,
+    subsector           VARCHAR(100),
+    sistema             VARCHAR(100),
+    subsistema          VARCHAR(100),
+    creado_por_id       UUID REFERENCES usuarios(id),
+    fecha_creacion      TIMESTAMP NOT NULL DEFAULT now(),
+    fecha_modificacion  TIMESTAMP NOT NULL DEFAULT now()
+);
+
+CREATE TYPE tipo_orden_enum AS ENUM ('OE01', 'OE02', 'OE03', 'OE04');
+CREATE TYPE estatus_ot_enum AS ENUM ('asignada', 'en_progreso', 'cerrada');
+
+CREATE TABLE Ordenes_de_trabajo (
+    id                    UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tipo_de_orden         tipo_orden_enum NOT NULL,
+    ubicacion_tecnica_id  UUID NOT NULL REFERENCES ubicaciones_tecnicas(id),
+    creado_por_id         UUID NOT NULL REFERENCES usuarios(id),
+    tecnico_asignado_id   UUID NOT NULL REFERENCES tecnicos(id),
+    descripcion           TEXT NOT NULL,
+    prioridad             SMALLINT NOT NULL CHECK (prioridad BETWEEN 1 AND 4),
+    estatus               estatus_ot_enum NOT NULL DEFAULT 'asignada',
+    estatus_instalacion   BOOLEAN NOT NULL,
+    fecha_inic_planif     TIMESTAMP NOT NULL,
+    fecha_fin_planif      TIMESTAMP NOT NULL,
+    fecha_cierre          TIMESTAMP
+);
+
+CREATE TYPE clave_control_enum AS ENUM ('PM01', 'PMNN');
+
+CREATE TABLE Pasos_de_ots (
+    id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    ot_id               UUID NOT NULL REFERENCES ordenes_de_trabajo(id),
+    descripcion         TEXT NOT NULL,
+    estatus             BOOLEAN NOT NULL DEFAULT FALSE,
+    horas_planificadas  DECIMAL(5,2),
+    clave_control       clave_control_enum NOT NULL
+);
+
+CREATE TYPE resultado_trabajo_enum AS ENUM ('ejecutado', 'no_ejecutado');
+
+CREATE TABLE Cierres_paso_ot (
+    id                              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    paso_ot_id                      UUID NOT NULL REFERENCES pasos_de_ots(id),
+    fecha_hora_notificacion         TIMESTAMP NOT NULL DEFAULT now(),
+    tiempo_real_trabajado           DECIMAL(5,2) NOT NULL,
+    trabajo_finalizado              BOOLEAN NOT NULL,
+    sin_trabajo_realizado           BOOLEAN NOT NULL,
+    resultado_trabajo               resultado_trabajo_enum NOT NULL,
+    descripcion_trabajo_realizado   TEXT NOT NULL
+);
+
+CREATE TABLE Comunicados (
+    id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    supervisor_id     UUID NOT NULL REFERENCES supervisores(id),
+    tecnico_id        UUID REFERENCES tecnicos(id),
+    texto             TEXT,
+    url_imagen        VARCHAR(255),
+    fecha_envio       TIMESTAMP NOT NULL DEFAULT now(),
+    fecha_expiracion  TIMESTAMP NOT NULL,
+    CONSTRAINT chk_comunicado_no_vacio CHECK (texto IS NOT NULL OR url_imagen IS NOT NULL)
+);
