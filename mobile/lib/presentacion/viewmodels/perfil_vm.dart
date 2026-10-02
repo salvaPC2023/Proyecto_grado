@@ -20,11 +20,15 @@ class PerfilViewModel extends AsyncNotifier<Perfil> {
     required String apellidoPaterno,
     String? apellidoMaterno,
   }) async {
-    final perfil = await ref.read(repositorioPerfilProvider).editarPerfil(
-          nombre: nombre,
-          apellidoPaterno: apellidoPaterno,
-          apellidoMaterno: apellidoMaterno,
-        );
+    final repositorio = ref.read(repositorioPerfilProvider);
+    await repositorio.editarPerfil(
+      nombre: nombre,
+      apellidoPaterno: apellidoPaterno,
+      apellidoMaterno: apellidoMaterno,
+    );
+    // La respuesta de la edicion solo trae los datos basicos del usuario; se
+    // vuelve a pedir el perfil completo para no perder grupo, profesion y horario.
+    final perfil = await repositorio.verPerfil();
     // El nombre en el encabezado de Home tambien se actualiza.
     ref.read(sesionProvider.notifier).completarConPerfil(perfil);
     state = AsyncValue.data(perfil);

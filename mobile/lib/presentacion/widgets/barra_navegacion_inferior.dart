@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../nucleo/sesion.dart';
 import '../../nucleo/tema.dart';
-import '../pantallas/inicio/pantalla_inicio.dart';
 import '../pantallas/ordenes_trabajo/pantalla_mis_ots.dart';
 import '../pantallas/ordenes_trabajo/pantalla_nueva_ot.dart';
 import '../pantallas/ordenes_trabajo/pantalla_ots_grupo.dart';
@@ -21,8 +20,16 @@ class BarraNavegacionInferior extends ConsumerWidget {
   const BarraNavegacionInferior({super.key, required this.activo});
   final SeccionNav activo;
 
+  // Cada seccion se abre siempre encima del menu de inicio, nunca encima de
+  // otra seccion: asi "volver" desde cualquier seccion lleva al menu.
   void _irA(BuildContext context, Widget pantalla) {
-    Navigator.of(context).push(MaterialPageRoute(builder: (_) => pantalla));
+    final navegador = Navigator.of(context);
+    navegador.popUntil((ruta) => ruta.isFirst);
+    navegador.push(MaterialPageRoute(builder: (_) => pantalla));
+  }
+
+  void _irAlInicio(BuildContext context) {
+    Navigator.of(context).popUntil((ruta) => ruta.isFirst);
   }
 
   @override
@@ -46,7 +53,7 @@ class BarraNavegacionInferior extends ConsumerWidget {
             _ItemNav(
               icono: Icons.home_rounded,
               activo: activo == SeccionNav.inicio,
-              onTap: () => _irA(context, const PantallaInicio()),
+              onTap: () => _irAlInicio(context),
             ),
             _ItemNav(
               icono: Icons.calendar_today_outlined,

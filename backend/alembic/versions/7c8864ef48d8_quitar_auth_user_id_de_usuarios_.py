@@ -1,4 +1,4 @@
-"""quitar auth_user_id de usuarios, especializacion de tecnicos y activo de grupos
+"""quitar auth_user_id de usuarios, especializacion de tecnicos y activo de grupos; un supervisor por grupo
 
 Revision ID: 7c8864ef48d8
 Revises: ea473948f562
@@ -20,9 +20,27 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     """Upgrade schema."""
-    pass
+    # Al eliminar auth_user_id, Postgres elimina tambien su restriccion UNIQUE.
+    op.drop_column('usuarios', 'auth_user_id')
+    op.drop_column('tecnicos', 'especializacion')
+    op.drop_column('grupo', 'activo')
+
+    # Un supervisor esta a cargo de un solo grupo.
+    op.create_unique_constraint('uq_grupo_supervisor', 'grupo', ['supervisor_id'])
 
 
 def downgrade() -> None:
     """Downgrade schema."""
-    pass
+    op.drop_constraint('uq_grupo_supervisor', 'grupo', type_='unique')
+
+    # server_default es necesario: sin el, Postgres no puede agregar una
+    # columna NOT NULL a una tabla que ya tiene filas.
+    op.add_column(
+        'grupo',
+        sa.Column('activo', sa.Boolean(), nullable=False, server_default=sa.true()),
+    )
+    op.add_column('tecnicos', sa.Column('especializacion', sa.String(100), nullable=True))
+    op.add_column(
+        'usuarios',
+        sa.Column('auth_user_id', sa.String(100), nullable=True, unique=True),
+    )

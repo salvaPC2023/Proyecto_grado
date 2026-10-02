@@ -143,9 +143,9 @@ class _PantallaMiPerfilState extends ConsumerState<PantallaMiPerfil> {
                           const SizedBox(height: 16),
                         ] else ...[
                           _CampoBloqueado(
-                            etiqueta: 'Área designada',
-                            valor: perfil.areaDesignada ?? '—',
-                            icono: Icons.place_outlined,
+                            etiqueta: 'Grupo a cargo',
+                            valor: perfil.grupoNombre ?? '—',
+                            icono: Icons.groups_outlined,
                           ),
                           const SizedBox(height: 16),
                           _CampoBloqueado(

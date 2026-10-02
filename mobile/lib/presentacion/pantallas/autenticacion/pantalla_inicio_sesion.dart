@@ -29,6 +29,7 @@ class _PantallaInicioSesionState extends ConsumerState<PantallaInicioSesion> {
     final usuario = _controladorUsuario.text.trim();
     final contrasena = _controladorContrasena.text;
     if (usuario.isEmpty || contrasena.isEmpty) return;
+    FocusScope.of(context).unfocus();
 
     final exito = await ref
         .read(authViewModelProvider.notifier)
@@ -284,7 +285,9 @@ class _CampoEstilizado extends StatelessWidget {
       ),
       obscureText: ocultarTexto,
       textInputAction: accionTeclado,
-      enabled: habilitado,
+      // readOnly en vez de enabled: en web, deshabilitar un campo que tiene el
+      // foco lo deja sin poder editarse despues de un error de login.
+      readOnly: !habilitado,
       onSubmitted: alEnviar,
     );
   }

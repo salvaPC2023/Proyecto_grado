@@ -1,12 +1,9 @@
 from uuid import UUID
-
 from sqlalchemy import select
 from sqlalchemy.orm import Session
-
 from ..dominio.modelos import Usuario
 from ..dominio.puertos import Rol, RepositorioUsuarios
 from .orm import SupervisorORM, TecnicoORM, UsuarioORM
-
 
 def usuario_a_dominio(orm: UsuarioORM) -> Usuario:
     return Usuario(
@@ -19,7 +16,6 @@ def usuario_a_dominio(orm: UsuarioORM) -> Usuario:
         activo=orm.activo,
         debe_cambiar_password=orm.debe_cambiar_password,
     )
-
 
 class RepositorioUsuariosSQL(RepositorioUsuarios):
     def __init__(self, sesion: Session):
