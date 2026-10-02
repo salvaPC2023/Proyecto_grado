@@ -139,7 +139,7 @@ trabajo de las historias.
 **Reglas:**
 
 - RNF **transversal** (seguridad, autorización, resiliencia, offline) → Definition of Done + condición transversal en cada historia afectada. No genera trabajo aparte.
-- RNF **medible con verificación propia** (tiempo de respuesta, capacidad) → **tarjeta de restricción** en `📋 Product Backlog` (etiqueta `restricción`, sin puntos), con su criterio de verificación. Se revisa en la Sprint Review.
+- RNF **medible con verificación propia** (tiempo de respuesta, capacidad) → **tarjeta de restricción** en `Product Backlog` (etiqueta `restricción`, sin puntos), con su criterio de verificación. Se revisa en la Sprint Review.
 - Todos conservan su identificador `RNF-0X` para la trazabilidad con el informe.
 
 ---

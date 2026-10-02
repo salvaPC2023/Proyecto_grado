@@ -7,7 +7,7 @@ Fuentes: Cohn, *Succeeding with Agile* (visión del producto); Cohn, *Agile Esti
 Planning* (condiciones de satisfacción del release); Cohn, *User Stories Applied*
 (cap. "User Role Modeling", personas).
 
-> ⚠️ **Verificar contra el informe aprobado.** La visión y las condiciones de satisfacción
+> **Nota: Verificar contra el informe aprobado.** La visión y las condiciones de satisfacción
 > deben ser coherentes con tu *objetivo general* y tus *objetivos específicos* literales.
 > Ajusta los valores de las métricas con el cliente/tutor antes del Capítulo 3.
 

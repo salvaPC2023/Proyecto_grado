@@ -1,10 +1,9 @@
 import uuid
-
-from sqlalchemy import Boolean, Enum as SQLEnum, ForeignKey, String
+from datetime import time
+from sqlalchemy import Boolean, Enum as SQLEnum, ForeignKey, String, Time
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column
-
-from src.compartido.base_datos import Base
+from src.compartido.bd import Base
 
 
 class UsuarioORM(Base):
@@ -19,7 +18,6 @@ class UsuarioORM(Base):
     activo: Mapped[bool] = mapped_column(Boolean, default=True)
     debe_cambiar_password: Mapped[bool] = mapped_column(Boolean, default=True)
 
-
 class SupervisorORM(Base):
     __tablename__ = "supervisores"
 
@@ -27,7 +25,20 @@ class SupervisorORM(Base):
     usuario_id: Mapped[uuid.UUID] = mapped_column(
         PGUUID(as_uuid=True), ForeignKey("usuarios.id"), unique=True
     )
+    horario_entrada: Mapped[time] = mapped_column(Time)
+    horario_salida: Mapped[time] = mapped_column(Time)
+    area_designada: Mapped[str | None] = mapped_column(String(100), nullable=True)
 
+class GrupoORM(Base):
+    __tablename__ = "grupo"
+
+    id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True)
+    nombre_de_grupo: Mapped[str] = mapped_column(String(100))
+    supervisor_id: Mapped[uuid.UUID] = mapped_column(
+        PGUUID(as_uuid=True), ForeignKey("supervisores.id")
+    )
+    horario_entrada: Mapped[time] = mapped_column(Time)
+    horario_salida: Mapped[time] = mapped_column(Time)
 
 class TecnicoORM(Base):
     __tablename__ = "tecnicos"
@@ -47,4 +58,7 @@ class TecnicoORM(Base):
             name="profesion_enum",
             create_type=False,
         )
+    )
+    creado_por_id: Mapped[uuid.UUID | None] = mapped_column(
+        PGUUID(as_uuid=True), ForeignKey("usuarios.id"), nullable=True
     )

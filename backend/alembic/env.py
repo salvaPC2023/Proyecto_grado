@@ -10,7 +10,7 @@ from alembic import context
 # permite "from src...." sin importar desde donde se invoque el comando alembic
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from src.compartido.base_datos import Base  # noqa: E402
+from src.compartido.bd import Base  # noqa: E402
 from src.compartido.configuracion import settings  # noqa: E402
 
 # this is the Alembic Config object, which provides

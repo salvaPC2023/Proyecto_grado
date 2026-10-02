@@ -1,4 +1,6 @@
 from dataclasses import dataclass
+from datetime import time
+from typing import Literal
 from uuid import UUID
 
 
@@ -12,3 +14,24 @@ class Usuario:
     activo: bool
     debe_cambiar_password: bool
     apellido_materno: str | None = None
+
+
+Profesion = Literal["electrico", "mecanico", "electromecanico"]
+
+
+@dataclass
+class Tecnico:
+    id: UUID
+    usuario_id: UUID
+    grupo_id: UUID
+    profesion: Profesion
+    creado_por_id: UUID | None = None
+
+
+@dataclass
+class Supervisor:
+    id: UUID
+    usuario_id: UUID
+    horario_entrada: time
+    horario_salida: time
+    area_designada: str | None = None

@@ -1,4 +1,4 @@
-> ⚠️ **Acta desactualizada.** Se redactó para el plan 8–14 sep con nombres del código de
+> **Nota: Acta desactualizada.** Se redactó para el plan 8–14 sep con nombres del código de
 > referencia (`notified`, `turno vigente`, rutas `domain/…`). Regenerar tras fijar la fecha
 > de entrega (conciliacion.md D-06) y con la estructura `funcionalidades/<x>/…` y los
 > estados `asignada / en progreso / cerrada`.

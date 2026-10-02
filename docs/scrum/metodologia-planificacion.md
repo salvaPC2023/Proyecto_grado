@@ -231,10 +231,10 @@ redacción, no una metodología aparte; no introduce ninguna fuente nueva.
 
 | # | Acción | Archivo(s) | Estado |
 |---|---|---|---|
-| 1 | `discovery/impact-map.md` → `discovery/vision-y-roles.md`: visión del producto + condiciones de satisfacción del release + modelado de roles de usuario + personas | `docs/scrum/discovery/vision-y-roles.md` | ✅ Hecho |
-| 2 | Introducción de `user-story-map.md` ajustada para citar a Cohn (*Succeeding with Agile*), que atribuye la técnica a Patton | `discovery/user-story-map.md` | ✅ Hecho |
-| 3 | Nota "épica = *tema* de Cohn" añadida (sin renombrar E1–E5) | `product-backlog.md`, `trello-setup.md`, `trello-cards.md` | ✅ Hecho |
-| 4 | Enlaces y descripciones actualizados | `README.md` | ✅ Hecho |
+| 1 | `discovery/impact-map.md` → `discovery/vision-y-roles.md`: visión del producto + condiciones de satisfacción del release + modelado de roles de usuario + personas | `docs/scrum/discovery/vision-y-roles.md` | Hecho |
+| 2 | Introducción de `user-story-map.md` ajustada para citar a Cohn (*Succeeding with Agile*), que atribuye la técnica a Patton | `discovery/user-story-map.md` | Hecho |
+| 3 | Nota "épica = *tema* de Cohn" añadida (sin renombrar E1–E5) | `product-backlog.md`, `trello-setup.md`, `trello-cards.md` | Hecho |
+| 4 | Enlaces y descripciones actualizados | `README.md` | Hecho |
 
 **No afectados por el cambio:** los PBI / historias de usuario (HU-01…HU-19), sus
 condiciones de satisfacción, estimaciones, prioridades MoSCoW y la agrupación E1–E5. El

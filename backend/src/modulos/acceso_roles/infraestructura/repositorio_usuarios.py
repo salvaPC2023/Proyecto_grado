@@ -8,7 +8,7 @@ from ..dominio.puertos import Rol, RepositorioUsuarios
 from .orm import SupervisorORM, TecnicoORM, UsuarioORM
 
 
-def _a_dominio(orm: UsuarioORM) -> Usuario:
+def usuario_a_dominio(orm: UsuarioORM) -> Usuario:
     return Usuario(
         id=orm.id,
         nombre=orm.nombre,
@@ -29,11 +29,11 @@ class RepositorioUsuariosSQL(RepositorioUsuarios):
         orm = self._sesion.scalars(
             select(UsuarioORM).where(UsuarioORM.nombre_usuario == nombre_usuario)
         ).first()
-        return _a_dominio(orm) if orm else None
+        return usuario_a_dominio(orm) if orm else None
 
     def obtener_por_id(self, id: UUID) -> Usuario | None:
         orm = self._sesion.get(UsuarioORM, id)
-        return _a_dominio(orm) if orm else None
+        return usuario_a_dominio(orm) if orm else None
 
     def obtener_rol(self, usuario_id: UUID) -> Rol:
         es_supervisor = self._sesion.scalars(
@@ -66,7 +66,7 @@ class RepositorioUsuariosSQL(RepositorioUsuarios):
         self._sesion.add(orm)
         self._sesion.commit()
         self._sesion.refresh(orm)
-        return _a_dominio(orm)
+        return usuario_a_dominio(orm)
 
     def actualizar(self, usuario: Usuario) -> Usuario:
         orm = self._sesion.get(UsuarioORM, usuario.id)
@@ -79,4 +79,4 @@ class RepositorioUsuariosSQL(RepositorioUsuarios):
         orm.debe_cambiar_password = usuario.debe_cambiar_password
         self._sesion.commit()
         self._sesion.refresh(orm)
-        return _a_dominio(orm)
+        return usuario_a_dominio(orm)
