@@ -15,7 +15,8 @@ class AplicacionMantenimiento extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Maintenance App',
-      theme: temaOscuro,
+      debugShowCheckedModeBanner: false,
+      theme: temaClaro,
       home: const PantallaInicioSesion(),
     );
   }

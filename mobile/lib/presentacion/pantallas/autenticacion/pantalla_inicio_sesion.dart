@@ -1,10 +1,9 @@
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-// TODO: reemplazar por el provider real de HU-01 (funcionalidades/acceso_roles)
-// una vez creado, por ejemplo en presentacion/pantallas/autenticacion/controlador_autenticacion.dart
-// import '../../../nucleo/di.dart';
+import '../../../nucleo/errores.dart';
+import '../../viewmodels/auth_vm.dart';
+import '../inicio/pantalla_inicio.dart';
 
 class PantallaInicioSesion extends ConsumerStatefulWidget {
   const PantallaInicioSesion({super.key});
@@ -30,15 +29,34 @@ class _PantallaInicioSesionState extends ConsumerState<PantallaInicioSesion> {
     final usuario = _controladorUsuario.text.trim();
     final contrasena = _controladorContrasena.text;
     if (usuario.isEmpty || contrasena.isEmpty) return;
-    // TODO: llamar al caso de uso real de login (HU-01) en vez de esta linea
-    // await ref.read(controladorAutenticacionProvider.notifier).iniciarSesion(usuario, contrasena);
+
+    final exito = await ref
+        .read(authViewModelProvider.notifier)
+        .iniciarSesion(usuario, contrasena);
+
+    if (exito && mounted) {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (_) => const PantallaInicio()),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    // TODO: reemplazar por el estado real del controlador de autenticacion
-    final estadoCargando = false;
+    final estadoAuth = ref.watch(authViewModelProvider);
+    final estadoCargando = estadoAuth.isLoading;
     final cs = Theme.of(context).colorScheme;
+
+    ref.listen(authViewModelProvider, (anterior, siguiente) {
+      if (siguiente.hasError) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(mensajeDeError(siguiente.error!)),
+            backgroundColor: cs.error,
+          ),
+        );
+      }
+    });
 
     return Scaffold(
       body: Container(
@@ -74,7 +92,7 @@ class _PantallaInicioSesionState extends ConsumerState<PantallaInicioSesion> {
                     child: Image.asset(
                       'assets/images/portada.png',
                       fit: BoxFit.contain,
-                      errorBuilder: (_, __, ___) => Container(
+                      errorBuilder: (_, _, _) => Container(
                         decoration: const BoxDecoration(
                           gradient: LinearGradient(
                             begin: Alignment.topLeft,
