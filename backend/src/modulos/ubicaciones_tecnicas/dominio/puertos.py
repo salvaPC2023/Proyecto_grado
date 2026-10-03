@@ -3,6 +3,7 @@ from uuid import UUID
 
 from .modelos import UbicacionTecnica
 
+
 class RepositorioUbicacionesTecnicas(ABC):
     @abstractmethod
     def listar_ubicaciones(self) -> list[UbicacionTecnica]:

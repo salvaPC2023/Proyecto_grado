@@ -1,5 +1,3 @@
-from uuid import UUID
-
 from ..dominio.modelos import UbicacionTecnica
 from ..dominio.puertos import RepositorioUbicacionesTecnicas
 
