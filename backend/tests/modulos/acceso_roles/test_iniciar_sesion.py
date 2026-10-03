@@ -3,11 +3,7 @@ from uuid import uuid4
 import pytest
 
 from src.compartido.seguridad import hashear_password
-from src.modulos.acceso_roles.aplicacion.iniciar_sesion import (
-    CredencialesInvalidas,
-    CuentaDeshabilitada,
-    iniciar_sesion,
-)
+from src.modulos.acceso_roles.aplicacion.iniciar_sesion import CredencialesInvalidas, CuentaDeshabilitada, iniciar_sesion
 from src.modulos.acceso_roles.dominio.modelos import Usuario
 from src.modulos.acceso_roles.dominio.puertos import RepositorioUsuarios
 

@@ -10,10 +10,7 @@ from .repositorio_supervisores import RepositorioSupervisoresSQL
 from .repositorio_tecnicos import RepositorioTecnicosSQL
 from .repositorio_usuarios import RepositorioUsuariosSQL
 
-from ..aplicacion.cambiar_estado_cuenta import (
-    TecnicoNoEncontrado,
-    cambiar_estado_cuenta,
-)
+from ..aplicacion.cambiar_estado_cuenta import TecnicoNoEncontrado, cambiar_estado_cuenta
 from ..aplicacion.cambiar_password import ContrasenaActualIncorrecta, cambiar_password
 from ..aplicacion.crear_tecnico import NombreUsuarioDuplicado, crear_tecnico
 from ..aplicacion.editar_perfil import editar_perfil

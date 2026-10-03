@@ -6,7 +6,6 @@ from ..dominio.puertos import RepositorioTecnicos, RepositorioUsuarios
 class TecnicoNoEncontrado(Exception):
     pass
 
-
 def cambiar_estado_cuenta(
     tecnico_id: UUID,
     activo: bool,

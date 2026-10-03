@@ -10,10 +10,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from src.main import app
-from src.modulos.acceso_roles.infraestructura.dependencias import (
-    UsuarioAutenticado,
-    obtener_usuario_actual,
-)
+from src.modulos.acceso_roles.infraestructura.dependencias import UsuarioAutenticado, obtener_usuario_actual
 
 
 @pytest.fixture

@@ -1,11 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from src.modulos.acceso_roles.infraestructura.router import (
-    router_auth as acceso_roles_router_auth,
-    router_perfil as acceso_roles_router_perfil,
-    router_tecnicos as acceso_roles_router_tecnicos,
-)
+from src.modulos.acceso_roles.infraestructura.router import router_auth as acceso_roles_router_auth, router_perfil as acceso_roles_router_perfil, router_tecnicos as acceso_roles_router_tecnicos
 
 app = FastAPI(title="Maintenance App API", version="0.1.0")
 
