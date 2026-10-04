@@ -11,8 +11,6 @@ import 'componentes_ot.dart';
 import 'pantalla_detalle_ot.dart';
 import 'tira_de_dias.dart';
 
-/// El Supervisor ve el avance de las OTs de su grupo en un dia (hoy +-2),
-/// con filtro opcional por tecnico.
 class PantallaOtsGrupo extends ConsumerStatefulWidget {
   const PantallaOtsGrupo({super.key});
 
@@ -21,13 +19,12 @@ class PantallaOtsGrupo extends ConsumerStatefulWidget {
 }
 
 class _PantallaOtsGrupoState extends ConsumerState<PantallaOtsGrupo> {
-  String? _tecnicoId; // null = todos los tecnicos del grupo
+  String? _tecnicoId;
 
   Future<void> _abrirDetalle(String otId) async {
     await Navigator.of(context).push(
       MaterialPageRoute(builder: (_) => PantallaDetalleOt(otId: otId)),
     );
-    // El Supervisor no cambia el estado al abrirla, pero el tecnico pudo avanzar mientras.
     if (mounted) ref.read(otsGrupoViewModelProvider.notifier).recargar();
   }
 
@@ -35,7 +32,6 @@ class _PantallaOtsGrupoState extends ConsumerState<PantallaOtsGrupo> {
   Widget build(BuildContext context) {
     final estado = ref.watch(otsGrupoViewModelProvider);
     final viewModel = ref.read(otsGrupoViewModelProvider.notifier);
-    // Si los tecnicos aun no cargaron (o fallaron), la lista funciona igual, sin nombres.
     final tecnicos = ref.watch(tecnicosViewModelProvider).value ?? const <Tecnico>[];
     final nombres = {for (final t in tecnicos) t.id: t.nombreCompleto};
 

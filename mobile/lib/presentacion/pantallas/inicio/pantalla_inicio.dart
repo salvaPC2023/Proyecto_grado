@@ -9,8 +9,6 @@ import '../ordenes_trabajo/pantalla_mis_ots.dart';
 import '../ordenes_trabajo/pantalla_ots_grupo.dart';
 import '../perfil/pantalla_mi_perfil.dart';
 
-// TODO: el progreso/avisos/comunicado siguen hardcodeados hasta que existan
-// esos modulos. "Ver Ordenes de Trabajo" abre las OTs de cada rol.
 
 class PantallaInicio extends ConsumerWidget {
   const PantallaInicio({super.key});
@@ -77,7 +75,6 @@ class _Encabezado extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        // Al presionar la foto de perfil, navega a "Mi Perfil".
         GestureDetector(
           onTap: () => Navigator.of(context).push(
             MaterialPageRoute(builder: (_) => const PantallaMiPerfil()),

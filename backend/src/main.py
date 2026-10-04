@@ -9,7 +9,7 @@ app = FastAPI(title="Maintenance App API", version="0.1.0")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # solo para desarrollo
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -20,7 +20,6 @@ app.include_router(acceso_roles_router_tecnicos, prefix="/api/v1")
 app.include_router(acceso_roles_router_perfil, prefix="/api/v1")
 app.include_router(ubicaciones_tecnicas_router, prefix="/api/v1")
 app.include_router(ordenes_trabajo_router, prefix="/api/v1")
-# Los routers de los proximos modulos se agregan aca de la misma forma.
 
 
 @app.get("/health")

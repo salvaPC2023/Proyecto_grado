@@ -18,9 +18,7 @@ abstract interface class RepositorioOrdenesTrabajo {
 
   Future<OrdenTrabajo> obtenerDetalle(String otId);
 
-  /// Con [fecha], solo las OTs vigentes ese dia.
   Future<List<OrdenTrabajo>> listarMisOts({DateTime? fecha});
 
-  /// OTs de los tecnicos del grupo del Supervisor; con [fecha], las vigentes ese dia.
   Future<List<OrdenTrabajo>> listarOtsGrupo({DateTime? fecha});
 }

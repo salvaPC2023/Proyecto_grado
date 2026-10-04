@@ -11,7 +11,6 @@ from alembic import op
 import sqlalchemy as sa
 
 
-# revision identifiers, used by Alembic.
 revision: str = '7c8864ef48d8'
 down_revision: Union[str, Sequence[str], None] = 'ea473948f562'
 branch_labels: Union[str, Sequence[str], None] = None
@@ -19,7 +18,6 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    """Upgrade schema."""
     op.drop_column('usuarios', 'auth_user_id')
     op.drop_column('tecnicos', 'especializacion')
     op.drop_column('grupo', 'activo')
@@ -28,7 +26,6 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    """Downgrade schema."""
     op.drop_constraint('uq_grupo_supervisor', 'grupo', type_='unique')
 
     op.add_column('grupo', sa.Column('activo', sa.Boolean(), nullable=False, server_default=sa.true()))

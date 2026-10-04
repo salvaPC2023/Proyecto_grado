@@ -9,9 +9,6 @@ import '../../widgets/barra_navegacion_inferior.dart';
 import 'pantalla_registrar_tecnico.dart';
 import 'pantalla_ver_perfil_tecnico.dart';
 
-// Paleta de colores para los avatares — el backend no manda un color por
-// tecnico, se elige uno de esta lista segun el id, solo para diferenciarlos
-// visualmente (todos en tonos azules, ver paleta de la app).
 const _paletaAvatares = [
   (fondo: Color(0xFFE0F2FE), texto: Color(0xFF0369A1)),
   (fondo: Color(0xFFE0E7FF), texto: Color(0xFF4338CA)),
@@ -54,7 +51,6 @@ class PantallaListaTecnicos extends ConsumerWidget {
                   MaterialPageRoute(
                       builder: (_) => const PantallaRegistrarTecnico()),
                 );
-                // Por si se creo un tecnico nuevo, refresca la lista al volver.
                 ref.invalidate(tecnicosViewModelProvider);
               },
             ),
@@ -89,8 +85,6 @@ class PantallaListaTecnicos extends ConsumerWidget {
                                   id: tecnicos[i].id,
                                   nombreCompleto: tecnicos[i].nombreCompleto,
                                   nombreUsuario: tecnicos[i].nombreUsuario,
-                                  // TODO: el nombre del grupo no viene en
-                                  // GET /tecnicos todavia, solo su id.
                                   grupo: 'Grupo 1 - Suministros',
                                   profesion: tecnicos[i].profesion,
                                   activo: tecnicos[i].activo,
@@ -143,7 +137,6 @@ class _Encabezado extends StatelessWidget {
                   ),
                 ),
               ),
-              // Registrar tecnico va dentro de la pagina, no como boton flotante.
               _BotonCircular(icono: Icons.person_add, onPressed: onRegistrarTecnico),
             ],
           ),

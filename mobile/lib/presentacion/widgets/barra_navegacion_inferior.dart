@@ -12,16 +12,10 @@ enum SeccionNav { inicio, agenda, ordenesTrabajo, equipoTrabajo }
 
 const _colorIcono = ColoresApp.principal;
 
-// El calendario abre las OTs por dia de cada rol: las propias del Tecnico
-// o las del grupo del Supervisor. El boton "+" central (Nueva OT)
-// y el de gestion de tecnicos (grupo) solo los ve el Supervisor.
-// TODO: definir que abre el icono de "Ordenes de Trabajo" (portapapeles).
 class BarraNavegacionInferior extends ConsumerWidget {
   const BarraNavegacionInferior({super.key, required this.activo});
   final SeccionNav activo;
 
-  // Cada seccion se abre siempre encima del menu de inicio, nunca encima de
-  // otra seccion: asi "volver" desde cualquier seccion lleva al menu.
   void _irA(BuildContext context, Widget pantalla) {
     final navegador = Navigator.of(context);
     navegador.popUntil((ruta) => ruta.isFirst);
@@ -72,8 +66,6 @@ class BarraNavegacionInferior extends ConsumerWidget {
               activo: activo == SeccionNav.ordenesTrabajo,
               onTap: () {},
             ),
-            // Gestion de tecnicos (listar, registrar, deshabilitar): solo Supervisor.
-            // El backend ademas responde 403 a un Tecnico en /tecnicos.
             if (esSupervisor)
               _ItemNav(
                 icono: Icons.groups_outlined,

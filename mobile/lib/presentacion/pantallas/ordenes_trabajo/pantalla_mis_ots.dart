@@ -10,7 +10,6 @@ import 'componentes_ot.dart';
 import 'pantalla_detalle_ot.dart';
 import 'tira_de_dias.dart';
 
-/// OTs asignadas al Tecnico para un dia (hoy +-2), filtrables por estado.
 class PantallaMisOts extends ConsumerStatefulWidget {
   const PantallaMisOts({super.key});
 
@@ -43,7 +42,6 @@ class _PantallaMisOtsState extends ConsumerState<PantallaMisOts> {
     await Navigator.of(context).push(
       MaterialPageRoute(builder: (_) => PantallaDetalleOt(otId: ot.id)),
     );
-    // Al abrirla, la OT pudo pasar de "Asignada" a "En proceso".
     if (mounted) ref.read(misOtsViewModelProvider.notifier).recargar();
   }
 

@@ -7,16 +7,12 @@ class AuthViewModel extends Notifier<AsyncValue<void>> {
   @override
   AsyncValue<void> build() => const AsyncValue.data(null);
 
-  /// true si el login funciono. El error (si lo hubo) queda en el estado
-  /// del provider, para que la pantalla lo muestre.
   Future<bool> iniciarSesion(String nombreUsuario, String password) async {
     state = const AsyncValue.loading();
     try {
       final resultado =
           await ref.read(repositorioAutenticacionProvider).iniciarSesion(nombreUsuario, password);
 
-      // El token debe quedar en la sesion ANTES de pedir el perfil, porque
-      // el interceptor de Dio (nucleo/api_client.dart) lo lee de ahi.
       ref
           .read(sesionProvider.notifier)
           .establecerToken(token: resultado.token, rol: resultado.rol);

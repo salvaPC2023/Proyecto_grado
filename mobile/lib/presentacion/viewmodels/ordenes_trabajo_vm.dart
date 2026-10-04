@@ -4,8 +4,6 @@ import '../../dominio/modelos/orden_trabajo.dart';
 import '../../nucleo/di.dart';
 import '../../nucleo/fechas.dart';
 
-/// Pantalla "Nueva OT" (Supervisor): su estado es el catalogo de
-/// ubicaciones tecnicas para elegir una; `crear` registra la OT.
 class NuevaOtViewModel extends AsyncNotifier<List<UbicacionTecnica>> {
   @override
   Future<List<UbicacionTecnica>> build() {
@@ -19,8 +17,6 @@ class NuevaOtViewModel extends AsyncNotifier<List<UbicacionTecnica>> {
     );
   }
 
-  /// Lanza si el backend la rechaza (ej. 400 sin PM01) — la pantalla lo
-  /// atrapa con try/catch para mostrar el mensaje.
   Future<OrdenTrabajo> crear({
     required String titulo,
     required String tipoDeOrden,
@@ -53,7 +49,6 @@ final nuevaOtViewModelProvider =
   NuevaOtViewModel.new,
 );
 
-/// Lista "Mis OTs" (Tecnico): siempre las OTs de un dia; por defecto, hoy.
 class MisOtsViewModel extends AsyncNotifier<List<OrdenTrabajo>> {
   DateTime fecha = hoySinHora();
 
@@ -80,12 +75,10 @@ final misOtsViewModelProvider =
   MisOtsViewModel.new,
 );
 
-/// Detalle de una OT. Una instancia por id; se descarta al salir de la pantalla.
 final detalleOtProvider = FutureProvider.autoDispose.family<OrdenTrabajo, String>(
   (ref, otId) => ref.read(repositorioOrdenesTrabajoProvider).obtenerDetalle(otId),
 );
 
-/// "Ordenes de Trabajo" del Supervisor: las OTs de su grupo en un dia.
 class OtsGrupoViewModel extends AsyncNotifier<List<OrdenTrabajo>> {
   DateTime fecha = hoySinHora();
 

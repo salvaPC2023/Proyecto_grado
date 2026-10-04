@@ -18,17 +18,13 @@ class UbicacionTecnica {
       .where((n) => n.isNotEmpty)
       .toList();
 
-  /// "Embotellado / Area 1 / Llenadora / Sistema de Dosificacion"
   String get ruta => niveles.join(' / ');
 
-  /// El nivel mas especifico, para las tarjetas donde no entra la ruta completa.
   String get nombreCorto => niveles.last;
 
-  /// Los dos niveles mas especificos: "Etiquetadora · Aplicador de Etiquetas".
   String get resumen => niveles.skip(niveles.length > 1 ? niveles.length - 2 : 0).join(' · ');
 }
 
-/// Cierre registrado por el Tecnico sobre un paso PM01.
 class CierrePaso {
   const CierrePaso({
     required this.id,
@@ -45,7 +41,7 @@ class CierrePaso {
   final double tiempoRealTrabajado;
   final bool trabajoFinalizado;
   final bool sinTrabajoRealizado;
-  final String resultadoTrabajo; // 'ejecutado' | 'no_ejecutado'
+  final String resultadoTrabajo;
   final String descripcionTrabajoRealizado;
 }
 
@@ -62,9 +58,9 @@ class PasoOt {
   final String id;
   final int numeroPaso;
   final String descripcion;
-  final String claveControl; // 'PM01' | 'PMNN'
+  final String claveControl;
   final double? horasPlanificadas;
-  final CierrePaso? cierre; // null = sin cerrar (los PMNN nunca se cierran)
+  final CierrePaso? cierre;
 
   bool get esPm01 => claveControl == 'PM01';
   bool get cerrado => cierre != null;
@@ -92,26 +88,23 @@ class OrdenTrabajo {
   final String tipoDeOrden;
   final String tecnicoAsignadoId;
   final String descripcion;
-  final int prioridad; // 1 = Urgente ... 4 = Baja
-  final String estatus; // 'asignada' | 'en_progreso' | 'cerrada'
-  final bool estatusEquipo; // true = en funcionamiento, false = detenido
+  final int prioridad;
+  final String estatus;
+  final bool estatusEquipo;
   final DateTime fechaInicPlanif;
   final DateTime fechaFinPlanif;
   final DateTime? fechaCierre;
   final UbicacionTecnica? ubicacion;
   final List<PasoOt> pasos;
 
-  /// Suma de las horas planificadas de los pasos PM01 (los PMNN no llevan horas).
   double get horasPlanificadas => pasos
       .where((p) => p.esPm01)
       .fold(0, (total, p) => total + (p.horasPlanificadas ?? 0));
 
-  /// Avance = pasos PM01 cerrados / total de PM01 (los PMNN son informativos).
   int get pm01Total => pasos.where((p) => p.esPm01).length;
   int get pm01Cerrados => pasos.where((p) => p.esPm01 && p.cerrado).length;
 }
 
-/// Paso que el Supervisor agrega al crear la OT (todavia sin id ni numero).
 class PasoNuevo {
   const PasoNuevo({
     required this.descripcion,

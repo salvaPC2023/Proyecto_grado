@@ -6,10 +6,6 @@ import '../../../nucleo/tema.dart';
 import '../../viewmodels/tecnicos_vm.dart';
 import '../../widgets/barra_navegacion_inferior.dart';
 
-// TODO: "Grupo 1 - Suministros" sigue hardcodeado — no hay endpoint para
-// consultar el nombre del grupo del supervisor todavia (POST /tecnicos ya
-// no necesita el id, el backend lo deriva solo, pero mostrar el NOMBRE
-// real aqui necesitaria un endpoint nuevo).
 
 enum _Profesion { electrico, mecanico, electromecanico }
 
@@ -255,7 +251,6 @@ class _AvatarConBadge extends StatelessWidget {
         Stack(
           clipBehavior: Clip.none,
           children: [
-            // TODO: solo decorativo por ahora — no hay campo de foto en el backend
             const CircleAvatar(
               radius: 55.5,
               backgroundColor: Colors.white,

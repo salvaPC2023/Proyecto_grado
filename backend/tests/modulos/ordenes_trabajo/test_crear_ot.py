@@ -4,52 +4,10 @@ from uuid import uuid4
 
 import pytest
 
-from src.modulos.acceso_roles.dominio.puertos import RepositorioTecnicos
 from src.modulos.ordenes_trabajo.aplicacion.crear_ot import FechasInvalidas, HorasInvalidas, PasoSolicitado, PrioridadInvalida, SinPasoPM01, TecnicoFueraDeGrupo, UbicacionNoEncontrada, crear_ot
 from src.modulos.ordenes_trabajo.dominio.modelos import PASOS_SEGURIDAD
-from src.modulos.ordenes_trabajo.dominio.puertos import RepositorioOrdenesTrabajo
 from src.modulos.ubicaciones_tecnicas.dominio.modelos import UbicacionTecnica
-from src.modulos.ubicaciones_tecnicas.dominio.puertos import RepositorioUbicacionesTecnicas
-
-
-class RepositorioOrdenesTrabajoFalso(RepositorioOrdenesTrabajo):
-    def __init__(self):
-        self.ots = {}
-
-    def crear(self, ot):
-        self.ots[ot.id] = ot
-        return ot
-
-    def obtener_por_id(self, id):
-        return self.ots.get(id)
-
-
-class RepositorioUbicacionesFalso(RepositorioUbicacionesTecnicas):
-    def __init__(self, ubicaciones):
-        self._ubicaciones = ubicaciones
-
-    def listar_ubicaciones(self):
-        return list(self._ubicaciones)
-
-    def obtener_por_id(self, id):
-        return next((u for u in self._ubicaciones if u.id == id), None)
-
-
-class RepositorioTecnicosFalso(RepositorioTecnicos):
-    """Solo implementa lo que usa crear_ot; el resto avisa si alguien lo llama."""
-
-    def __init__(self, grupo: dict):
-        self._grupo = grupo  # {tecnico_id: supervisor_usuario_id}
-
-    def pertenece_a_supervisor(self, tecnico_id, supervisor_usuario_id):
-        return self._grupo.get(tecnico_id) == supervisor_usuario_id
-
-    def obtener_por_id(self, id): raise NotImplementedError
-    def crear(self, tecnico): raise NotImplementedError
-    def listar_por_supervisor(self, supervisor_usuario_id): raise NotImplementedError
-    def obtener_grupo_del_supervisor(self, supervisor_usuario_id): raise NotImplementedError
-    def obtener_por_usuario_id(self, usuario_id): raise NotImplementedError
-    def obtener_nombre_grupo(self, grupo_id): raise NotImplementedError
+from tests.modulos.ordenes_trabajo.repositorios_falsos import RepositorioOrdenesTrabajoFalso, RepositorioTecnicosFalso, RepositorioUbicacionesFalso
 
 
 SUPERVISOR = uuid4()
@@ -64,7 +22,7 @@ def repositorios():
     return {
         "repositorio_ots": RepositorioOrdenesTrabajoFalso(),
         "repositorio_ubicaciones": RepositorioUbicacionesFalso([UBICACION]),
-        "repositorio_tecnicos": RepositorioTecnicosFalso({TECNICO: SUPERVISOR, TECNICO_DE_OTRO_GRUPO: OTRO_SUPERVISOR}),
+        "repositorio_tecnicos": RepositorioTecnicosFalso(supervisor_de_tecnico={TECNICO: SUPERVISOR, TECNICO_DE_OTRO_GRUPO: OTRO_SUPERVISOR}),
     }
 
 
@@ -77,7 +35,6 @@ def pmnn(descripcion="Revisar guardas", horas=None):
 
 
 def _crear(repositorios, **cambios):
-    """Crea una OT valida; cada test cambia solo el dato que quiere probar."""
     datos = dict(
         titulo="Sobrecalentamiento de transformador",
         tipo_de_orden="OE01",

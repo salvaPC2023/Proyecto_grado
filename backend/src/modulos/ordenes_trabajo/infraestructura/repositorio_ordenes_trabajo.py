@@ -1,10 +1,19 @@
+from datetime import date, datetime, time, timedelta
 from uuid import UUID
 
+from sqlalchemy import select
 from sqlalchemy.orm import Session
+
+from src.modulos.acceso_roles.infraestructura.orm import TecnicoORM
 
 from ..dominio.modelos import OrdenDeTrabajo, PasoOT
 from ..dominio.puertos import RepositorioOrdenesTrabajo
 from .orm import OrdenDeTrabajoORM, PasoOTORM
+
+
+def rango_del_dia(fecha: date) -> tuple[datetime, datetime]:
+    inicio = datetime.combine(fecha, time.min)
+    return inicio, inicio + timedelta(days=1)
 
 
 def paso_a_dominio(orm: PasoOTORM) -> PasoOT:
@@ -55,7 +64,6 @@ class RepositorioOrdenesTrabajoSQL(RepositorioOrdenesTrabajo):
             ],
         )
         self._sesion.add(orm)
-        # Un solo commit: la OT y todos sus pasos se guardan juntos o no se guarda nada.
         self._sesion.commit()
         self._sesion.refresh(orm)
         return ot_a_dominio(orm)
@@ -63,3 +71,18 @@ class RepositorioOrdenesTrabajoSQL(RepositorioOrdenesTrabajo):
     def obtener_por_id(self, id: UUID) -> OrdenDeTrabajo | None:
         orm = self._sesion.get(OrdenDeTrabajoORM, id)
         return ot_a_dominio(orm) if orm else None
+
+    def listar_por_tecnico(self, tecnico_id: UUID, fecha: date | None = None) -> list[OrdenDeTrabajo]:
+        consulta = select(OrdenDeTrabajoORM).where(OrdenDeTrabajoORM.tecnico_asignado_id == tecnico_id)
+        return self.ejecutar(consulta, fecha)
+
+    def listar_por_grupo(self, grupo_id: UUID, fecha: date | None = None) -> list[OrdenDeTrabajo]:
+        consulta = select(OrdenDeTrabajoORM).join(TecnicoORM, OrdenDeTrabajoORM.tecnico_asignado_id == TecnicoORM.id).where(TecnicoORM.grupo_id == grupo_id)
+        return self.ejecutar(consulta, fecha)
+
+    def ejecutar(self, consulta, fecha: date | None) -> list[OrdenDeTrabajo]:
+        if fecha is not None:
+            inicio_dia, fin_dia = rango_del_dia(fecha)
+            consulta = consulta.where(OrdenDeTrabajoORM.fecha_inic_planif < fin_dia, OrdenDeTrabajoORM.fecha_fin_planif >= inicio_dia)
+        consulta = consulta.order_by(OrdenDeTrabajoORM.fecha_inic_planif, OrdenDeTrabajoORM.prioridad, OrdenDeTrabajoORM.titulo, OrdenDeTrabajoORM.id)
+        return [ot_a_dominio(o) for o in self._sesion.scalars(consulta).all()]

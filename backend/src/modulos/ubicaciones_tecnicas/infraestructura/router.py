@@ -11,7 +11,6 @@ from ..aplicacion.listar_ubicaciones_tecnicas import listar_ubicaciones_tecnicas
 from ..dominio.modelos import UbicacionTecnica
 from .repositorio_ubicaciones_tecnicas import RepositorioUbicacionesTecnicasSQL
 
-# La ruta coincide con la que llama la app movil (repositorio_ordenes_trabajo_remoto.dart).
 router_ubicaciones = APIRouter(prefix="/ubicaciones-tecnicas", tags=["ubicaciones tecnicas"])
 
 

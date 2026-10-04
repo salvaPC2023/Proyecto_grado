@@ -19,8 +19,6 @@ class Perfil {
   final String? apellidoMaterno;
   final String nombreUsuario;
 
-  // Presentes solo segun el rol: profesion/grupoNombre para Tecnico,
-  // horarioEntrada/horarioSalida/areaDesignada para Supervisor.
   final String? rol;
   final String? profesion;
   final String? grupoNombre;

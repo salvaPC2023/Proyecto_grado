@@ -6,9 +6,6 @@ import '../../../nucleo/tema.dart';
 import '../../viewmodels/tecnicos_vm.dart';
 import '../../widgets/barra_navegacion_inferior.dart';
 
-// TODO: "grupo" sigue recibido por parametro con un valor de ejemplo — no
-// hay forma de saber el NOMBRE del grupo todavia (GET /tecnicos solo manda
-// su id). El resto (nombre, usuario, profesion, activo) ya es real.
 
 class PantallaVerPerfilTecnico extends ConsumerStatefulWidget {
   const PantallaVerPerfilTecnico({

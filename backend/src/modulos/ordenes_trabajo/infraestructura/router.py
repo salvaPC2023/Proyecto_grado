@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 from decimal import Decimal
 from uuid import UUID
 
@@ -7,23 +7,23 @@ from pydantic import BaseModel, Field, field_validator
 from sqlalchemy.orm import Session
 
 from src.compartido.bd import get_db
-from src.modulos.acceso_roles.infraestructura.dependencias import UsuarioAutenticado, requerir_supervisor
+from src.modulos.acceso_roles.infraestructura.dependencias import UsuarioAutenticado, requerir_supervisor, requerir_tecnico
 from src.modulos.acceso_roles.infraestructura.repositorio_tecnicos import RepositorioTecnicosSQL
 from src.modulos.ubicaciones_tecnicas.infraestructura.repositorio_ubicaciones_tecnicas import RepositorioUbicacionesTecnicasSQL
 from src.modulos.ubicaciones_tecnicas.infraestructura.router import UbicacionOut, a_ubicacion_out
 
 from ..aplicacion.crear_ot import FechasInvalidas, HorasInvalidas, PasoSolicitado, PrioridadInvalida, SinPasoPM01, TecnicoFueraDeGrupo, UbicacionNoEncontrada, crear_ot
+from ..aplicacion.listar_ots_supervisor import listar_ots_supervisor
+from ..aplicacion.listar_ots_tecnico import listar_ots_tecnico
 from ..dominio.modelos import ClaveControl, EstatusOT, OrdenDeTrabajo, TipoOrden
 from .repositorio_ordenes_trabajo import RepositorioOrdenesTrabajoSQL
 
-# Rutas y campos coinciden con lo que llama la app movil (repositorio_ordenes_trabajo_remoto.dart y mapeo_json.dart).
 router_ots = APIRouter(prefix="/ordenes-trabajo", tags=["ordenes de trabajo"])
 
 
 class PasoIn(BaseModel):
     descripcion: str = Field(min_length=1)
     clave_control: ClaveControl
-    # Igual que la columna DECIMAL(5,2): hasta 999.99. Sin esto, un valor mayor llega a la BD y responde 500.
     horas_planificadas: Decimal | None = Field(default=None, max_digits=5, decimal_places=2, examples=["2.50"])
 
 
@@ -42,8 +42,6 @@ class CrearOTRequest(BaseModel):
     @field_validator("fecha_inic_planif", "fecha_fin_planif")
     @classmethod
     def sin_zona_horaria(cls, valor: datetime) -> datetime:
-        # Las columnas son TIMESTAMP (sin zona) y el sistema opera en hora de Bolivia.
-        # Si la fecha llega con zona ("Z", "-04:00"), se pasa a la hora local del servidor.
         if valor.tzinfo is not None:
             return valor.astimezone().replace(tzinfo=None)
         return valor
@@ -55,7 +53,7 @@ class PasoOut(BaseModel):
     descripcion: str
     clave_control: ClaveControl
     horas_planificadas: Decimal | None = Field(examples=["2.50"])
-    cierre: None = None  # El cierre de paso llega en el Bloque G.
+    cierre: None = None
 
 
 class OrdenDeTrabajoOut(BaseModel):
@@ -129,3 +127,20 @@ def crear_ot_endpoint(datos: CrearOTRequest, db: Session = Depends(get_db), actu
     except TecnicoFueraDeGrupo:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="El técnico no existe o no pertenece a tu grupo")
     return a_ot_out(ot, repositorio_ubicaciones.obtener_por_id(ot.ubicacion_tecnica_id))
+
+
+def a_lista_out(ots: list[OrdenDeTrabajo], repositorio_ubicaciones: RepositorioUbicacionesTecnicasSQL) -> list[OrdenDeTrabajoOut]:
+    ubicaciones = {u.id: u for u in repositorio_ubicaciones.listar_ubicaciones()}
+    return [a_ot_out(ot, ubicaciones.get(ot.ubicacion_tecnica_id)) for ot in ots]
+
+
+@router_ots.get("/mis-ots", response_model=list[OrdenDeTrabajoOut])
+def listar_mis_ots_endpoint(fecha: date | None = None, db: Session = Depends(get_db), actual: UsuarioAutenticado = Depends(requerir_tecnico)):
+    ots = listar_ots_tecnico(actual.id, RepositorioOrdenesTrabajoSQL(db), RepositorioTecnicosSQL(db), fecha)
+    return a_lista_out(ots, RepositorioUbicacionesTecnicasSQL(db))
+
+
+@router_ots.get("/grupo", response_model=list[OrdenDeTrabajoOut])
+def listar_ots_grupo_endpoint(fecha: date | None = None, db: Session = Depends(get_db), actual: UsuarioAutenticado = Depends(requerir_supervisor)):
+    ots = listar_ots_supervisor(actual.id, RepositorioOrdenesTrabajoSQL(db), RepositorioTecnicosSQL(db), fecha)
+    return a_lista_out(ots, RepositorioUbicacionesTecnicasSQL(db))

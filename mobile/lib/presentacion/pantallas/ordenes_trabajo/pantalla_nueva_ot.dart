@@ -10,7 +10,6 @@ import '../../viewmodels/tecnicos_vm.dart';
 import '../../widgets/barra_navegacion_inferior.dart';
 import 'formato_ot.dart';
 
-/// El Supervisor crea una OT, eligiendo la ubicacion tecnica del catalogo.
 class PantallaNuevaOt extends ConsumerStatefulWidget {
   const PantallaNuevaOt({super.key});
 
@@ -31,7 +30,7 @@ class _PantallaNuevaOtState extends ConsumerState<PantallaNuevaOt> {
 
   String _tipoDeOrden = _tiposDeOrden.first;
   UbicacionTecnica? _ubicacion;
-  String? _profesionFiltro; // null = todas
+  String? _profesionFiltro;
   String? _tecnicoId;
   bool _equipoEnFuncionamiento = false;
   late DateTime _inicio;
@@ -132,7 +131,6 @@ class _PantallaNuevaOtState extends ConsumerState<PantallaNuevaOt> {
             pasos: _pasos,
           );
       if (!mounted) return;
-      // Si la lista del grupo esta abierta detras, que muestre la OT nueva.
       ref.invalidate(otsGrupoViewModelProvider);
       _avisar('OT "${ot.titulo}" creada con ${ot.pasos.length} pasos');
       Navigator.of(context).pop();
@@ -406,7 +404,6 @@ class _PantallaNuevaOtState extends ConsumerState<PantallaNuevaOt> {
   }
 }
 
-// ── Piezas visuales ─────────────────────────────────────────────────────────
 
 class _Encabezado extends StatelessWidget {
   const _Encabezado({required this.onVolver});

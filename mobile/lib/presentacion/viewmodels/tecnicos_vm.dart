@@ -7,8 +7,6 @@ import '../../nucleo/sesion.dart';
 class TecnicosViewModel extends AsyncNotifier<List<Tecnico>> {
   @override
   Future<List<Tecnico>> build() {
-    // Depende del token: otro Supervisor que entre en el mismo dispositivo no
-    // debe ver, ni por un instante, los tecnicos del grupo del anterior.
     ref.watch(sesionProvider.select((sesion) => sesion?.token));
     return ref.read(repositorioTecnicosProvider).listar();
   }
@@ -18,8 +16,6 @@ class TecnicosViewModel extends AsyncNotifier<List<Tecnico>> {
     state = await AsyncValue.guard(() => ref.read(repositorioTecnicosProvider).listar());
   }
 
-  /// Lanza si algo sale mal (ej. nombre de usuario duplicado) — la
-  /// pantalla lo atrapa con try/catch para mostrar el mensaje.
   Future<void> crear({
     required String nombre,
     required String apellidoPaterno,

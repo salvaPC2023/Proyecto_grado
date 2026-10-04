@@ -17,8 +17,6 @@ class RepositorioTecnicosRemoto implements RepositorioTecnicos {
     });
   }
 
-  // grupo_id no se manda: el backend lo deriva del grupo del supervisor
-  // autenticado ("mismo grupo del creador").
   @override
   Future<Tecnico> crear({
     required String nombre,

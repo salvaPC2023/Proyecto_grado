@@ -2,8 +2,6 @@ import '../../dominio/modelos/orden_trabajo.dart';
 import '../../dominio/modelos/perfil.dart';
 import '../../dominio/modelos/tecnico.dart';
 
-// Traduccion entre el JSON del backend y los modelos de dominio. Vive en la
-// capa de datos: si cambia el formato de la API, el dominio no se entera.
 
 typedef Json = Map<String, dynamic>;
 
@@ -83,7 +81,6 @@ OrdenTrabajo ordenTrabajoDesdeJson(Json json) {
     prioridad: json['prioridad'] as int,
     estatus: json['estatus'] as String,
     estatusEquipo: json['estatus_equipo'] as bool,
-    // El backend usa TIMESTAMP sin zona: se leen como hora local.
     fechaInicPlanif: DateTime.parse(json['fecha_inic_planif'] as String),
     fechaFinPlanif: DateTime.parse(json['fecha_fin_planif'] as String),
     fechaCierre: fechaCierre == null ? null : DateTime.parse(fechaCierre as String),
@@ -98,7 +95,6 @@ Json pasoNuevoAJson(PasoNuevo paso) => {
       if (paso.horasPlanificadas != null) 'horas_planificadas': paso.horasPlanificadas,
     };
 
-// Pydantic serializa los Decimal como texto ("2.50").
 double? _aDouble(Object? valor) => switch (valor) {
       null => null,
       num n => n.toDouble(),

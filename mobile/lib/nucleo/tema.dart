@@ -1,8 +1,5 @@
 import 'package:flutter/material.dart';
 
-/// Paleta extraida del diseno de Figma ("interfaz nueva"), ajustada para
-/// usar solo tonos azules (#131D8C como principal) — sin morados, por
-/// seriedad de marca.
 class ColoresApp {
   static const fondo = Color(0xFFEDF0FF);
   static const principal = Color(0xFF131D8C);

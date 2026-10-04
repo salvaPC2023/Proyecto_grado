@@ -2,9 +2,6 @@ import 'package:dio/dio.dart';
 
 import '../../dominio/errores.dart';
 
-/// Ejecuta una llamada HTTP y convierte cualquier DioException en un
-/// ErrorDeAplicacion con el mensaje que el backend manda en "detail"
-/// (HTTPException de FastAPI), o uno generico si no hay.
 Future<T> traducirErrores<T>(Future<T> Function() llamada) async {
   try {
     return await llamada();

@@ -2,9 +2,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../dominio/modelos/perfil.dart';
 
-// TODO: esto vive solo en memoria — se pierde al cerrar la app. Si mas
-// adelante se necesita persistir la sesion entre aperturas, agregar
-// almacenamiento local (ej. flutter_secure_storage) aqui.
 
 class SesionUsuario {
   const SesionUsuario({
@@ -38,8 +35,6 @@ class SesionNotifier extends Notifier<SesionUsuario?> {
   @override
   SesionUsuario? build() => null;
 
-  /// Se llama justo despues del login. El token debe quedar en la sesion
-  /// ANTES de pedir el perfil, porque el interceptor de Dio lo lee de aca.
   void establecerToken({required String token, required String rol}) {
     state = SesionUsuario(token: token, rol: rol);
   }

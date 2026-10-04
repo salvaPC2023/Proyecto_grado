@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-/// Textos y colores de OT que comparten las pantallas del modulo.
 
 class EstiloEtiqueta {
   const EstiloEtiqueta(this.texto, this.color, this.fondo);
@@ -16,7 +15,6 @@ EstiloEtiqueta estiloEstatus(String estatus) => switch (estatus) {
       _ => EstiloEtiqueta(estatus, const Color(0xFF475569), const Color(0xFFF1F5F9)),
     };
 
-/// Prioridad 1..4 del backend (CHECK prioridad BETWEEN 1 AND 4).
 const etiquetasPrioridad = {1: 'Urgente', 2: 'Alta', 3: 'Normal', 4: 'Baja'};
 
 EstiloEtiqueta estiloPrioridad(int prioridad) => switch (prioridad) {
@@ -33,13 +31,10 @@ String nombreMes(DateTime f) => _meses[f.month - 1];
 String nombreDia(DateTime f) => _dias[f.weekday - 1];
 String dosDigitos(int n) => n.toString().padLeft(2, '0');
 
-/// "01 Oct 2026"
 String formatoFecha(DateTime f) => '${dosDigitos(f.day)} ${nombreMes(f)} ${f.year}';
 
-/// "08:00"
 String formatoHora(DateTime f) => '${dosDigitos(f.hour)}:${dosDigitos(f.minute)}';
 
-/// "2.5 Horas", "1 Hora"
 String formatoHoras(double horas) {
   final numero = horas == horas.roundToDouble()
       ? horas.toInt().toString()

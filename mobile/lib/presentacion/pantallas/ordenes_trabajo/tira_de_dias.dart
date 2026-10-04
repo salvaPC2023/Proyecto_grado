@@ -4,7 +4,6 @@ import '../../../nucleo/fechas.dart';
 import '../../../nucleo/tema.dart';
 import 'formato_ot.dart';
 
-/// Siempre 5 dias: 2 antes de hoy, hoy (al centro) y 2 despues, tengan o no OTs.
 class TiraDeDias extends StatelessWidget {
   const TiraDeDias({super.key, required this.seleccionada, required this.onSeleccionar});
   final DateTime seleccionada;
@@ -60,7 +59,6 @@ class _ChipDia extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorTexto = seleccionado ? Colors.white : ColoresApp.textoOscuro;
     final colorSuave = seleccionado ? Colors.white70 : ColoresApp.textoPlaceholder;
-    // El dia elegido crece un poco para que se note cual se esta viendo.
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),
       curve: Curves.easeOut,

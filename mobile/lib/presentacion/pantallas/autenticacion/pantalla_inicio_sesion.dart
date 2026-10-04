@@ -285,8 +285,6 @@ class _CampoEstilizado extends StatelessWidget {
       ),
       obscureText: ocultarTexto,
       textInputAction: accionTeclado,
-      // readOnly en vez de enabled: en web, deshabilitar un campo que tiene el
-      // foco lo deja sin poder editarse despues de un error de login.
       readOnly: !habilitado,
       onSubmitted: alEnviar,
     );

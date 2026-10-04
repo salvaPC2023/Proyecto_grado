@@ -17,7 +17,6 @@ class RepositorioOrdenesTrabajoRemoto implements RepositorioOrdenesTrabajo {
     });
   }
 
-  // Los 3 pasos de seguridad (PMNN) no se mandan: los agrega el backend.
   @override
   Future<OrdenTrabajo> crear({
     required String titulo,
@@ -40,7 +39,6 @@ class RepositorioOrdenesTrabajoRemoto implements RepositorioOrdenesTrabajo {
         'descripcion': descripcion,
         'prioridad': prioridad,
         'estatus_equipo': estatusEquipo,
-        // Hora local sin zona, igual que las columnas TIMESTAMP del backend.
         'fecha_inic_planif': fechaInicPlanif.toIso8601String(),
         'fecha_fin_planif': fechaFinPlanif.toIso8601String(),
         'pasos': pasos.map(pasoNuevoAJson).toList(),

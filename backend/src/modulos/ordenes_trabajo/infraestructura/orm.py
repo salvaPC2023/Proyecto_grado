@@ -8,10 +8,8 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.compartido.bd import Base
 
-# Las ForeignKey apuntan a tablas de otros modulos (usuarios, tecnicos, ubicaciones_tecnicas).
-# Importar sus ORM las registra en Base, para que SQLAlchemy pueda resolverlas.
-from src.modulos.acceso_roles.infraestructura import orm as _orm_acceso_roles  # noqa: F401
-from src.modulos.ubicaciones_tecnicas.infraestructura import orm as _orm_ubicaciones  # noqa: F401
+from src.modulos.acceso_roles.infraestructura import orm as _orm_acceso_roles
+from src.modulos.ubicaciones_tecnicas.infraestructura import orm as _orm_ubicaciones
 
 
 class OrdenDeTrabajoORM(Base):
@@ -31,7 +29,6 @@ class OrdenDeTrabajoORM(Base):
     fecha_fin_planif: Mapped[datetime] = mapped_column(DateTime)
     fecha_cierre: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
-    # Los pasos se guardan y se leen siempre junto con su OT (agregado), ordenados por numero.
     pasos: Mapped[list["PasoOTORM"]] = relationship(order_by="PasoOTORM.numero_paso", cascade="all, delete-orphan", lazy="selectin")
 
 

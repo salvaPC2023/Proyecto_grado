@@ -10,8 +10,6 @@ import '../../widgets/barra_navegacion_inferior.dart';
 import 'componentes_ot.dart';
 import 'formato_ot.dart';
 
-/// Detalle de una OT con sus pasos ordenados y el cierre de cada uno.
-/// El Tecnico asignado puede registrar cierres; el Supervisor solo consulta.
 class PantallaDetalleOt extends ConsumerWidget {
   const PantallaDetalleOt({super.key, required this.otId});
   final String otId;
@@ -60,7 +58,6 @@ class PantallaDetalleOt extends ConsumerWidget {
                       for (final paso in ot.pasos)
                         _TarjetaPaso(
                           paso: paso,
-                          // Solo el Tecnico, solo PM01 abiertos y solo si la OT no esta cerrada.
                           puedeCerrar: esTecnico &&
                               paso.esPm01 &&
                               !paso.cerrado &&
@@ -286,7 +283,6 @@ class _TarjetaPaso extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        // Los PMNN (seguridad / informativos) se distinguen con fondo azul suave.
         color: paso.esPm01 ? Colors.white : const Color(0xFFF8FAFF),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
@@ -344,7 +340,6 @@ class _TarjetaPaso extends StatelessWidget {
             SizedBox(
               width: double.infinity,
               child: FilledButton.icon(
-                // TODO: abrir el formulario de cierre de paso.
                 onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
                     content: Text('El registro de cierre aun no esta disponible'),

@@ -9,8 +9,6 @@ from src.modulos.acceso_roles.dominio.puertos import RepositorioUsuarios
 
 
 class RepositorioUsuariosFalso(RepositorioUsuarios):
-    """Vive en memoria, sin Postgres — solo para probar aplicacion/ aislada."""
-
     def __init__(self, usuarios: list[Usuario], rol: str = "tecnico"):
         self._usuarios = {u.nombre_usuario: u for u in usuarios}
         self._rol = rol

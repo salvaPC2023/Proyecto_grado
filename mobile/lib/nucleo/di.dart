@@ -10,8 +10,6 @@ import '../dominio/repositorios/repositorio_perfil.dart';
 import '../dominio/repositorios/repositorio_tecnicos.dart';
 import 'api_client.dart';
 
-// Unico lugar donde se decide que implementacion usa cada contrato. Los
-// ViewModels solo conocen el contrato (dominio), nunca la clase concreta.
 
 final repositorioAutenticacionProvider = Provider<RepositorioAutenticacion>(
   (ref) => RepositorioAutenticacionRemoto(ref.watch(dioProvider)),

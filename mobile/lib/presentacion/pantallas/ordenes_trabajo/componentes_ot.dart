@@ -4,7 +4,6 @@ import '../../../dominio/modelos/orden_trabajo.dart';
 import '../../../nucleo/tema.dart';
 import 'formato_ot.dart';
 
-/// Piezas comunes de las listas de OTs (Tecnico y Supervisor).
 
 class EncabezadoOts extends StatelessWidget {
   const EncabezadoOts({super.key, required this.titulo});
@@ -48,10 +47,8 @@ class TarjetaOt extends StatelessWidget {
   const TarjetaOt({super.key, required this.ot, this.nombreTecnico, this.onTap});
   final OrdenTrabajo ot;
 
-  /// Solo en la lista del Supervisor: a quien esta asignada.
   final String? nombreTecnico;
 
-  /// Abre el detalle de la OT.
   final VoidCallback? onTap;
 
   @override

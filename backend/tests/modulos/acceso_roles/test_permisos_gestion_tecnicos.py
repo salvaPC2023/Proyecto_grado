@@ -1,9 +1,3 @@
-"""Solo el Supervisor gestiona tecnicos: un Tecnico recibe 403 en los tres endpoints.
-
-No toca la BD: se reemplaza obtener_usuario_actual por un usuario fijo, y el 403 lo
-lanza requerir_supervisor antes de llegar al caso de uso.
-"""
-
 from uuid import uuid4
 
 import pytest

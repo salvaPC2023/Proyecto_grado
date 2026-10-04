@@ -6,8 +6,6 @@ from src.modulos.ubicaciones_tecnicas.dominio.puertos import RepositorioUbicacio
 
 
 class RepositorioUbicacionesFalso(RepositorioUbicacionesTecnicas):
-    """Vive en memoria: permite probar el caso de uso sin PostgreSQL."""
-
     def __init__(self, ubicaciones: list[UbicacionTecnica]):
         self._ubicaciones = ubicaciones
 
