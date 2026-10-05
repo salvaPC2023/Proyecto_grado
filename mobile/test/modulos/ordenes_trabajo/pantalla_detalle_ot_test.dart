@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:maintenance_app/dominio/errores.dart';
 import 'package:maintenance_app/dominio/modelos/orden_trabajo.dart';
@@ -18,12 +19,24 @@ void main() {
     expect(find.text('Informativo'), findsOneWidget);
   });
 
-  testWidgets('el técnico ve el botón para registrar el cierre', (tester) async {
+  testWidgets('el técnico abre el formulario de cierre', (tester) async {
     await montarPantalla(tester, const PantallaDetalleOt(otId: 'ot1'), sesion: perfilTecnico);
 
     await tocar(tester, find.text('Registrar cierre'));
 
-    expect(find.text('El registro de cierre aun no esta disponible'), findsOneWidget);
+    expect(find.text('RESULTADO DEL TRABAJO'), findsOneWidget);
+  });
+
+  testWidgets('al registrar el cierre vuelve al detalle y lo confirma', (tester) async {
+    await montarPantalla(tester, const PantallaDetalleOt(otId: 'ot1'), sesion: perfilTecnico);
+
+    await tocar(tester, find.text('Registrar cierre'));
+    await tester.enterText(find.byType(TextField).at(0), '2');
+    await tester.enterText(find.byType(TextField).at(1), 'Se cambió el filtro');
+    await tocar(tester, find.widgetWithText(FilledButton, 'Registrar cierre'));
+
+    expect(find.text('Cierre registrado'), findsOneWidget);
+    expect(find.text('Detalle de OT'), findsOneWidget);
   });
 
   testWidgets('el supervisor no puede registrar cierres', (tester) async {

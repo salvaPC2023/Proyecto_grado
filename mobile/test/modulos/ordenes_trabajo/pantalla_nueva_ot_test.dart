@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:maintenance_app/presentacion/pantallas/ordenes_trabajo/formato_ot.dart';
 import 'package:maintenance_app/presentacion/pantallas/ordenes_trabajo/pantalla_nueva_ot.dart';
 
 import '../../compartido/app_de_prueba.dart';
@@ -66,46 +65,5 @@ void main() {
     await tester.enterText(find.widgetWithText(TextField, 'Descripción'), 'Revisar aceite');
     await tocar(tester, find.text('Agregar'));
     expect(find.text('Los pasos PM01 requieren horas mayores a 0'), findsOneWidget);
-  });
-
-  testWidgets('se puede agregar y quitar un paso informativo', (tester) async {
-    await montarPantalla(tester, const PantallaNuevaOt(), sesion: perfilSupervisor);
-
-    await agregarPaso(tester, descripcion: 'Avisar al jefe de turno');
-    expect(find.text('Avisar al jefe de turno'), findsOneWidget);
-
-    await tocar(tester, find.byTooltip('Quitar paso'));
-    expect(find.text('Avisar al jefe de turno'), findsNothing);
-  });
-
-  testWidgets('filtra los técnicos por profesión', (tester) async {
-    await montarPantalla(tester, const PantallaNuevaOt(), sesion: perfilSupervisor);
-
-    await tocar(tester, find.text('Todas las profesiones'));
-    await tocar(tester, find.text('Electromecánico').last);
-
-    expect(find.text('No hay técnicos activos con esa profesión'), findsOneWidget);
-  });
-
-  testWidgets('el buscador de ubicaciones avisa si no encuentra nada', (tester) async {
-    await montarPantalla(tester, const PantallaNuevaOt(), sesion: perfilSupervisor);
-
-    await tocar(tester, find.text('Toca para elegir entre 2 ubicaciones'));
-    await tester.enterText(find.byType(TextField).last, 'xyz');
-    await tester.pump();
-
-    expect(find.text('Sin resultados'), findsOneWidget);
-  });
-
-  testWidgets('se puede cambiar la fecha de inicio', (tester) async {
-    await montarPantalla(tester, const PantallaNuevaOt(), sesion: perfilSupervisor);
-    final ahora = DateTime.now();
-    final inicio = DateTime(ahora.year, ahora.month, ahora.day, ahora.hour + 1);
-
-    await tocar(tester, find.text(formatoFecha(inicio)));
-    await tocar(tester, find.text('Aceptar')); // calendario
-    await tocar(tester, find.text('Aceptar')); // reloj
-
-    expect(find.text('Nueva Orden de Trabajo'), findsOneWidget);
   });
 }

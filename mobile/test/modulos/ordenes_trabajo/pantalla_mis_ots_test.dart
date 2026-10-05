@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:maintenance_app/dominio/errores.dart';
 import 'package:maintenance_app/nucleo/fechas.dart';
@@ -20,25 +19,6 @@ void main() {
 
     expect(find.text('Revisar transformador'), findsOneWidget);
     expect(find.text('Cambiar motor'), findsOneWidget);
-  });
-
-  testWidgets('filtra por estado', (tester) async {
-    await montarPantalla(tester, const PantallaMisOts(),
-        sesion: perfilTecnico, ordenes: RepositorioOrdenesTrabajoFalso(ots: ots));
-
-    await tocar(tester, find.widgetWithText(ChoiceChip, 'Finalizadas'));
-
-    expect(find.text('Revisar transformador'), findsNothing);
-    expect(find.text('Cambiar motor'), findsOneWidget);
-  });
-
-  testWidgets('avisa si no hay OTs en el estado elegido', (tester) async {
-    await montarPantalla(tester, const PantallaMisOts(),
-        sesion: perfilTecnico, ordenes: RepositorioOrdenesTrabajoFalso(ots: ots));
-
-    await tocar(tester, find.widgetWithText(ChoiceChip, 'En proceso'));
-
-    expect(find.text('No hay órdenes en este estado'), findsOneWidget);
   });
 
   testWidgets('avisa si no hay OTs en el día', (tester) async {

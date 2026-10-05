@@ -15,6 +15,7 @@ ProviderContainer crearContenedor({
   RepositorioPerfilFalso? perfil,
   RepositorioTecnicosFalso? tecnicos,
   RepositorioOrdenesTrabajoFalso? ordenes,
+  RepositorioSupervisoresFalso? supervisores,
 }) {
   final contenedor = ProviderContainer(
     retry: (_, _) => null, // el error se ve de inmediato
@@ -23,6 +24,7 @@ ProviderContainer crearContenedor({
       repositorioPerfilProvider.overrideWithValue(perfil ?? RepositorioPerfilFalso()),
       repositorioTecnicosProvider.overrideWithValue(tecnicos ?? RepositorioTecnicosFalso()),
       repositorioOrdenesTrabajoProvider.overrideWithValue(ordenes ?? RepositorioOrdenesTrabajoFalso()),
+      repositorioSupervisoresProvider.overrideWithValue(supervisores ?? RepositorioSupervisoresFalso()),
     ],
   );
   addTearDown(contenedor.dispose);
@@ -44,6 +46,7 @@ Future<ProviderContainer> montarPantalla(
   RepositorioPerfilFalso? perfil,
   RepositorioTecnicosFalso? tecnicos,
   RepositorioOrdenesTrabajoFalso? ordenes,
+  RepositorioSupervisoresFalso? supervisores,
 }) async {
   // Pantalla grande de los tests es mas ancha que la real
   tester.view.physicalSize = const Size(800, 1600);
@@ -56,6 +59,7 @@ Future<ProviderContainer> montarPantalla(
     perfil: perfil,
     tecnicos: tecnicos,
     ordenes: ordenes,
+    supervisores: supervisores,
   );
 
   await tester.pumpWidget(UncontrolledProviderScope(

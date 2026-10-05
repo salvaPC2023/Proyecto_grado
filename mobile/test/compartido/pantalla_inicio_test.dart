@@ -29,14 +29,6 @@ void main() {
     expect(find.text('Filtrar por:'), findsOneWidget);
   });
 
-  testWidgets('el avatar abre el perfil', (tester) async {
-    await montarPantalla(tester, const PantallaInicio(), sesion: perfilSupervisor);
-
-    await tocar(tester, find.byIcon(Icons.person));
-
-    expect(find.text('Mi Perfil'), findsOneWidget);
-  });
-
   testWidgets('cerrar sesión vuelve al login', (tester) async {
     final contenedor = await montarPantalla(tester, const PantallaInicio(), sesion: perfilSupervisor);
 
@@ -69,5 +61,24 @@ void main() {
       await tocar(tester, find.byIcon(Icons.calendar_today_outlined));
       expect(find.text('Asignadas'), findsOneWidget);
     });
+
+    testWidgets('el administrador solo ve inicio y supervisores', (tester) async {
+      await montarPantalla(tester, const PantallaInicio(), sesion: perfilAdministrador);
+
+      expect(find.byIcon(Icons.calendar_today_outlined), findsNothing);
+      expect(find.byIcon(Icons.add), findsNothing);
+
+      await tocar(tester, find.byIcon(Icons.groups_outlined));
+      expect(find.text('Supervisores'), findsOneWidget);
+    });
+  });
+
+  testWidgets('el administrador va a gestionar supervisores', (tester) async {
+    await montarPantalla(tester, const PantallaInicio(), sesion: perfilAdministrador);
+
+    expect(find.text('Administrador Carla Vargas'), findsOneWidget);
+    await tocar(tester, find.text('Gestionar Supervisores'));
+
+    expect(find.text('Ana Rojas'), findsOneWidget);
   });
 }

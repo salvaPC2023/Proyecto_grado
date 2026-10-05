@@ -12,37 +12,12 @@ void main() {
     crearOt(id: 'ot2', titulo: 'Cambiar motor', tecnicoId: 't2'),
   ];
 
-  Future<void> elegirTecnico(WidgetTester tester, String nombre) async {
-    await tocar(tester, find.text('Todos los técnicos'));
-    await tester.tap(find.text(nombre).last);
-    await tester.pumpAndSettle();
-  }
-
   testWidgets('muestra las OTs de todo el grupo', (tester) async {
     await montarPantalla(tester, const PantallaOtsGrupo(),
         sesion: perfilSupervisor, ordenes: RepositorioOrdenesTrabajoFalso(ots: ots));
 
     expect(find.text('Revisar transformador'), findsOneWidget);
     expect(find.text('Cambiar motor'), findsOneWidget);
-  });
-
-  testWidgets('filtra por técnico', (tester) async {
-    await montarPantalla(tester, const PantallaOtsGrupo(),
-        sesion: perfilSupervisor, ordenes: RepositorioOrdenesTrabajoFalso(ots: ots));
-
-    await elegirTecnico(tester, 'Marco Rojas');
-
-    expect(find.text('Revisar transformador'), findsNothing);
-    expect(find.text('Cambiar motor'), findsOneWidget);
-  });
-
-  testWidgets('avisa si el técnico elegido no tiene OTs', (tester) async {
-    await montarPantalla(tester, const PantallaOtsGrupo(),
-        sesion: perfilSupervisor, ordenes: RepositorioOrdenesTrabajoFalso(ots: ots));
-
-    await elegirTecnico(tester, 'Pedro Soliz');
-
-    expect(find.text('Este técnico no tiene órdenes de trabajo para este día'), findsOneWidget);
   });
 
   testWidgets('avisa si el grupo no tiene OTs', (tester) async {

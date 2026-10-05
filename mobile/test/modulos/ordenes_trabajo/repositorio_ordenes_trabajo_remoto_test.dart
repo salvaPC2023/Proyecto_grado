@@ -100,4 +100,18 @@ void main() {
       {'descripcion': 'Desmontar', 'clave_control': 'PM01', 'horas_planificadas': 2.0},
     ]);
   });
+
+  test('registra el cierre de un paso', () async {
+    final adaptador = AdaptadorHttpFalso((_) => otJson);
+    final repositorio = RepositorioOrdenesTrabajoRemoto(crearDioFalso(adaptador));
+
+    await repositorio.registrarCierre(otId: 'ot1', pasoId: 'p1', ejecutado: false, tiempoRealTrabajado: 0, descripcion: 'Sin repuesto');
+
+    expect(adaptador.ultima.path, '/ordenes-trabajo/ot1/pasos/p1/cierre');
+    expect(adaptador.ultima.data, {
+      'resultado_trabajo': 'no_ejecutado',
+      'tiempo_real_trabajado': 0.0,
+      'descripcion_trabajo_realizado': 'Sin repuesto',
+    });
+  });
 }

@@ -1,11 +1,86 @@
 import 'package:maintenance_app/dominio/errores.dart';
 import 'package:maintenance_app/dominio/modelos/perfil.dart';
+import 'package:maintenance_app/dominio/modelos/supervisor.dart';
 import 'package:maintenance_app/dominio/modelos/tecnico.dart';
 import 'package:maintenance_app/dominio/repositorios/repositorio_autenticacion.dart';
 import 'package:maintenance_app/dominio/repositorios/repositorio_perfil.dart';
+import 'package:maintenance_app/dominio/repositorios/repositorio_supervisores.dart';
 import 'package:maintenance_app/dominio/repositorios/repositorio_tecnicos.dart';
 
 // Implementaciones en memoria, no se llama a la API real
+
+const perfilAdministrador = Perfil(
+  id: 'u9',
+  nombre: 'Carla',
+  apellidoPaterno: 'Vargas',
+  apellidoMaterno: null,
+  nombreUsuario: 'admin',
+  rol: 'administrador',
+);
+
+const supervisorAna = Supervisor(
+  id: 's1',
+  nombre: 'Ana',
+  apellidoPaterno: 'Rojas',
+  apellidoMaterno: null,
+  nombreUsuario: 'ana',
+  activo: true,
+  horarioEntrada: '07:00:00',
+  horarioSalida: '15:00:00',
+  grupoNombre: 'Grupo Suministros',
+);
+
+const supervisorJorge = Supervisor(
+  id: 's2',
+  nombre: 'Jorge',
+  apellidoPaterno: 'Mamani',
+  apellidoMaterno: null,
+  nombreUsuario: 'jmamani',
+  activo: false,
+  horarioEntrada: '23:00:00',
+  horarioSalida: '07:00:00',
+  grupoNombre: 'Grupo Taller',
+);
+
+class RepositorioSupervisoresFalso implements RepositorioSupervisores {
+  RepositorioSupervisoresFalso({
+    this.supervisores = const [supervisorAna, supervisorJorge],
+    this.error,
+  });
+
+  final List<Supervisor> supervisores;
+  final ErrorDeAplicacion? error;
+
+  String? usuarioCreado;
+  String? horarioEntradaCreado;
+  String? idCambiado;
+
+  @override
+  Future<List<Supervisor>> listar() async {
+    if (error != null) throw error!;
+    return supervisores;
+  }
+
+  @override
+  Future<Supervisor> crear({
+    required String nombre,
+    required String apellidoPaterno,
+    String? apellidoMaterno,
+    required String nombreUsuario,
+    required String nombreDeGrupo,
+    required String horarioEntrada,
+    required String horarioSalida,
+  }) async {
+    usuarioCreado = nombreUsuario;
+    horarioEntradaCreado = horarioEntrada;
+    return supervisorAna;
+  }
+
+  @override
+  Future<void> cambiarEstado(String supervisorId, bool activo) async {
+    idCambiado = supervisorId;
+  }
+}
 
 const perfilSupervisor = Perfil(
   id: 'u1',

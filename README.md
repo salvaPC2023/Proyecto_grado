@@ -25,7 +25,7 @@ Requisitos: Git, Python 3.12, PostgreSQL 17, Flutter y Android Studio (para el A
 ### Base de datos
 
 1. En pgAdmin, crear la base `mantenimiento_db`.
-2. Ejecutar sobre ella el contenido de `Query.txt`.
+2. Crear sus tablas con el script de la base de datos.
 
 ### Backend
 
@@ -35,18 +35,32 @@ Desde la carpeta `backend`:
 py -3.12 -m venv .venv
 .\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
-copy .env.example .env
 alembic stamp head
 ```
 
-En `.env` hay que completar `DATABASE_URL` (con la contraseña de PostgreSQL) y `JWT_SECRET_KEY` (una cadena larga y aleatoria).
+Antes de `alembic stamp head` hay que crear en `backend` un archivo `.env` con estas dos variables:
 
-`alembic stamp head` registra que la base creada con `Query.txt` ya está en la última versión, sin ejecutar migraciones.
+```env
+DATABASE_URL=postgresql://postgres:<contraseña>@localhost:5432/mantenimiento_db
+JWT_SECRET_KEY=<una cadena larga y aleatoria>
+```
 
-Para iniciar sesión hace falta al menos un supervisor con su grupo, que se crea directamente en la base. La contraseña se guarda cifrada; el valor para `password_hash` se obtiene con:
+`alembic stamp head` registra que la base ya está en la última versión, sin ejecutar migraciones.
+
+Para empezar hace falta un administrador, que se crea directamente en la base; después, el administrador registra a los supervisores desde la app, y cada supervisor registra a sus técnicos. La contraseña se guarda cifrada; el valor para `password_hash` se obtiene con:
 
 ```terminal
 python -c "from src.compartido.seguridad import hashear_password; print(hashear_password('LaContrasena'))"
+```
+
+Con ese valor, en pgAdmin:
+
+```sql
+INSERT INTO usuarios (id, nombre, apellido_paterno, nombre_usuario, password_hash, activo, debe_cambiar_password)
+VALUES (gen_random_uuid(), 'Nombre', 'Apellido', 'admin', '<password_hash>', true, false);
+
+INSERT INTO administradores (id, usuario_id)
+SELECT gen_random_uuid(), id FROM usuarios WHERE nombre_usuario = 'admin';
 ```
 
 ### App móvil

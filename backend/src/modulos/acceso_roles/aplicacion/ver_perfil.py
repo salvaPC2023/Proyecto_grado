@@ -43,9 +43,11 @@ def ver_perfil(
         )
 
     supervisor = repositorio_supervisores.obtener_por_usuario_id(usuario_id)
+    grupo = repositorio_supervisores.obtener_grupo(supervisor.id) if supervisor else None
     return PerfilCompleto(
         usuario=usuario,
         rol=rol,
+        grupo_nombre=grupo.nombre_de_grupo if grupo else None,
         horario_entrada=supervisor.horario_entrada if supervisor else None,
         horario_salida=supervisor.horario_salida if supervisor else None,
         area_designada=supervisor.area_designada if supervisor else None,

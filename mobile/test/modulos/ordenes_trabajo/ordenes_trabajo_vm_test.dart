@@ -38,4 +38,21 @@ void main() {
 
     expect(contenedor.read(nuevaOtViewModelProvider).value, hasLength(2));
   });
+
+  test('registrar un cierre lo envía al repositorio', () async {
+    final repositorio = RepositorioOrdenesTrabajoFalso();
+    final contenedor = crearContenedor(ordenes: repositorio);
+    contenedor.listen(cierrePasoViewModelProvider, (_, _) {});
+
+    final exito = await contenedor.read(cierrePasoViewModelProvider.notifier).registrar(
+          otId: 'ot1',
+          pasoId: 'p2',
+          ejecutado: true,
+          tiempoRealTrabajado: 1.5,
+          descripcion: 'Se cambió el filtro',
+        );
+
+    expect(exito, isTrue);
+    expect(repositorio.pasoCerrado, 'p2');
+  });
 }

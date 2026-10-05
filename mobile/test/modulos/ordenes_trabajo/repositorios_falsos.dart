@@ -61,14 +61,18 @@ OrdenTrabajo crearOt({
 }
 
 class RepositorioOrdenesTrabajoFalso implements RepositorioOrdenesTrabajo {
-  RepositorioOrdenesTrabajoFalso({List<OrdenTrabajo>? ots, this.error})
+  RepositorioOrdenesTrabajoFalso({List<OrdenTrabajo>? ots, this.error, this.errorAlCerrar})
       : ots = ots ?? [crearOt()];
 
   final List<OrdenTrabajo> ots;
   final ErrorDeAplicacion? error;
+  final ErrorDeAplicacion? errorAlCerrar;
 
   DateTime? fechaConsultada;
   String? tituloCreado;
+  String? pasoCerrado;
+  bool? cierreEjecutado;
+  double? horasDelCierre;
 
   @override
   Future<List<UbicacionTecnica>> listarUbicaciones() async {
@@ -111,5 +115,20 @@ class RepositorioOrdenesTrabajoFalso implements RepositorioOrdenesTrabajo {
     if (error != null) throw error!;
     fechaConsultada = fecha;
     return ots;
+  }
+
+  @override
+  Future<OrdenTrabajo> registrarCierre({
+    required String otId,
+    required String pasoId,
+    required bool ejecutado,
+    required double tiempoRealTrabajado,
+    required String descripcion,
+  }) async {
+    if (errorAlCerrar != null) throw errorAlCerrar!;
+    pasoCerrado = pasoId;
+    cierreEjecutado = ejecutado;
+    horasDelCierre = tiempoRealTrabajado;
+    return ots.firstWhere((ot) => ot.id == otId);
   }
 }

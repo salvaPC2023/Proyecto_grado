@@ -78,10 +78,25 @@ class RepositorioTecnicosFalso(RepositorioTecnicos):
 
 class RepositorioSupervisoresFalso(RepositorioSupervisores):
     def __init__(self, supervisores=None):
-        self._supervisores = supervisores or []
+        self.supervisores = list(supervisores or [])
+        self.grupos = {}
 
     def obtener_por_usuario_id(self, usuario_id):
-        return next((s for s in self._supervisores if s.usuario_id == usuario_id), None)
+        return next((s for s in self.supervisores if s.usuario_id == usuario_id), None)
+
+    def obtener_por_id(self, id):
+        return next((s for s in self.supervisores if s.id == id), None)
+
+    def crear(self, supervisor, grupo):
+        self.supervisores.append(supervisor)
+        self.grupos[supervisor.id] = grupo
+        return supervisor
+
+    def listar(self):
+        return list(self.supervisores)
+
+    def obtener_grupo(self, supervisor_id):
+        return self.grupos.get(supervisor_id)
 
 
 def crear_tecnico_de(usuario, profesion="mecanico", grupo_id=None):

@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:maintenance_app/datos/remoto/repositorio_autenticacion_remoto.dart';
 import 'package:maintenance_app/datos/remoto/repositorio_ordenes_trabajo_remoto.dart';
 import 'package:maintenance_app/datos/remoto/repositorio_perfil_remoto.dart';
+import 'package:maintenance_app/datos/remoto/repositorio_supervisores_remoto.dart';
 import 'package:maintenance_app/datos/remoto/repositorio_tecnicos_remoto.dart';
 import 'package:maintenance_app/nucleo/api_client.dart';
 import 'package:maintenance_app/nucleo/di.dart';
@@ -42,5 +43,6 @@ void main() {
     expect(contenedor.read(repositorioPerfilProvider), isA<RepositorioPerfilRemoto>());
     expect(contenedor.read(repositorioTecnicosProvider), isA<RepositorioTecnicosRemoto>());
     expect(contenedor.read(repositorioOrdenesTrabajoProvider), isA<RepositorioOrdenesTrabajoRemoto>());
+    expect(contenedor.read(repositorioSupervisoresProvider), isA<RepositorioSupervisoresRemoto>());
   });
 }

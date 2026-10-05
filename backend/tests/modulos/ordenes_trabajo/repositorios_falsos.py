@@ -1,6 +1,6 @@
 from src.modulos.acceso_roles.dominio.modelos import Tecnico
 from src.modulos.acceso_roles.dominio.puertos import RepositorioSupervisores, RepositorioTecnicos
-from src.modulos.ordenes_trabajo.dominio.puertos import RepositorioOrdenesTrabajo
+from src.modulos.ordenes_trabajo.dominio.puertos import CierreDuplicado, RepositorioOrdenesTrabajo
 from src.modulos.ubicaciones_tecnicas.dominio.puertos import RepositorioUbicacionesTecnicas
 
 # Implementaciones en memoria, no se llama a la base de datos real
@@ -25,6 +25,16 @@ class RepositorioOrdenesTrabajoFalso(RepositorioOrdenesTrabajo):
     def listar_por_grupo(self, grupo_id, fecha=None):
         self.fecha_recibida = fecha
         return [ot for ot in self.ots.values() if self._grupo_de_tecnico.get(ot.tecnico_asignado_id) == grupo_id]
+
+    def registrar_cierre(self, ot_id, cierre, estatus, fecha_cierre):
+        ot = self.ots[ot_id]
+        paso = next(p for p in ot.pasos if p.id == cierre.paso_ot_id)
+        if paso.cierre is not None:
+            raise CierreDuplicado()
+        paso.cierre = cierre
+        ot.estatus = estatus
+        ot.fecha_cierre = fecha_cierre
+        return ot
 
 
 class RepositorioUbicacionesFalso(RepositorioUbicacionesTecnicas):
@@ -65,3 +75,8 @@ class RepositorioSupervisoresFalso(RepositorioSupervisores):
 
     def obtener_por_usuario_id(self, usuario_id):
         return next((s for s in self._supervisores if s.usuario_id == usuario_id), None)
+
+    def obtener_por_id(self, id): raise NotImplementedError
+    def crear(self, supervisor, grupo): raise NotImplementedError
+    def listar(self): raise NotImplementedError
+    def obtener_grupo(self, supervisor_id): raise NotImplementedError
