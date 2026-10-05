@@ -1,11 +1,16 @@
 # Maintenance App — Gestión de Órdenes de Trabajo
 
-Sistema de gestión de Órdenes de Trabajo (OT) de mantenimiento para el área de Mantenimiento de ESPODI. El supervisor planifica y asigna las OT a los técnicos de su grupo, y el técnico las consulta y registra su ejecución paso a paso.
+Sistema de gestión de órdenes de trabajo para el área de Mantenimiento de ESPODI.
+Gestiona las Órdenes de Trabajo (OT) con una vista separada para el supervisor y el técnico, notifica al personal técnico de sus tareas y estandariza las descripciones de trabajo con un modelo de lenguaje.
 
 ## Tecnologías
 
 - **Backend:** Python 3.12, FastAPI, SQLAlchemy 2, Alembic y PostgreSQL 17. Arquitectura hexagonal organizada por módulos (vertical slicing).
 - **App móvil:** Flutter con Riverpod y Dio. Clean Architecture con MVVM.
+
+## Metodología
+
+Este proyecto se gestiona con **Scrum** y **Kanban** (Scrumban).
 
 ## Estructura
 
