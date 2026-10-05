@@ -3,6 +3,7 @@ from src.modulos.acceso_roles.dominio.puertos import RepositorioSupervisores, Re
 from src.modulos.ordenes_trabajo.dominio.puertos import RepositorioOrdenesTrabajo
 from src.modulos.ubicaciones_tecnicas.dominio.puertos import RepositorioUbicacionesTecnicas
 
+# Implementaciones en memoria, no se llama a la base de datos real
 
 class RepositorioOrdenesTrabajoFalso(RepositorioOrdenesTrabajo):
     def __init__(self, grupo_de_tecnico: dict | None = None):

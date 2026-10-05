@@ -1,3 +1,4 @@
+# Backend - Python / FastAPI
 __pycache__/
 *.py[cod]
 .venv/
@@ -6,6 +7,9 @@ venv/
 .pytest_cache/
 .env
 backend/.env
+backend/scripts/
+
+# Frontend
 .dart_tool/
 .flutter-plugins
 .flutter-plugins-dependencies
@@ -16,6 +20,8 @@ mobile/android/local.properties
 mobile/ios/Flutter/Flutter.framework
 mobile/ios/Pods/
 *.g.dart.lock
+
+# General
 .vscode/
 .DS_Store
 Thumbs.db
@@ -25,4 +31,8 @@ Thumbs.db
 *.key
 secrets/
 interfaz nueva/
-backend/scripts/
+
+# Coverage
+.coverage
+htmlcov/
+coverage/

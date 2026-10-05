@@ -20,7 +20,7 @@ La app móvil (`mobile/lib`) se organiza por capas: `dominio` (modelos y contrat
 
 ## Puesta en marcha en una computadora nueva
 
-Requisitos: Git, Python 3.12, PostgreSQL 17 y Flutter.
+Requisitos: Git, Python 3.12, PostgreSQL 17, Flutter y Android Studio (para el Android SDK y el emulador).
 
 ### Base de datos
 
@@ -31,7 +31,7 @@ Requisitos: Git, Python 3.12, PostgreSQL 17 y Flutter.
 
 Desde la carpeta `backend`:
 
-```powershell
+```terminal
 py -3.12 -m venv .venv
 .\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
@@ -45,7 +45,7 @@ En `.env` hay que completar `DATABASE_URL` (con la contraseña de PostgreSQL) y 
 
 Para iniciar sesión hace falta al menos un supervisor con su grupo, que se crea directamente en la base. La contraseña se guarda cifrada; el valor para `password_hash` se obtiene con:
 
-```powershell
+```terminal
 python -c "from src.compartido.seguridad import hashear_password; print(hashear_password('LaContrasena'))"
 ```
 
@@ -53,48 +53,95 @@ python -c "from src.compartido.seguridad import hashear_password; print(hashear_
 
 Desde la carpeta `mobile`:
 
-```powershell
+```terminal
 flutter pub get
 ```
+
+### Emulador Android
+
+Se crea una sola vez desde Android Studio, en Device Manager. Representa un celular de gama media baja (pantalla de 360x800 dp):
+
+1. New Hardware Profile: nombre `Gama media baja`, pantalla de 6.5", resolución 720x1600 y 3 GB de RAM.
+2. Imagen del sistema: API 34 (Android 14), Google APIs x86_64.
+3. Ajustes avanzados: 3 GB de RAM y 2 núcleos de CPU.
+4. Con el emulador encendido, fijar la densidad en 320 para que Flutter vea 360x800:
+
+```terminal
+adb shell wm density 320
+```
+
+`adb` está en `%LOCALAPPDATA%\Android\Sdk\platform-tools`, que debe estar en el PATH.
 
 ## Ejecución diaria
 
 Backend, desde `backend` con el entorno virtual activo:
 
-```powershell
+```terminal
 cd backend
 uvicorn src.main:app --reload
 ```
 
-App móvil, desde `navegador`:
+La app móvil se ejecuta en otra terminal, desde `mobile`. No hace falta el entorno virtual.
 
-```powershell
+En el navegador:
+
+```terminal
 flutter run -d edge
 ```
 
-App móvil, desde `simulador android SDK`:
+En el emulador Android:
 
-```powershell
-flutter emulators --launch <nombre>
+```terminal
+flutter emulators --launch Gama_media_baja
+flutter devices
+adb reverse tcp:8000 tcp:8000
 flutter run -d emulator-5554
 ```
 
-App móvil, desde `celular conectado a la pc`:
+- `flutter devices` sirve para confirmar que el emulador ya terminó de arrancar y ver su id (normalmente `emulator-5554`).
+- `adb reverse` hace que `localhost:8000` dentro del emulador apunte al backend de la PC. Se repite cada vez que el emulador se reinicia.
+- Si el emulador ya está abierto, `flutter emulators --launch` falla con `exited with code 1`. En ese caso se salta ese paso y se busca su ventana con Alt+Tab.
+- Si el emulador se cuelga, se cierra con `adb -s emulator-5554 emu kill` y se vuelve a lanzar.
 
-```powershell
+En un celular conectado por USB, con la depuración USB activada:
+
+```terminal
 flutter devices
+adb reverse tcp:8000 tcp:8000
 flutter run -d <id>
 ```
 
+Mientras la app corre: `r` recarga los cambios, `R` reinicia la app y `q` la detiene.
+
 ## Pruebas
 
-```powershell
+```terminal
 cd backend
 pytest
 ```
 
-```powershell
+```terminal
 cd mobile
 flutter analyze
 flutter test
 ```
+
+### Coverage
+
+Desde backend con el entorno virtual activo:
+
+```terminal
+cd backend
+pytest --cov --cov-report=term-missing
+```
+
+La tabla sale en la terminal (la columna "Missing" indica las líneas sin probar).
+
+Desde mobile:
+
+```terminal
+cd mobile
+flutter test --coverage
+```
+
+El resultado queda en mobile/coverage/lcov.info. Para verlo línea por línea en VS Code se usa la extensión Coverage Gutters.
