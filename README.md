@@ -1,69 +1,95 @@
 # Maintenance App — Gestión de Órdenes de Trabajo
 
-Sistema de gestión de mantenimiento para el área de Mantenimiento de ESPODI.
-Estandariza el registro de Órdenes de Trabajo (OT) preventivas (PM01), notifica al
-personal técnico y estandariza las descripciones de trabajo con un modelo de lenguaje.
+Sistema de gestión de Órdenes de Trabajo (OT) de mantenimiento para el área de Mantenimiento de ESPODI. El supervisor planifica y asigna las OT a los técnicos de su grupo, y el técnico las consulta y registra su ejecución paso a paso.
 
-- **Backend:** Python 3.12.5 + FastAPI · PostgreSQL · arquitectura hexagonal + vertical slicing
-- **App móvil:** Flutter (Dart) · MVVM + Riverpod · Drift (SQLite) para operación sin conexión
-- **LLM:** API de OpenAI (`gpt-4o-mini`) vía adaptador de salida, solo para estandarización de descripciones
+## Tecnologías
 
-## Metodología
+- **Backend:** Python 3.12, FastAPI, SQLAlchemy 2, Alembic y PostgreSQL 17. Arquitectura hexagonal organizada por módulos (vertical slicing).
+- **App móvil:** Flutter con Riverpod y Dio. Clean Architecture con MVVM.
 
-Este proyecto se gestiona con **Scrum**.
-Ver [`docs/scrum/`](docs/scrum/)
+## Estructura
 
-## Estructura del repositorio
+El backend tiene un módulo por tema: `acceso_roles`, `ubicaciones_tecnicas` y `ordenes_trabajo`. Cada módulo se divide en `dominio`, `aplicacion` e `infraestructura`. Lo que comparten todos (conexión a la base, configuración y seguridad) está en `backend/src/compartido`.
 
-```
-maintenance-app/
-├── backend/          # API FastAPI — hexagonal + vertical slicing
-│   └── src/
-│       ├── modulos/                  # una rebanada por tema del backlog (E1–E6)
-│       │   └── <modulo>/
-│       │       ├── dominio/          # modelos + puertos (lógica pura)
-│       │       ├── aplicacion/       # casos de uso
-│       │       └── infraestructura/  # adaptadores: PostgreSQL, LLM, endpoints
-│       └── compartido/               # BD, configuración, seguridad, tipos comunes
-├── mobile/           # app Flutter — Clean Architecture + MVVM, offline-first
-│   └── lib/
-│       ├── dominio/            # modelos y contratos de repositorio
-│       ├── datos/              # implementaciones remota (API) y local (Drift)
-│       ├── presentacion/       # pantallas, widgets, ViewModels (Riverpod)
-│       └── nucleo/             # router, inyección de dependencias, constantes
-└── docs/
-    ├── scrum/        # artefactos y evidencia de la metodología
-    ├── arquitectura/ # QAS y justificación de la arquitectura
-    ├── conciliacion.md
-    └── Base de Datos/Query.txt   # esquema de la BD (fuente de verdad del modelo)
-```
+La app móvil (`mobile/lib`) se organiza por capas: `dominio` (modelos y contratos de repositorio), `datos` (implementación de los contratos contra la API), `presentacion` (pantallas y ViewModels) y `nucleo` (cliente HTTP, sesión, inyección de dependencias y tema).
 
 ## Puesta en marcha en una computadora nueva
 
-Backend y app móvil requieren PostgreSQL corriendo localmente con la base `mantenimiento_db`
-(esquema en [`docs/Base de Datos/Query.txt`](docs/Base%20de%20Datos/Query.txt)) antes de arrancar.
+Requisitos: Git, Python 3.12, PostgreSQL 17 y Flutter.
+
+### Base de datos
+
+1. En pgAdmin, crear la base `mantenimiento_db`.
+2. Ejecutar sobre ella el contenido de `Query.txt`.
 
 ### Backend
 
+Desde la carpeta `backend`:
+
+```powershell
+py -3.12 -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+copy .env.example .env
+alembic stamp head
+```
+
+En `.env` hay que completar `DATABASE_URL` (con la contraseña de PostgreSQL) y `JWT_SECRET_KEY` (una cadena larga y aleatoria).
+
+`alembic stamp head` registra que la base creada con `Query.txt` ya está en la última versión, sin ejecutar migraciones.
+
+Para iniciar sesión hace falta al menos un supervisor con su grupo, que se crea directamente en la base. La contraseña se guarda cifrada; el valor para `password_hash` se obtiene con:
+
+```powershell
+python -c "from src.compartido.seguridad import hashear_password; print(hashear_password('LaContrasena'))"
+```
+
+### App móvil
+
+Desde la carpeta `mobile`:
+
+```powershell
+flutter pub get
+```
+
+## Ejecución diaria
+
+Backend, desde `backend` con el entorno virtual activo:
+
 ```powershell
 cd backend
-py -m venv .venv # SOLO EN PC NUEVA (Crea un venv nuevo)
-.\.venv\Scripts\Activate.ps1
-pip install -r requirements.txt # SOLO EN PC NUEVA
-copy .env.example .env   # completar DATABASE_URL y JWT_SECRET_KEY con valores reales 
 uvicorn src.main:app --reload
 ```
 
-Backend disponible en `http://localhost:8000/docs` (Swagger).
+App móvil, desde `navegador`:
 
-### Frontend
+```powershell
+flutter run -d edge
+```
+
+App móvil, desde `simulador android SDK`:
+
+```powershell
+flutter emulators --launch <nombre>
+flutter run -d emulator-5554
+```
+
+App móvil, desde `celular conectado a la pc`:
+
+```powershell
+flutter devices
+flutter run -d <id>
+```
+
+## Pruebas
+
+```powershell
+cd backend
+pytest
+```
 
 ```powershell
 cd mobile
-flutter pub get
-flutter run
+flutter analyze
+flutter test
 ```
-
-> Estado: en construcción (Sprint 1 — base técnica, autenticación y usuarios). Ver
-> [`docs/scrum/sprint-plan.md`](docs/scrum/sprint-plan.md) para el alcance de cada sprint.
-

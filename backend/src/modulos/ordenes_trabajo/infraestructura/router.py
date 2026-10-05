@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field, field_validator
 from sqlalchemy.orm import Session
 
 from src.compartido.bd import get_db
-from src.modulos.acceso_roles.infraestructura.dependencias import UsuarioAutenticado, requerir_supervisor, requerir_tecnico
+from src.modulos.acceso_roles.infraestructura.dependencias import UsuarioAutenticado, obtener_usuario_actual, requerir_supervisor, requerir_tecnico
 from src.modulos.acceso_roles.infraestructura.repositorio_supervisores import RepositorioSupervisoresSQL
 from src.modulos.acceso_roles.infraestructura.repositorio_tecnicos import RepositorioTecnicosSQL
 from src.modulos.ubicaciones_tecnicas.infraestructura.repositorio_ubicaciones_tecnicas import RepositorioUbicacionesTecnicasSQL
@@ -16,6 +16,7 @@ from src.modulos.ubicaciones_tecnicas.infraestructura.router import UbicacionOut
 from ..aplicacion.crear_ot import FechasInvalidas, HorasInvalidas, PasoSolicitado, PrioridadInvalida, SinPasoPM01, SupervisorNoEncontrado, TecnicoFueraDeGrupo, UbicacionNoEncontrada, crear_ot
 from ..aplicacion.listar_ots_supervisor import listar_ots_supervisor
 from ..aplicacion.listar_ots_tecnico import listar_ots_tecnico
+from ..aplicacion.ver_detalle_ot import OTNoEncontrada, SinAccesoAOT, ver_detalle_ot
 from ..dominio.modelos import ClaveControl, EstatusOT, OrdenDeTrabajo, TipoOrden
 from .repositorio_ordenes_trabajo import RepositorioOrdenesTrabajoSQL
 
@@ -148,3 +149,14 @@ def listar_mis_ots_endpoint(fecha: date | None = None, db: Session = Depends(get
 def listar_ots_grupo_endpoint(fecha: date | None = None, db: Session = Depends(get_db), actual: UsuarioAutenticado = Depends(requerir_supervisor)):
     ots = listar_ots_supervisor(actual.id, RepositorioOrdenesTrabajoSQL(db), RepositorioTecnicosSQL(db), fecha)
     return a_lista_out(ots, RepositorioUbicacionesTecnicasSQL(db))
+
+
+@router_ots.get("/{ot_id}", response_model=OrdenDeTrabajoOut)
+def ver_detalle_ot_endpoint(ot_id: UUID, db: Session = Depends(get_db), actual: UsuarioAutenticado = Depends(obtener_usuario_actual)):
+    try:
+        ot = ver_detalle_ot(ot_id, actual.id, actual.rol, RepositorioOrdenesTrabajoSQL(db), RepositorioTecnicosSQL(db))
+    except OTNoEncontrada:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Orden de trabajo no encontrada")
+    except SinAccesoAOT:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No tienes acceso a esta orden de trabajo")
+    return a_ot_out(ot, RepositorioUbicacionesTecnicasSQL(db).obtener_por_id(ot.ubicacion_tecnica_id))
