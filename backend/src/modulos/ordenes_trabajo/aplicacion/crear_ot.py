@@ -3,11 +3,15 @@ from datetime import datetime
 from decimal import Decimal
 from uuid import UUID, uuid4
 
-from src.modulos.acceso_roles.dominio.puertos import RepositorioTecnicos
+from src.modulos.acceso_roles.dominio.puertos import RepositorioSupervisores, RepositorioTecnicos
 from src.modulos.ubicaciones_tecnicas.dominio.puertos import RepositorioUbicacionesTecnicas
 
 from ..dominio.modelos import PASOS_SEGURIDAD, ClaveControl, OrdenDeTrabajo, PasoOT, TipoOrden
 from ..dominio.puertos import RepositorioOrdenesTrabajo
+
+
+class SupervisorNoEncontrado(Exception):
+    pass
 
 
 class PrioridadInvalida(Exception):
@@ -69,6 +73,7 @@ def crear_ot(
     repositorio_ots: RepositorioOrdenesTrabajo,
     repositorio_ubicaciones: RepositorioUbicacionesTecnicas,
     repositorio_tecnicos: RepositorioTecnicos,
+    repositorio_supervisores: RepositorioSupervisores,
 ) -> OrdenDeTrabajo:
     if not 1 <= prioridad <= 4:
         raise PrioridadInvalida()
@@ -76,6 +81,9 @@ def crear_ot(
         raise FechasInvalidas()
     validar_pasos(pasos)
 
+    supervisor = repositorio_supervisores.obtener_por_usuario_id(supervisor_usuario_id)
+    if supervisor is None:
+        raise SupervisorNoEncontrado()
     if repositorio_ubicaciones.obtener_por_id(ubicacion_tecnica_id) is None:
         raise UbicacionNoEncontrada()
     if not repositorio_tecnicos.pertenece_a_supervisor(
@@ -110,7 +118,7 @@ def crear_ot(
         id=ot_id,
         tecnico_asignado_id=tecnico_asignado_id,
         ubicacion_tecnica_id=ubicacion_tecnica_id,
-        creado_por_id=supervisor_usuario_id,
+        creado_por_id=supervisor.id,
         titulo=titulo,
         tipo_de_orden=tipo_de_orden,
         descripcion=descripcion,

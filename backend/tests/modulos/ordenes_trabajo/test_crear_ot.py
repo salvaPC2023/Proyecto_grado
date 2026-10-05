@@ -1,17 +1,19 @@
-from datetime import datetime
+from datetime import datetime, time
 from decimal import Decimal
 from uuid import uuid4
 
 import pytest
 
-from src.modulos.ordenes_trabajo.aplicacion.crear_ot import FechasInvalidas, HorasInvalidas, PasoSolicitado, PrioridadInvalida, SinPasoPM01, TecnicoFueraDeGrupo, UbicacionNoEncontrada, crear_ot
+from src.modulos.ordenes_trabajo.aplicacion.crear_ot import FechasInvalidas, HorasInvalidas, PasoSolicitado, PrioridadInvalida, SinPasoPM01, SupervisorNoEncontrado, TecnicoFueraDeGrupo, UbicacionNoEncontrada, crear_ot
+from src.modulos.acceso_roles.dominio.modelos import Supervisor
 from src.modulos.ordenes_trabajo.dominio.modelos import PASOS_SEGURIDAD
 from src.modulos.ubicaciones_tecnicas.dominio.modelos import UbicacionTecnica
-from tests.modulos.ordenes_trabajo.repositorios_falsos import RepositorioOrdenesTrabajoFalso, RepositorioTecnicosFalso, RepositorioUbicacionesFalso
+from tests.modulos.ordenes_trabajo.repositorios_falsos import RepositorioOrdenesTrabajoFalso, RepositorioSupervisoresFalso, RepositorioTecnicosFalso, RepositorioUbicacionesFalso
 
 
 SUPERVISOR = uuid4()
 OTRO_SUPERVISOR = uuid4()
+REGISTRO_SUPERVISOR = Supervisor(id=uuid4(), usuario_id=SUPERVISOR, horario_entrada=time(7), horario_salida=time(15))
 TECNICO = uuid4()
 TECNICO_DE_OTRO_GRUPO = uuid4()
 UBICACION = UbicacionTecnica(id=uuid4(), sector="Embotellado", subsector="Area 1", sistema="Llenadora")
@@ -23,6 +25,7 @@ def repositorios():
         "repositorio_ots": RepositorioOrdenesTrabajoFalso(),
         "repositorio_ubicaciones": RepositorioUbicacionesFalso([UBICACION]),
         "repositorio_tecnicos": RepositorioTecnicosFalso(supervisor_de_tecnico={TECNICO: SUPERVISOR, TECNICO_DE_OTRO_GRUPO: OTRO_SUPERVISOR}),
+        "repositorio_supervisores": RepositorioSupervisoresFalso([REGISTRO_SUPERVISOR]),
     }
 
 
@@ -56,7 +59,8 @@ def test_crea_la_ot_asignada_y_la_guarda(repositorios):
     ot = _crear(repositorios)
 
     assert ot.estatus == "asignada"
-    assert ot.creado_por_id == SUPERVISOR
+    assert ot.creado_por_id == REGISTRO_SUPERVISOR.id
+    assert ot.creado_por_id != SUPERVISOR
     assert repositorios["repositorio_ots"].obtener_por_id(ot.id) is ot
 
 
@@ -121,5 +125,12 @@ def test_tecnico_de_otro_grupo_lanza_error(repositorios):
 def test_si_una_regla_falla_no_se_guarda_nada(repositorios):
     with pytest.raises(TecnicoFueraDeGrupo):
         _crear(repositorios, tecnico_asignado_id=TECNICO_DE_OTRO_GRUPO)
+
+    assert repositorios["repositorio_ots"].ots == {}
+
+
+def test_usuario_que_no_es_supervisor_no_puede_crear(repositorios):
+    with pytest.raises(SupervisorNoEncontrado):
+        _crear(repositorios, supervisor_usuario_id=uuid4())
 
     assert repositorios["repositorio_ots"].ots == {}

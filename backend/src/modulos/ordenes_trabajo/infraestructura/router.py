@@ -8,11 +8,12 @@ from sqlalchemy.orm import Session
 
 from src.compartido.bd import get_db
 from src.modulos.acceso_roles.infraestructura.dependencias import UsuarioAutenticado, requerir_supervisor, requerir_tecnico
+from src.modulos.acceso_roles.infraestructura.repositorio_supervisores import RepositorioSupervisoresSQL
 from src.modulos.acceso_roles.infraestructura.repositorio_tecnicos import RepositorioTecnicosSQL
 from src.modulos.ubicaciones_tecnicas.infraestructura.repositorio_ubicaciones_tecnicas import RepositorioUbicacionesTecnicasSQL
 from src.modulos.ubicaciones_tecnicas.infraestructura.router import UbicacionOut, a_ubicacion_out
 
-from ..aplicacion.crear_ot import FechasInvalidas, HorasInvalidas, PasoSolicitado, PrioridadInvalida, SinPasoPM01, TecnicoFueraDeGrupo, UbicacionNoEncontrada, crear_ot
+from ..aplicacion.crear_ot import FechasInvalidas, HorasInvalidas, PasoSolicitado, PrioridadInvalida, SinPasoPM01, SupervisorNoEncontrado, TecnicoFueraDeGrupo, UbicacionNoEncontrada, crear_ot
 from ..aplicacion.listar_ots_supervisor import listar_ots_supervisor
 from ..aplicacion.listar_ots_tecnico import listar_ots_tecnico
 from ..dominio.modelos import ClaveControl, EstatusOT, OrdenDeTrabajo, TipoOrden
@@ -113,7 +114,10 @@ def crear_ot_endpoint(datos: CrearOTRequest, db: Session = Depends(get_db), actu
             repositorio_ots=RepositorioOrdenesTrabajoSQL(db),
             repositorio_ubicaciones=repositorio_ubicaciones,
             repositorio_tecnicos=RepositorioTecnicosSQL(db),
+            repositorio_supervisores=RepositorioSupervisoresSQL(db),
         )
+    except SupervisorNoEncontrado:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Solo un supervisor registrado puede crear órdenes de trabajo")
     except PrioridadInvalida:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail="La prioridad debe estar entre 1 y 4")
     except FechasInvalidas:

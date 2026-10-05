@@ -19,7 +19,7 @@ class OrdenDeTrabajoORM(Base):
     titulo: Mapped[str] = mapped_column(String(150))
     tipo_de_orden: Mapped[str] = mapped_column(SQLEnum("OE01", "OE02", "OE03", "OE04", name="tipo_orden_enum", create_type=False))
     ubicacion_tecnica_id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), ForeignKey("ubicaciones_tecnicas.id"))
-    creado_por_id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), ForeignKey("usuarios.id"))
+    creado_por_id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), ForeignKey("supervisores.id"))
     tecnico_asignado_id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), ForeignKey("tecnicos.id"))
     descripcion: Mapped[str] = mapped_column(Text)
     prioridad: Mapped[int] = mapped_column(SmallInteger)

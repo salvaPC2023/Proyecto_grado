@@ -1,5 +1,5 @@
 from src.modulos.acceso_roles.dominio.modelos import Tecnico
-from src.modulos.acceso_roles.dominio.puertos import RepositorioTecnicos
+from src.modulos.acceso_roles.dominio.puertos import RepositorioSupervisores, RepositorioTecnicos
 from src.modulos.ordenes_trabajo.dominio.puertos import RepositorioOrdenesTrabajo
 from src.modulos.ubicaciones_tecnicas.dominio.puertos import RepositorioUbicacionesTecnicas
 
@@ -56,3 +56,11 @@ class RepositorioTecnicosFalso(RepositorioTecnicos):
     def crear(self, tecnico): raise NotImplementedError
     def listar_por_supervisor(self, supervisor_usuario_id): raise NotImplementedError
     def obtener_nombre_grupo(self, grupo_id): raise NotImplementedError
+
+
+class RepositorioSupervisoresFalso(RepositorioSupervisores):
+    def __init__(self, supervisores=None):
+        self._supervisores = supervisores or []
+
+    def obtener_por_usuario_id(self, usuario_id):
+        return next((s for s in self._supervisores if s.usuario_id == usuario_id), None)
