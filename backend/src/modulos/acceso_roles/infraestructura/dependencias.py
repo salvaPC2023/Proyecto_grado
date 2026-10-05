@@ -53,6 +53,17 @@ def requerir_administrador(
     return actual
 
 
+def requerir_supervisor_o_administrador(
+    actual: UsuarioAutenticado = Depends(obtener_usuario_actual),
+) -> UsuarioAutenticado:
+    if actual.rol not in ("supervisor", "administrador"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Solo un Supervisor o un Administrador puede realizar esta accion",
+        )
+    return actual
+
+
 def requerir_supervisor(
     actual: UsuarioAutenticado = Depends(obtener_usuario_actual),
 ) -> UsuarioAutenticado:

@@ -80,3 +80,26 @@ class RepositorioSupervisores(ABC):
     @abstractmethod
     def obtener_grupo(self, supervisor_id: UUID) -> Grupo | None:
         ...
+
+
+class RepositorioGrupos(ABC):
+    @abstractmethod
+    def listar(self) -> list[Grupo]:
+        ...
+
+    @abstractmethod
+    def obtener_por_id(self, id: UUID) -> Grupo | None:
+        ...
+
+    @abstractmethod
+    def crear(self, grupo: Grupo) -> Grupo:
+        ...
+
+    @abstractmethod
+    def asignar_supervisores(self, asignaciones: dict[UUID, UUID | None]) -> None:
+        """Cambia el supervisor de varios grupos en una sola transacción (grupo_id -> supervisor_id)"""
+        ...
+
+    @abstractmethod
+    def contar_tecnicos(self, grupo_id: UUID) -> int:
+        ...

@@ -42,8 +42,8 @@ class GrupoORM(Base):
 
     id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True)
     nombre_de_grupo: Mapped[str] = mapped_column(String(100))
-    supervisor_id: Mapped[uuid.UUID] = mapped_column(
-        PGUUID(as_uuid=True), ForeignKey("supervisores.id")
+    supervisor_id: Mapped[uuid.UUID | None] = mapped_column(
+        PGUUID(as_uuid=True), ForeignKey("supervisores.id"), nullable=True
     )
     horario_entrada: Mapped[time] = mapped_column(Time)
     horario_salida: Mapped[time] = mapped_column(Time)

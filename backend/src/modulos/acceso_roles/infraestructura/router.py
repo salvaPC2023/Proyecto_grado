@@ -1,11 +1,12 @@
 from datetime import time
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 from src.compartido.bd import get_db
 from ..dominio.modelos import Profesion
 from .dependencias import UsuarioAutenticado, obtener_usuario_actual, requerir_administrador, requerir_supervisor
+from .repositorio_grupos import RepositorioGruposSQL
 from .repositorio_supervisores import RepositorioSupervisoresSQL
 from .repositorio_tecnicos import RepositorioTecnicosSQL
 from .repositorio_usuarios import RepositorioUsuariosSQL
@@ -16,6 +17,7 @@ from ..aplicacion.cambiar_password import ContrasenaActualIncorrecta, cambiar_pa
 from ..aplicacion.crear_supervisor import HorarioInvalido, crear_supervisor
 from ..aplicacion.crear_tecnico import NombreUsuarioDuplicado, crear_tecnico
 from ..aplicacion.editar_perfil import editar_perfil
+from ..aplicacion.gestionar_grupos import GrupoNoEncontrado, asignar_supervisor, crear_grupo, listar_grupos
 from ..aplicacion.iniciar_sesion import CredencialesInvalidas, CuentaDeshabilitada, iniciar_sesion
 from ..aplicacion.listar_supervisores import listar_supervisores
 from ..aplicacion.listar_tecnicos import listar_tecnicos
@@ -26,6 +28,7 @@ router_auth = APIRouter(prefix="/auth", tags=["autenticacion"])
 router_tecnicos = APIRouter(prefix="/tecnicos", tags=["tecnicos"])
 router_perfil = APIRouter(prefix="/perfil", tags=["perfil"])
 router_supervisores = APIRouter(prefix="/supervisores", tags=["administracion"])
+router_grupos = APIRouter(prefix="/grupos", tags=["administracion"])
 
 
 class CredencialesLogin(BaseModel):
@@ -382,3 +385,81 @@ def cambiar_estado_supervisor_endpoint(
             detail="Supervisor no encontrado",
         )
     return {"activo": datos.activo}
+
+
+class GrupoOut(BaseModel):
+    id: UUID
+    nombre_de_grupo: str
+    supervisor_id: UUID | None
+    supervisor_nombre: str | None
+    horario_entrada: time
+    horario_salida: time
+    cantidad_tecnicos: int
+
+
+class CrearGrupoRequest(BaseModel):
+    nombre_de_grupo: str = Field(min_length=1, max_length=100)
+    supervisor_id: UUID
+
+
+class AsignarSupervisorRequest(BaseModel):
+    supervisor_id: UUID
+
+
+def a_grupo_out(grupo, repositorio_grupos: RepositorioGruposSQL, repositorio_supervisores: RepositorioSupervisoresSQL, repositorio_usuarios: RepositorioUsuariosSQL) -> GrupoOut:
+    supervisor_nombre = None
+    if grupo.supervisor_id is not None:
+        supervisor = repositorio_supervisores.obtener_por_id(grupo.supervisor_id)
+        usuario = repositorio_usuarios.obtener_por_id(supervisor.usuario_id)
+        supervisor_nombre = f"{usuario.nombre} {usuario.apellido_paterno}"
+    return GrupoOut(
+        id=grupo.id,
+        nombre_de_grupo=grupo.nombre_de_grupo,
+        supervisor_id=grupo.supervisor_id,
+        supervisor_nombre=supervisor_nombre,
+        horario_entrada=grupo.horario_entrada,
+        horario_salida=grupo.horario_salida,
+        cantidad_tecnicos=repositorio_grupos.contar_tecnicos(grupo.id),
+    )
+
+
+@router_grupos.get("", response_model=list[GrupoOut])
+def listar_grupos_endpoint(
+    db: Session = Depends(get_db),
+    actual: UsuarioAutenticado = Depends(requerir_administrador),
+):
+    repositorio_grupos = RepositorioGruposSQL(db)
+    repositorio_supervisores = RepositorioSupervisoresSQL(db)
+    repositorio_usuarios = RepositorioUsuariosSQL(db)
+    return [a_grupo_out(g, repositorio_grupos, repositorio_supervisores, repositorio_usuarios) for g in listar_grupos(repositorio_grupos)]
+
+
+@router_grupos.post("", response_model=GrupoOut, status_code=status.HTTP_201_CREATED)
+def crear_grupo_endpoint(
+    datos: CrearGrupoRequest,
+    db: Session = Depends(get_db),
+    actual: UsuarioAutenticado = Depends(requerir_administrador),
+):
+    repositorio_grupos = RepositorioGruposSQL(db)
+    repositorio_supervisores = RepositorioSupervisoresSQL(db)
+    try:
+        grupo = crear_grupo(datos.nombre_de_grupo.strip(), datos.supervisor_id, repositorio_grupos, repositorio_supervisores)
+    except SupervisorNoEncontrado:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Supervisor no encontrado")
+    return a_grupo_out(grupo, repositorio_grupos, repositorio_supervisores, RepositorioUsuariosSQL(db))
+
+
+@router_grupos.patch("/{grupo_id}/supervisor", status_code=status.HTTP_200_OK)
+def asignar_supervisor_endpoint(
+    grupo_id: UUID,
+    datos: AsignarSupervisorRequest,
+    db: Session = Depends(get_db),
+    actual: UsuarioAutenticado = Depends(requerir_administrador),
+):
+    try:
+        asignar_supervisor(grupo_id, datos.supervisor_id, RepositorioGruposSQL(db), RepositorioSupervisoresSQL(db))
+    except GrupoNoEncontrado:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Grupo no encontrado")
+    except SupervisorNoEncontrado:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Supervisor no encontrado")
+    return {"detail": "Supervisor asignado"}

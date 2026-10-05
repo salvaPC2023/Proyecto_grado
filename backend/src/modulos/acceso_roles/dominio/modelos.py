@@ -41,6 +41,6 @@ class Supervisor:
 class Grupo:
     id: UUID
     nombre_de_grupo: str
-    supervisor_id: UUID
+    supervisor_id: UUID | None
     horario_entrada: time
     horario_salida: time
