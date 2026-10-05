@@ -2,9 +2,9 @@ from abc import ABC, abstractmethod
 from typing import Literal
 from uuid import UUID
 
-from .modelos import Supervisor, Tecnico, Usuario
+from .modelos import Grupo, Supervisor, Tecnico, Usuario
 
-Rol = Literal["supervisor", "tecnico"]
+Rol = Literal["administrador", "supervisor", "tecnico"]
 
 
 class RepositorioUsuarios(ABC):
@@ -62,4 +62,21 @@ class RepositorioTecnicos(ABC):
 class RepositorioSupervisores(ABC):
     @abstractmethod
     def obtener_por_usuario_id(self, usuario_id: UUID) -> Supervisor | None:
+        ...
+
+    @abstractmethod
+    def obtener_por_id(self, id: UUID) -> Supervisor | None:
+        ...
+
+    @abstractmethod
+    def crear(self, supervisor: Supervisor, grupo: Grupo) -> Supervisor:
+        """Guarda el supervisor junto con su grupo"""
+        ...
+
+    @abstractmethod
+    def listar(self) -> list[Supervisor]:
+        ...
+
+    @abstractmethod
+    def obtener_grupo(self, supervisor_id: UUID) -> Grupo | None:
         ...

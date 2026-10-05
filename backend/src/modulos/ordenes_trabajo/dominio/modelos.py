@@ -7,7 +7,20 @@ from uuid import UUID
 TipoOrden = Literal["OE01", "OE02", "OE03", "OE04"]
 EstatusOT = Literal["asignada", "en_progreso", "cerrada"]
 ClaveControl = Literal["PM01", "PMNN"]
+ResultadoTrabajo = Literal["ejecutado", "no_ejecutado"]
 PASOS_SEGURIDAD = ("Piense de manera inteligente", "Vea, diga, haga algo", "Se tiene habilidades adecuadas para la tarea")
+
+
+@dataclass
+class CierrePaso:
+    id: UUID
+    paso_ot_id: UUID
+    fecha_hora_notificacion: datetime
+    tiempo_real_trabajado: Decimal
+    trabajo_finalizado: bool
+    sin_trabajo_realizado: bool
+    resultado_trabajo: ResultadoTrabajo
+    descripcion_trabajo_realizado: str
 
 
 @dataclass
@@ -18,6 +31,7 @@ class PasoOT:
     descripcion: str
     clave_control: ClaveControl
     horas_planificadas: Decimal | None = None
+    cierre: CierrePaso | None = None
 
 
 @dataclass

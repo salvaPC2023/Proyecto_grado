@@ -18,6 +18,14 @@ class UsuarioORM(Base):
     activo: Mapped[bool] = mapped_column(Boolean, default=True)
     debe_cambiar_password: Mapped[bool] = mapped_column(Boolean, default=True)
 
+class AdministradorORM(Base):
+    __tablename__ = "administradores"
+
+    id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True)
+    usuario_id: Mapped[uuid.UUID] = mapped_column(
+        PGUUID(as_uuid=True), ForeignKey("usuarios.id"), unique=True
+    )
+
 class SupervisorORM(Base):
     __tablename__ = "supervisores"
 

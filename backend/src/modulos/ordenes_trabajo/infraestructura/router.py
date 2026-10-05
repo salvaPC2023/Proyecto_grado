@@ -16,8 +16,9 @@ from src.modulos.ubicaciones_tecnicas.infraestructura.router import UbicacionOut
 from ..aplicacion.crear_ot import FechasInvalidas, HorasInvalidas, PasoSolicitado, PrioridadInvalida, SinPasoPM01, SupervisorNoEncontrado, TecnicoFueraDeGrupo, UbicacionNoEncontrada, crear_ot
 from ..aplicacion.listar_ots_supervisor import listar_ots_supervisor
 from ..aplicacion.listar_ots_tecnico import listar_ots_tecnico
+from ..aplicacion.registrar_cierre_paso import CierreAnticipado, DescripcionVacia, OTYaCerrada, PasoNoEncontrado, PasoNoRegistrable, PasoYaCerrado, TiempoInvalido, registrar_cierre_paso
 from ..aplicacion.ver_detalle_ot import OTNoEncontrada, SinAccesoAOT, ver_detalle_ot
-from ..dominio.modelos import ClaveControl, EstatusOT, OrdenDeTrabajo, TipoOrden
+from ..dominio.modelos import CierrePaso, ClaveControl, EstatusOT, OrdenDeTrabajo, ResultadoTrabajo, TipoOrden
 from .repositorio_ordenes_trabajo import RepositorioOrdenesTrabajoSQL
 
 router_ots = APIRouter(prefix="/ordenes-trabajo", tags=["ordenes de trabajo"])
@@ -49,13 +50,43 @@ class CrearOTRequest(BaseModel):
         return valor
 
 
+class CierreIn(BaseModel):
+    resultado_trabajo: ResultadoTrabajo
+    tiempo_real_trabajado: Decimal = Field(ge=0, max_digits=5, decimal_places=2, examples=["1.50"])
+    descripcion_trabajo_realizado: str = Field(min_length=1)
+
+
+class CierreOut(BaseModel):
+    id: UUID
+    fecha_hora_notificacion: datetime
+    tiempo_real_trabajado: Decimal = Field(examples=["1.50"])
+    trabajo_finalizado: bool
+    sin_trabajo_realizado: bool
+    resultado_trabajo: ResultadoTrabajo
+    descripcion_trabajo_realizado: str
+
+
+def a_cierre_out(cierre: CierrePaso | None) -> CierreOut | None:
+    if cierre is None:
+        return None
+    return CierreOut(
+        id=cierre.id,
+        fecha_hora_notificacion=cierre.fecha_hora_notificacion,
+        tiempo_real_trabajado=cierre.tiempo_real_trabajado,
+        trabajo_finalizado=cierre.trabajo_finalizado,
+        sin_trabajo_realizado=cierre.sin_trabajo_realizado,
+        resultado_trabajo=cierre.resultado_trabajo,
+        descripcion_trabajo_realizado=cierre.descripcion_trabajo_realizado,
+    )
+
+
 class PasoOut(BaseModel):
     id: UUID
     numero_paso: int
     descripcion: str
     clave_control: ClaveControl
     horas_planificadas: Decimal | None = Field(examples=["2.50"])
-    cierre: None = None
+    cierre: CierreOut | None = None
 
 
 class OrdenDeTrabajoOut(BaseModel):
@@ -92,7 +123,7 @@ def a_ot_out(ot: OrdenDeTrabajo, ubicacion) -> OrdenDeTrabajoOut:
         fecha_fin_planif=ot.fecha_fin_planif,
         fecha_cierre=ot.fecha_cierre,
         ubicacion=a_ubicacion_out(ubicacion) if ubicacion else None,
-        pasos=[PasoOut(id=p.id, numero_paso=p.numero_paso, descripcion=p.descripcion, clave_control=p.clave_control, horas_planificadas=p.horas_planificadas) for p in ot.pasos],
+        pasos=[PasoOut(id=p.id, numero_paso=p.numero_paso, descripcion=p.descripcion, clave_control=p.clave_control, horas_planificadas=p.horas_planificadas, cierre=a_cierre_out(p.cierre)) for p in ot.pasos],
     )
 
 
@@ -159,4 +190,38 @@ def ver_detalle_ot_endpoint(ot_id: UUID, db: Session = Depends(get_db), actual: 
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Orden de trabajo no encontrada")
     except SinAccesoAOT:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No tienes acceso a esta orden de trabajo")
+    return a_ot_out(ot, RepositorioUbicacionesTecnicasSQL(db).obtener_por_id(ot.ubicacion_tecnica_id))
+
+
+@router_ots.post("/{ot_id}/pasos/{paso_id}/cierre", response_model=OrdenDeTrabajoOut, status_code=status.HTTP_201_CREATED)
+def registrar_cierre_endpoint(ot_id: UUID, paso_id: UUID, datos: CierreIn, db: Session = Depends(get_db), actual: UsuarioAutenticado = Depends(requerir_tecnico)):
+    try:
+        ot = registrar_cierre_paso(
+            ot_id=ot_id,
+            paso_id=paso_id,
+            tecnico_usuario_id=actual.id,
+            resultado_trabajo=datos.resultado_trabajo,
+            tiempo_real_trabajado=datos.tiempo_real_trabajado,
+            descripcion_trabajo_realizado=datos.descripcion_trabajo_realizado,
+            repositorio_ots=RepositorioOrdenesTrabajoSQL(db),
+            repositorio_tecnicos=RepositorioTecnicosSQL(db),
+        )
+    except OTNoEncontrada:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Orden de trabajo no encontrada")
+    except PasoNoEncontrado:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="El paso no pertenece a esta orden de trabajo")
+    except SinAccesoAOT:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No tienes acceso a esta orden de trabajo")
+    except OTYaCerrada:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="La orden de trabajo ya está cerrada")
+    except PasoYaCerrado:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="El paso ya tiene un cierre registrado")
+    except PasoNoRegistrable:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail="Solo los pasos PM01 se cierran")
+    except TiempoInvalido:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail="Si el trabajo se ejecutó, el tiempo debe ser mayor a 0; si no se ejecutó, debe ser 0")
+    except DescripcionVacia:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail="Describe el trabajo realizado")
+    except CierreAnticipado:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail="No se puede cerrar un paso antes del día de inicio planificado")
     return a_ot_out(ot, RepositorioUbicacionesTecnicasSQL(db).obtener_por_id(ot.ubicacion_tecnica_id))

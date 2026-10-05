@@ -2,13 +2,14 @@ from datetime import date, datetime, time, timedelta
 from uuid import UUID
 
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from src.modulos.acceso_roles.infraestructura.orm import TecnicoORM
 
-from ..dominio.modelos import OrdenDeTrabajo, PasoOT
-from ..dominio.puertos import RepositorioOrdenesTrabajo
-from .orm import OrdenDeTrabajoORM, PasoOTORM
+from ..dominio.modelos import CierrePaso, EstatusOT, OrdenDeTrabajo, PasoOT
+from ..dominio.puertos import CierreDuplicado, RepositorioOrdenesTrabajo
+from .orm import CierrePasoORM, OrdenDeTrabajoORM, PasoOTORM
 
 
 def rango_del_dia(fecha: date) -> tuple[datetime, datetime]:
@@ -16,8 +17,24 @@ def rango_del_dia(fecha: date) -> tuple[datetime, datetime]:
     return inicio, inicio + timedelta(days=1)
 
 
+def cierre_a_dominio(orm: CierrePasoORM) -> CierrePaso:
+    return CierrePaso(
+        id=orm.id,
+        paso_ot_id=orm.paso_ot_id,
+        fecha_hora_notificacion=orm.fecha_hora_notificacion,
+        tiempo_real_trabajado=orm.tiempo_real_trabajado,
+        trabajo_finalizado=orm.trabajo_finalizado,
+        sin_trabajo_realizado=orm.sin_trabajo_realizado,
+        resultado_trabajo=orm.resultado_trabajo,
+        descripcion_trabajo_realizado=orm.descripcion_trabajo_realizado,
+    )
+
+
 def paso_a_dominio(orm: PasoOTORM) -> PasoOT:
-    return PasoOT(id=orm.id, ot_id=orm.ot_id, numero_paso=orm.numero_paso, descripcion=orm.descripcion, clave_control=orm.clave_control, horas_planificadas=orm.horas_planificadas)
+    return PasoOT(
+        id=orm.id, ot_id=orm.ot_id, numero_paso=orm.numero_paso, descripcion=orm.descripcion, clave_control=orm.clave_control, horas_planificadas=orm.horas_planificadas,
+        cierre=cierre_a_dominio(orm.cierre) if orm.cierre else None,
+    )
 
 
 def ot_a_dominio(orm: OrdenDeTrabajoORM) -> OrdenDeTrabajo:
@@ -71,6 +88,28 @@ class RepositorioOrdenesTrabajoSQL(RepositorioOrdenesTrabajo):
     def obtener_por_id(self, id: UUID) -> OrdenDeTrabajo | None:
         orm = self._sesion.get(OrdenDeTrabajoORM, id)
         return ot_a_dominio(orm) if orm else None
+
+    def registrar_cierre(self, ot_id: UUID, cierre: CierrePaso, estatus: EstatusOT, fecha_cierre: datetime | None) -> OrdenDeTrabajo:
+        try:
+            ot = self._sesion.get(OrdenDeTrabajoORM, ot_id)
+            self._sesion.add(CierrePasoORM(
+                id=cierre.id,
+                paso_ot_id=cierre.paso_ot_id,
+                fecha_hora_notificacion=cierre.fecha_hora_notificacion,
+                tiempo_real_trabajado=cierre.tiempo_real_trabajado,
+                trabajo_finalizado=cierre.trabajo_finalizado,
+                sin_trabajo_realizado=cierre.sin_trabajo_realizado,
+                resultado_trabajo=cierre.resultado_trabajo,
+                descripcion_trabajo_realizado=cierre.descripcion_trabajo_realizado,
+            ))
+            ot.estatus = estatus
+            ot.fecha_cierre = fecha_cierre
+            self._sesion.commit()  # cierre y estado en una sola transacción
+        except IntegrityError:
+            self._sesion.rollback()
+            raise CierreDuplicado()
+        self._sesion.refresh(ot)
+        return ot_a_dominio(ot)
 
     def listar_por_tecnico(self, tecnico_id: UUID, fecha: date | None = None) -> list[OrdenDeTrabajo]:
         consulta = select(OrdenDeTrabajoORM).where(OrdenDeTrabajoORM.tecnico_asignado_id == tecnico_id)

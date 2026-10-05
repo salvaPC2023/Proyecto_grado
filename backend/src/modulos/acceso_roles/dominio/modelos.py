@@ -35,3 +35,12 @@ class Supervisor:
     horario_entrada: time
     horario_salida: time
     area_designada: str | None = None
+
+
+@dataclass
+class Grupo:
+    id: UUID
+    nombre_de_grupo: str
+    supervisor_id: UUID
+    horario_entrada: time
+    horario_salida: time

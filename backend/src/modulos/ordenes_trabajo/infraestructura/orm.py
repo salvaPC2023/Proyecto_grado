@@ -41,3 +41,18 @@ class PasoOTORM(Base):
     descripcion: Mapped[str] = mapped_column(Text)
     clave_control: Mapped[str] = mapped_column(SQLEnum("PM01", "PMNN", name="clave_control_enum", create_type=False))
     horas_planificadas: Mapped[Decimal | None] = mapped_column(Numeric(5, 2), nullable=True)
+
+    cierre: Mapped["CierrePasoORM | None"] = relationship(uselist=False, lazy="selectin")
+
+
+class CierrePasoORM(Base):
+    __tablename__ = "cierres_paso_ot"
+
+    id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True)
+    paso_ot_id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), ForeignKey("pasos_de_ots.id"), unique=True)
+    fecha_hora_notificacion: Mapped[datetime] = mapped_column(DateTime)
+    tiempo_real_trabajado: Mapped[Decimal] = mapped_column(Numeric(5, 2))
+    trabajo_finalizado: Mapped[bool] = mapped_column(Boolean)
+    sin_trabajo_realizado: Mapped[bool] = mapped_column(Boolean)
+    resultado_trabajo: Mapped[str] = mapped_column(String(12))
+    descripcion_trabajo_realizado: Mapped[str] = mapped_column(Text)

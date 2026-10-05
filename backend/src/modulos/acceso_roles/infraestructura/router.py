@@ -5,16 +5,19 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from src.compartido.bd import get_db
 from ..dominio.modelos import Profesion
-from .dependencias import UsuarioAutenticado, obtener_usuario_actual, requerir_supervisor
+from .dependencias import UsuarioAutenticado, obtener_usuario_actual, requerir_administrador, requerir_supervisor
 from .repositorio_supervisores import RepositorioSupervisoresSQL
 from .repositorio_tecnicos import RepositorioTecnicosSQL
 from .repositorio_usuarios import RepositorioUsuariosSQL
 
 from ..aplicacion.cambiar_estado_cuenta import TecnicoNoEncontrado, cambiar_estado_cuenta
+from ..aplicacion.cambiar_estado_supervisor import SupervisorNoEncontrado, cambiar_estado_supervisor
 from ..aplicacion.cambiar_password import ContrasenaActualIncorrecta, cambiar_password
+from ..aplicacion.crear_supervisor import HorarioInvalido, crear_supervisor
 from ..aplicacion.crear_tecnico import NombreUsuarioDuplicado, crear_tecnico
 from ..aplicacion.editar_perfil import editar_perfil
 from ..aplicacion.iniciar_sesion import CredencialesInvalidas, CuentaDeshabilitada, iniciar_sesion
+from ..aplicacion.listar_supervisores import listar_supervisores
 from ..aplicacion.listar_tecnicos import listar_tecnicos
 from ..aplicacion.ver_perfil import PerfilCompleto, ver_perfil
 
@@ -22,6 +25,7 @@ from ..aplicacion.ver_perfil import PerfilCompleto, ver_perfil
 router_auth = APIRouter(prefix="/auth", tags=["autenticacion"])
 router_tecnicos = APIRouter(prefix="/tecnicos", tags=["tecnicos"])
 router_perfil = APIRouter(prefix="/perfil", tags=["perfil"])
+router_supervisores = APIRouter(prefix="/supervisores", tags=["administracion"])
 
 
 class CredencialesLogin(BaseModel):
@@ -268,3 +272,113 @@ def cambiar_password_endpoint(
             detail="La contraseña actual es incorrecta",
         )
     return {"detail": "Contraseña actualizada"}
+
+
+class CrearSupervisorRequest(BaseModel):
+    nombre: str
+    apellido_paterno: str
+    apellido_materno: str | None = None
+    nombre_usuario: str
+    nombre_de_grupo: str
+    horario_entrada: time
+    horario_salida: time
+    area_designada: str | None = None
+
+
+class SupervisorOut(BaseModel):
+    id: UUID
+    usuario_id: UUID
+    nombre: str
+    apellido_paterno: str
+    apellido_materno: str | None
+    nombre_usuario: str
+    activo: bool
+    horario_entrada: time
+    horario_salida: time
+    area_designada: str | None
+    grupo_nombre: str | None
+
+
+def a_supervisor_out(supervisor, repositorio_usuarios: RepositorioUsuariosSQL, repositorio_supervisores: RepositorioSupervisoresSQL) -> SupervisorOut:
+    usuario = repositorio_usuarios.obtener_por_id(supervisor.usuario_id)
+    grupo = repositorio_supervisores.obtener_grupo(supervisor.id)
+    return SupervisorOut(
+        id=supervisor.id,
+        usuario_id=supervisor.usuario_id,
+        nombre=usuario.nombre,
+        apellido_paterno=usuario.apellido_paterno,
+        apellido_materno=usuario.apellido_materno,
+        nombre_usuario=usuario.nombre_usuario,
+        activo=usuario.activo,
+        horario_entrada=supervisor.horario_entrada,
+        horario_salida=supervisor.horario_salida,
+        area_designada=supervisor.area_designada,
+        grupo_nombre=grupo.nombre_de_grupo if grupo else None,
+    )
+
+
+@router_supervisores.get("", response_model=list[SupervisorOut])
+def listar_supervisores_endpoint(
+    db: Session = Depends(get_db),
+    actual: UsuarioAutenticado = Depends(requerir_administrador),
+):
+    repositorio_usuarios = RepositorioUsuariosSQL(db)
+    repositorio_supervisores = RepositorioSupervisoresSQL(db)
+    supervisores = listar_supervisores(repositorio_supervisores)
+    return [a_supervisor_out(s, repositorio_usuarios, repositorio_supervisores) for s in supervisores]
+
+
+@router_supervisores.post("", response_model=SupervisorOut, status_code=status.HTTP_201_CREATED)
+def crear_supervisor_endpoint(
+    datos: CrearSupervisorRequest,
+    db: Session = Depends(get_db),
+    actual: UsuarioAutenticado = Depends(requerir_administrador),
+):
+    repositorio_usuarios = RepositorioUsuariosSQL(db)
+    repositorio_supervisores = RepositorioSupervisoresSQL(db)
+    try:
+        supervisor = crear_supervisor(
+            nombre=datos.nombre,
+            apellido_paterno=datos.apellido_paterno,
+            apellido_materno=datos.apellido_materno,
+            nombre_usuario=datos.nombre_usuario,
+            nombre_de_grupo=datos.nombre_de_grupo,
+            horario_entrada=datos.horario_entrada,
+            horario_salida=datos.horario_salida,
+            area_designada=datos.area_designada,
+            repositorio_usuarios=repositorio_usuarios,
+            repositorio_supervisores=repositorio_supervisores,
+        )
+    except NombreUsuarioDuplicado:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="El nombre de usuario ya está en uso",
+        )
+    except HorarioInvalido:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail="La hora de entrada y la de salida no pueden ser iguales",
+        )
+    return a_supervisor_out(supervisor, repositorio_usuarios, repositorio_supervisores)
+
+
+@router_supervisores.patch("/{supervisor_id}/estado", status_code=status.HTTP_200_OK)
+def cambiar_estado_supervisor_endpoint(
+    supervisor_id: UUID,
+    datos: CambiarEstadoRequest,
+    db: Session = Depends(get_db),
+    actual: UsuarioAutenticado = Depends(requerir_administrador),
+):
+    try:
+        cambiar_estado_supervisor(
+            supervisor_id=supervisor_id,
+            activo=datos.activo,
+            repositorio_supervisores=RepositorioSupervisoresSQL(db),
+            repositorio_usuarios=RepositorioUsuariosSQL(db),
+        )
+    except SupervisorNoEncontrado:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Supervisor no encontrado",
+        )
+    return {"activo": datos.activo}

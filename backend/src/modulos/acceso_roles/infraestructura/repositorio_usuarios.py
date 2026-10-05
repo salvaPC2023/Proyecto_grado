@@ -3,7 +3,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 from ..dominio.modelos import Usuario
 from ..dominio.puertos import Rol, RepositorioUsuarios
-from .orm import SupervisorORM, TecnicoORM, UsuarioORM
+from .orm import AdministradorORM, SupervisorORM, TecnicoORM, UsuarioORM
 
 def usuario_a_dominio(orm: UsuarioORM) -> Usuario:
     return Usuario(
@@ -32,6 +32,12 @@ class RepositorioUsuariosSQL(RepositorioUsuarios):
         return usuario_a_dominio(orm) if orm else None
 
     def obtener_rol(self, usuario_id: UUID) -> Rol:
+        es_administrador = self._sesion.scalars(
+            select(AdministradorORM).where(AdministradorORM.usuario_id == usuario_id)
+        ).first()
+        if es_administrador is not None:
+            return "administrador"
+
         es_supervisor = self._sesion.scalars(
             select(SupervisorORM).where(SupervisorORM.usuario_id == usuario_id)
         ).first()
@@ -45,7 +51,7 @@ class RepositorioUsuariosSQL(RepositorioUsuarios):
             return "tecnico"
 
         raise ValueError(
-            f"El usuario {usuario_id} no está en Supervisores ni en Tecnicos"
+            f"El usuario {usuario_id} no está en Administradores, Supervisores ni Tecnicos"
         )
 
     def crear(self, usuario: Usuario) -> Usuario:

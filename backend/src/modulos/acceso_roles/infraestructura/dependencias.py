@@ -42,6 +42,17 @@ def obtener_usuario_actual(
     return UsuarioAutenticado(id=usuario.id, rol=payload["role"])
 
 
+def requerir_administrador(
+    actual: UsuarioAutenticado = Depends(obtener_usuario_actual),
+) -> UsuarioAutenticado:
+    if actual.rol != "administrador":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Solo un Administrador puede realizar esta accion",
+        )
+    return actual
+
+
 def requerir_supervisor(
     actual: UsuarioAutenticado = Depends(obtener_usuario_actual),
 ) -> UsuarioAutenticado:
