@@ -9,6 +9,7 @@ import '../../viewmodels/ordenes_trabajo_vm.dart';
 import '../../widgets/barra_navegacion_inferior.dart';
 import 'componentes_ot.dart';
 import 'formato_ot.dart';
+import 'pantalla_cierre_paso.dart';
 
 class PantallaDetalleOt extends ConsumerWidget {
   const PantallaDetalleOt({super.key, required this.otId});
@@ -57,6 +58,7 @@ class PantallaDetalleOt extends ConsumerWidget {
                       const SizedBox(height: 10),
                       for (final paso in ot.pasos)
                         _TarjetaPaso(
+                          otId: ot.id,
                           paso: paso,
                           puedeCerrar: esTecnico &&
                               paso.esPm01 &&
@@ -272,9 +274,20 @@ class _AvancePm01 extends StatelessWidget {
 }
 
 class _TarjetaPaso extends StatelessWidget {
-  const _TarjetaPaso({required this.paso, required this.puedeCerrar});
+  const _TarjetaPaso({required this.otId, required this.paso, required this.puedeCerrar});
+  final String otId;
   final PasoOt paso;
   final bool puedeCerrar;
+
+  Future<void> _abrirCierre(BuildContext context) async {
+    final mensajero = ScaffoldMessenger.of(context);
+    final registrado = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(builder: (_) => PantallaCierrePaso(otId: otId, paso: paso)),
+    );
+    if (registrado == true) {
+      mensajero.showSnackBar(const SnackBar(content: Text('Cierre registrado')));
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -340,11 +353,7 @@ class _TarjetaPaso extends StatelessWidget {
             SizedBox(
               width: double.infinity,
               child: FilledButton.icon(
-                onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('El registro de cierre aun no esta disponible'),
-                  ),
-                ),
+                onPressed: () => _abrirCierre(context),
                 icon: const Icon(Icons.task_alt),
                 label: const Text('Registrar cierre'),
                 style: FilledButton.styleFrom(

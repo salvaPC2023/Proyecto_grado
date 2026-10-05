@@ -104,3 +104,36 @@ final otsGrupoViewModelProvider =
     AsyncNotifierProvider.autoDispose<OtsGrupoViewModel, List<OrdenTrabajo>>(
   OtsGrupoViewModel.new,
 );
+
+class CierrePasoViewModel extends Notifier<AsyncValue<void>> {
+  @override
+  AsyncValue<void> build() => const AsyncValue.data(null);
+
+  Future<bool> registrar({
+    required String otId,
+    required String pasoId,
+    required bool ejecutado,
+    required double tiempoRealTrabajado,
+    required String descripcion,
+  }) async {
+    state = const AsyncValue.loading();
+    try {
+      await ref.read(repositorioOrdenesTrabajoProvider).registrarCierre(
+            otId: otId,
+            pasoId: pasoId,
+            ejecutado: ejecutado,
+            tiempoRealTrabajado: tiempoRealTrabajado,
+            descripcion: descripcion,
+          );
+      ref.invalidate(detalleOtProvider(otId)); // el detalle se vuelve a pedir con el cierre nuevo
+      state = const AsyncValue.data(null);
+      return true;
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+      return false;
+    }
+  }
+}
+
+final cierrePasoViewModelProvider =
+    NotifierProvider.autoDispose<CierrePasoViewModel, AsyncValue<void>>(CierrePasoViewModel.new);

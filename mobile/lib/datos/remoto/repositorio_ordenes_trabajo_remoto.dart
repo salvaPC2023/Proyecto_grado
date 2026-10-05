@@ -65,6 +65,24 @@ class RepositorioOrdenesTrabajoRemoto implements RepositorioOrdenesTrabajo {
     return _listar('/ordenes-trabajo/grupo', fecha);
   }
 
+  @override
+  Future<OrdenTrabajo> registrarCierre({
+    required String otId,
+    required String pasoId,
+    required bool ejecutado,
+    required double tiempoRealTrabajado,
+    required String descripcion,
+  }) {
+    return traducirErrores(() async {
+      final respuesta = await _dio.post('/ordenes-trabajo/$otId/pasos/$pasoId/cierre', data: {
+        'resultado_trabajo': ejecutado ? 'ejecutado' : 'no_ejecutado',
+        'tiempo_real_trabajado': tiempoRealTrabajado,
+        'descripcion_trabajo_realizado': descripcion,
+      });
+      return ordenTrabajoDesdeJson(respuesta.data as Json);
+    });
+  }
+
   Future<List<OrdenTrabajo>> _listar(String ruta, DateTime? fecha) {
     return traducirErrores(() async {
       final respuesta = await _dio.get(

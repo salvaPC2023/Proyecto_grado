@@ -19,6 +19,7 @@ class SesionUsuario {
   final String nombreUsuario;
 
   bool get esSupervisor => rol == 'supervisor';
+  bool get esAdministrador => rol == 'administrador';
 
   SesionUsuario copyWith({String? id, String? nombreCompleto, String? nombreUsuario}) {
     return SesionUsuario(

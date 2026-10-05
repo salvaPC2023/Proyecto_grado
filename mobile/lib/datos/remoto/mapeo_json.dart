@@ -1,9 +1,24 @@
 import '../../dominio/modelos/orden_trabajo.dart';
 import '../../dominio/modelos/perfil.dart';
+import '../../dominio/modelos/supervisor.dart';
 import '../../dominio/modelos/tecnico.dart';
 
 
 typedef Json = Map<String, dynamic>;
+
+Supervisor supervisorDesdeJson(Json json) {
+  return Supervisor(
+    id: json['id'] as String,
+    nombre: json['nombre'] as String,
+    apellidoPaterno: json['apellido_paterno'] as String,
+    apellidoMaterno: json['apellido_materno'] as String?,
+    nombreUsuario: json['nombre_usuario'] as String,
+    activo: json['activo'] as bool,
+    horarioEntrada: json['horario_entrada'] as String,
+    horarioSalida: json['horario_salida'] as String,
+    grupoNombre: json['grupo_nombre'] as String?,
+  );
+}
 
 Tecnico tecnicoDesdeJson(Json json) {
   return Tecnico(

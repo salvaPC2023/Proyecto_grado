@@ -8,6 +8,7 @@ import '../autenticacion/pantalla_inicio_sesion.dart';
 import '../ordenes_trabajo/pantalla_mis_ots.dart';
 import '../ordenes_trabajo/pantalla_ots_grupo.dart';
 import '../perfil/pantalla_mi_perfil.dart';
+import '../supervisores/pantalla_lista_supervisores.dart';
 
 
 class PantallaInicio extends ConsumerWidget {
@@ -17,7 +18,12 @@ class PantallaInicio extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final sesion = ref.watch(sesionProvider);
     final nombreUsuario = sesion?.nombreCompleto ?? '';
-    final rol = sesion?.esSupervisor == true ? 'Supervisor' : 'Técnico';
+    final esAdministrador = sesion?.esAdministrador == true;
+    final rol = esAdministrador
+        ? 'Administrador'
+        : sesion?.esSupervisor == true
+            ? 'Supervisor'
+            : 'Técnico';
 
     return Scaffold(
       backgroundColor: ColoresApp.fondo,
@@ -40,11 +46,14 @@ class PantallaInicio extends ConsumerWidget {
               ),
               const SizedBox(height: 20),
               _TarjetaProgreso(
+                textoBoton: esAdministrador ? 'Gestionar Supervisores' : 'Ver Órdenes de Trabajo',
                 onVerOts: () => Navigator.of(context).push(
                   MaterialPageRoute(
-                    builder: (_) => sesion?.esSupervisor == true
-                        ? const PantallaOtsGrupo()
-                        : const PantallaMisOts(),
+                    builder: (_) => esAdministrador
+                        ? const PantallaListaSupervisores()
+                        : sesion?.esSupervisor == true
+                            ? const PantallaOtsGrupo()
+                            : const PantallaMisOts(),
                   ),
                 ),
               ),
@@ -156,8 +165,9 @@ class _Encabezado extends StatelessWidget {
 }
 
 class _TarjetaProgreso extends StatelessWidget {
-  const _TarjetaProgreso({this.onVerOts});
+  const _TarjetaProgreso({this.onVerOts, required this.textoBoton});
   final VoidCallback? onVerOts;
+  final String textoBoton;
 
   @override
   Widget build(BuildContext context) {
@@ -203,11 +213,11 @@ class _TarjetaProgreso extends StatelessWidget {
                   child: InkWell(
                     borderRadius: BorderRadius.circular(12),
                     onTap: onVerOts,
-                    child: const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                       child: Text(
-                        'Ver Órdenes de Trabajo',
-                        style: TextStyle(
+                        textoBoton,
+                        style: const TextStyle(
                           color: Color(0xFF2563EB),
                           fontSize: 12,
                           fontWeight: FontWeight.bold,

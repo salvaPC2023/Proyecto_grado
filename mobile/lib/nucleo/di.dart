@@ -3,10 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../datos/remoto/repositorio_autenticacion_remoto.dart';
 import '../datos/remoto/repositorio_ordenes_trabajo_remoto.dart';
 import '../datos/remoto/repositorio_perfil_remoto.dart';
+import '../datos/remoto/repositorio_supervisores_remoto.dart';
 import '../datos/remoto/repositorio_tecnicos_remoto.dart';
 import '../dominio/repositorios/repositorio_autenticacion.dart';
 import '../dominio/repositorios/repositorio_ordenes_trabajo.dart';
 import '../dominio/repositorios/repositorio_perfil.dart';
+import '../dominio/repositorios/repositorio_supervisores.dart';
 import '../dominio/repositorios/repositorio_tecnicos.dart';
 import 'api_client.dart';
 
@@ -25,4 +27,8 @@ final repositorioTecnicosProvider = Provider<RepositorioTecnicos>(
 
 final repositorioOrdenesTrabajoProvider = Provider<RepositorioOrdenesTrabajo>(
   (ref) => RepositorioOrdenesTrabajoRemoto(ref.watch(dioProvider)),
+);
+
+final repositorioSupervisoresProvider = Provider<RepositorioSupervisores>(
+  (ref) => RepositorioSupervisoresRemoto(ref.watch(dioProvider)),
 );
