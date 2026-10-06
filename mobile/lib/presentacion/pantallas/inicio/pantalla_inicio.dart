@@ -8,7 +8,6 @@ import '../autenticacion/pantalla_inicio_sesion.dart';
 import '../ordenes_trabajo/pantalla_mis_ots.dart';
 import '../ordenes_trabajo/pantalla_ots_grupo.dart';
 import '../perfil/pantalla_mi_perfil.dart';
-import '../supervisores/pantalla_lista_supervisores.dart';
 
 
 class PantallaInicio extends ConsumerWidget {
@@ -18,12 +17,8 @@ class PantallaInicio extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final sesion = ref.watch(sesionProvider);
     final nombreUsuario = sesion?.nombreCompleto ?? '';
-    final esAdministrador = sesion?.esAdministrador == true;
-    final rol = esAdministrador
-        ? 'Administrador'
-        : sesion?.esSupervisor == true
-            ? 'Supervisor'
-            : 'Técnico';
+    // solo para técnicos y supervisores; el administrador entra directo a sus pantallas
+    final rol = sesion?.esSupervisor == true ? 'Supervisor' : 'Técnico';
 
     return Scaffold(
       backgroundColor: ColoresApp.fondo,
@@ -46,14 +41,10 @@ class PantallaInicio extends ConsumerWidget {
               ),
               const SizedBox(height: 20),
               _TarjetaProgreso(
-                textoBoton: esAdministrador ? 'Gestionar Supervisores' : 'Ver Órdenes de Trabajo',
+                textoBoton: 'Ver Órdenes de Trabajo',
                 onVerOts: () => Navigator.of(context).push(
                   MaterialPageRoute(
-                    builder: (_) => esAdministrador
-                        ? const PantallaListaSupervisores()
-                        : sesion?.esSupervisor == true
-                            ? const PantallaOtsGrupo()
-                            : const PantallaMisOts(),
+                    builder: (_) => sesion?.esSupervisor == true ? const PantallaOtsGrupo() : const PantallaMisOts(),
                   ),
                 ),
               ),

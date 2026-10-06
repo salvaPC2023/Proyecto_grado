@@ -6,6 +6,7 @@ import '../../../nucleo/errores.dart';
 import '../../../nucleo/tema.dart';
 import '../../viewmodels/supervisores_vm.dart';
 import '../../widgets/barra_navegacion_inferior.dart';
+import '../../widgets/encabezado_administrador.dart';
 import 'pantalla_registrar_supervisor.dart';
 
 class PantallaListaSupervisores extends ConsumerWidget {
@@ -48,9 +49,11 @@ class PantallaListaSupervisores extends ConsumerWidget {
       body: SafeArea(
         child: Column(
           children: [
-            _Encabezado(
-              onVolver: () => Navigator.of(context).maybePop(),
-              onRegistrar: () => Navigator.of(context).push(
+            EncabezadoAdministrador(
+              titulo: 'Supervisores',
+              iconoAccion: Icons.person_add,
+              textoAccion: 'Registrar supervisor',
+              onAccion: () => Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => const PantallaRegistrarSupervisor()),
               ),
             ),
@@ -82,55 +85,7 @@ class PantallaListaSupervisores extends ConsumerWidget {
           ],
         ),
       ),
-      bottomNavigationBar: const BarraNavegacionInferior(activo: SeccionNav.equipoTrabajo),
-    );
-  }
-}
-
-class _Encabezado extends StatelessWidget {
-  const _Encabezado({required this.onVolver, required this.onRegistrar});
-  final VoidCallback onVolver;
-  final VoidCallback onRegistrar;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
-      child: Row(
-        children: [
-          _BotonCircular(icono: Icons.arrow_back, tooltip: 'Volver', onPressed: onVolver),
-          const SizedBox(width: 12),
-          const Expanded(
-            child: Text(
-              'Supervisores',
-              style: TextStyle(color: ColoresApp.textoOscuro, fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-          ),
-          _BotonCircular(icono: Icons.person_add, tooltip: 'Registrar supervisor', onPressed: onRegistrar),
-        ],
-      ),
-    );
-  }
-}
-
-class _BotonCircular extends StatelessWidget {
-  const _BotonCircular({required this.icono, required this.tooltip, required this.onPressed});
-  final IconData icono;
-  final String tooltip;
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.white,
-      shape: const CircleBorder(side: BorderSide(color: Color(0xFFF1F5F9))),
-      elevation: 2,
-      shadowColor: Colors.black12,
-      child: IconButton(
-        tooltip: tooltip,
-        onPressed: onPressed,
-        icon: Icon(icono, size: 20, color: ColoresApp.textoOscuro),
-      ),
+      bottomNavigationBar: const BarraNavegacionInferior(activo: SeccionNav.supervisores),
     );
   }
 }

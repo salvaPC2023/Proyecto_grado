@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../nucleo/errores.dart';
+import '../../../nucleo/sesion.dart';
 import '../../viewmodels/auth_vm.dart';
 import '../inicio/pantalla_inicio.dart';
+import '../supervisores/pantalla_lista_supervisores.dart';
 
 class PantallaInicioSesion extends ConsumerStatefulWidget {
   const PantallaInicioSesion({super.key});
@@ -36,8 +38,12 @@ class _PantallaInicioSesionState extends ConsumerState<PantallaInicioSesion> {
         .iniciarSesion(usuario, contrasena);
 
     if (exito && mounted) {
+      // el administrador no tiene pantalla de inicio
+      final esAdministrador = ref.read(sesionProvider)?.esAdministrador ?? false;
       Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const PantallaInicio()),
+        MaterialPageRoute(
+          builder: (_) => esAdministrador ? const PantallaListaSupervisores() : const PantallaInicio(),
+        ),
       );
     }
   }

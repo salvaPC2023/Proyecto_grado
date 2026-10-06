@@ -1,3 +1,4 @@
+import '../../dominio/modelos/grupo.dart';
 import '../../dominio/modelos/orden_trabajo.dart';
 import '../../dominio/modelos/perfil.dart';
 import '../../dominio/modelos/supervisor.dart';
@@ -5,6 +6,16 @@ import '../../dominio/modelos/tecnico.dart';
 
 
 typedef Json = Map<String, dynamic>;
+
+Grupo grupoDesdeJson(Json json) {
+  return Grupo(
+    id: json['id'] as String,
+    nombreDeGrupo: json['nombre_de_grupo'] as String,
+    cantidadTecnicos: json['cantidad_tecnicos'] as int,
+    supervisorId: json['supervisor_id'] as String?,
+    supervisorNombre: json['supervisor_nombre'] as String?,
+  );
+}
 
 Supervisor supervisorDesdeJson(Json json) {
   return Supervisor(

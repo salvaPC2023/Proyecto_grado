@@ -3,13 +3,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../nucleo/sesion.dart';
 import '../../nucleo/tema.dart';
+import '../pantallas/grupos/pantalla_grupos.dart';
 import '../pantallas/ordenes_trabajo/pantalla_mis_ots.dart';
 import '../pantallas/ordenes_trabajo/pantalla_nueva_ot.dart';
 import '../pantallas/ordenes_trabajo/pantalla_ots_grupo.dart';
 import '../pantallas/supervisores/pantalla_lista_supervisores.dart';
 import '../pantallas/tecnicos/pantalla_lista_tecnicos.dart';
+import '../pantallas/ubicaciones/pantalla_ubicaciones.dart';
 
-enum SeccionNav { inicio, agenda, ordenesTrabajo, equipoTrabajo }
+enum SeccionNav { inicio, agenda, ordenesTrabajo, equipoTrabajo, supervisores, grupos, ubicaciones }
 
 const _colorIcono = ColoresApp.principal;
 
@@ -25,6 +27,10 @@ class BarraNavegacionInferior extends ConsumerWidget {
 
   void _irAlInicio(BuildContext context) {
     Navigator.of(context).popUntil((ruta) => ruta.isFirst);
+  }
+
+  void _cambiarA(BuildContext context, Widget pantalla) {
+    Navigator.of(context).pushAndRemoveUntil(MaterialPageRoute(builder: (_) => pantalla), (ruta) => false);
   }
 
   @override
@@ -54,16 +60,24 @@ class BarraNavegacionInferior extends ConsumerWidget {
           ],
         ),
         child: esAdministrador
-            // el administrador solo gestiona supervisores
+            // el administrador no tiene inicio; cada sección reemplaza a la anterior
             ? Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
-                  inicio,
+                  _ItemNav(
+                    icono: Icons.manage_accounts_outlined,
+                    activo: activo == SeccionNav.supervisores,
+                    onTap: () => _cambiarA(context, const PantallaListaSupervisores()),
+                  ),
                   _ItemNav(
                     icono: Icons.groups_outlined,
-                    activo: activo == SeccionNav.equipoTrabajo,
-                    onTap: () =>
-                        _irA(context, const PantallaListaSupervisores()),
+                    activo: activo == SeccionNav.grupos,
+                    onTap: () => _cambiarA(context, const PantallaGrupos()),
+                  ),
+                  _ItemNav(
+                    icono: Icons.place_outlined,
+                    activo: activo == SeccionNav.ubicaciones,
+                    onTap: () => _cambiarA(context, const PantallaUbicaciones()),
                   ),
                 ],
               )

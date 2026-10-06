@@ -113,7 +113,7 @@ class _PantallaRegistrarSupervisorState extends ConsumerState<PantallaRegistrarS
           ],
         ),
       ),
-      bottomNavigationBar: const BarraNavegacionInferior(activo: SeccionNav.equipoTrabajo),
+      bottomNavigationBar: const BarraNavegacionInferior(activo: SeccionNav.supervisores),
     );
   }
 }
