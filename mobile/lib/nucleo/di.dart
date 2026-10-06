@@ -5,11 +5,13 @@ import '../datos/remoto/repositorio_ordenes_trabajo_remoto.dart';
 import '../datos/remoto/repositorio_perfil_remoto.dart';
 import '../datos/remoto/repositorio_supervisores_remoto.dart';
 import '../datos/remoto/repositorio_tecnicos_remoto.dart';
+import '../datos/remoto/repositorio_estandarizacion_remoto.dart';
 import '../dominio/repositorios/repositorio_autenticacion.dart';
 import '../dominio/repositorios/repositorio_ordenes_trabajo.dart';
 import '../dominio/repositorios/repositorio_perfil.dart';
 import '../dominio/repositorios/repositorio_supervisores.dart';
 import '../dominio/repositorios/repositorio_tecnicos.dart';
+import '../dominio/repositorios/repositorio_estandarizacion.dart';
 import 'api_client.dart';
 
 
@@ -31,4 +33,8 @@ final repositorioOrdenesTrabajoProvider = Provider<RepositorioOrdenesTrabajo>(
 
 final repositorioSupervisoresProvider = Provider<RepositorioSupervisores>(
   (ref) => RepositorioSupervisoresRemoto(ref.watch(dioProvider)),
+);
+
+final repositorioEstandarizacionProvider = Provider<RepositorioEstandarizacion>(
+  (ref) => RepositorioEstandarizacionRemoto(ref.watch(dioProvider)),
 );

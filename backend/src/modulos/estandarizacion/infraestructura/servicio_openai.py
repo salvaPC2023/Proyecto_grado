@@ -17,6 +17,7 @@ class ServicioEstandarizacionOpenAI(ServicioEstandarizacion):
             respuesta = cliente.chat.completions.create(
                 model=settings.openai_model,
                 temperature=0.2,
+                max_tokens=768,
                 messages=[
                     {"role": "system", "content": PROMPT_SISTEMA},
                     {"role": "user", "content": texto},

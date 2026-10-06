@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../dominio/modelos/orden_trabajo.dart';
 import '../../../nucleo/errores.dart';
 import '../../../nucleo/tema.dart';
+import '../../viewmodels/estandarizacion_vm.dart';
 import '../../viewmodels/ordenes_trabajo_vm.dart';
 import 'componentes_ot.dart';
 import 'formato_ot.dart';
@@ -21,12 +22,17 @@ class PantallaCierrePaso extends ConsumerStatefulWidget {
 class _PantallaCierrePasoState extends ConsumerState<PantallaCierrePaso> {
   final _controladorHoras = TextEditingController();
   final _controladorDescripcion = TextEditingController();
+  final _controladorRevision = TextEditingController();
   bool _ejecutado = true;
+  bool _revisando = false;
+  bool _estandarizado = false;
+  String? _errorEstandarizacion;
 
   @override
   void dispose() {
     _controladorHoras.dispose();
     _controladorDescripcion.dispose();
+    _controladorRevision.dispose();
     super.dispose();
   }
 
@@ -34,14 +40,54 @@ class _PantallaCierrePasoState extends ConsumerState<PantallaCierrePaso> {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(mensaje)));
   }
 
-  Future<void> _registrar() async {
-    final descripcion = _controladorDescripcion.text.trim();
+  double? _horasValidas() {
     // si no se ejecutó, el tiempo es 0
     final horas = _ejecutado ? double.tryParse(_controladorHoras.text.trim().replaceAll(',', '.')) : 0.0;
     if (horas == null || (_ejecutado && horas <= 0)) {
-      return _avisar('Ingresa las horas trabajadas (mayores a 0)');
+      _avisar('Ingresa las horas trabajadas (mayores a 0)');
+      return null;
     }
+    return horas;
+  }
+
+  Future<void> _estandarizar() async {
+    final descripcion = _controladorDescripcion.text.trim();
+    if (_horasValidas() == null) return;
     if (descripcion.isEmpty) return _avisar('Describe el trabajo realizado');
+
+    setState(() => _errorEstandarizacion = null);
+    final resultado = await ref.read(estandarizacionViewModelProvider.notifier).estandarizar(descripcion);
+    if (!mounted) return;
+    if (resultado != null) {
+      setState(() {
+        _controladorRevision.text = resultado;
+        _estandarizado = true;
+        _revisando = true;
+      });
+    } else {
+      setState(() => _errorEstandarizacion = mensajeDeError(ref.read(estandarizacionViewModelProvider).error!));
+    }
+  }
+
+  void _continuarConOriginal() {
+    setState(() {
+      _controladorRevision.text = _controladorDescripcion.text.trim();
+      _estandarizado = false;
+      _errorEstandarizacion = null;
+      _revisando = true;
+    });
+  }
+
+  void _volverARedactar() {
+    ref.read(estandarizacionViewModelProvider.notifier).reiniciar();
+    setState(() => _revisando = false);
+  }
+
+  Future<void> _registrar() async {
+    final descripcion = _controladorRevision.text.trim();
+    final horas = _horasValidas();
+    if (horas == null) return;
+    if (descripcion.isEmpty) return _avisar('La descripción no puede quedar vacía');
 
     final exito = await ref.read(cierrePasoViewModelProvider.notifier).registrar(
           otId: widget.otId,
@@ -61,6 +107,7 @@ class _PantallaCierrePasoState extends ConsumerState<PantallaCierrePaso> {
   @override
   Widget build(BuildContext context) {
     final guardando = ref.watch(cierrePasoViewModelProvider).isLoading;
+    final estandarizando = ref.watch(estandarizacionViewModelProvider).isLoading;
     final paso = widget.paso;
 
     return Scaffold(
@@ -126,6 +173,7 @@ class _PantallaCierrePasoState extends ConsumerState<PantallaCierrePaso> {
                         const _Etiqueta('Descripción del trabajo realizado'),
                         TextField(
                           controller: _controladorDescripcion,
+                          enabled: !_revisando && !estandarizando,
                           minLines: 4,
                           maxLines: 6,
                           decoration: _decoracion('Qué se hizo, mediciones y observaciones'),
@@ -133,24 +181,65 @@ class _PantallaCierrePasoState extends ConsumerState<PantallaCierrePaso> {
                       ],
                     ),
                   ),
+                  if (_errorEstandarizacion != null && !_revisando)
+                    _Tarjeta(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Text(
+                            _errorEstandarizacion!,
+                            style: TextStyle(color: Theme.of(context).colorScheme.error, fontWeight: FontWeight.w600),
+                          ),
+                          const SizedBox(height: 12),
+                          OutlinedButton(onPressed: estandarizando ? null : _estandarizar, child: const Text('Reintentar')),
+                          const SizedBox(height: 8),
+                          TextButton(onPressed: estandarizando ? null : _continuarConOriginal, child: const Text('Continuar con el texto original')),
+                        ],
+                      ),
+                    ),
+                  if (_revisando)
+                    _Tarjeta(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          _Etiqueta(_estandarizado ? 'Descripción estandarizada (puedes editarla)' : 'Descripción sin estandarizar'),
+                          TextField(
+                            controller: _controladorRevision,
+                            enabled: !guardando,
+                            minLines: 8,
+                            maxLines: 16,
+                            decoration: _decoracion(''),
+                          ),
+                          const SizedBox(height: 8),
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: TextButton.icon(
+                              onPressed: guardando ? null : _volverARedactar,
+                              icon: const Icon(Icons.edit_note),
+                              label: const Text('Volver a redactar'),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   const SizedBox(height: 8),
                   SizedBox(
                     height: 54,
                     child: FilledButton(
-                      onPressed: guardando ? null : _registrar,
+                      onPressed: (guardando || estandarizando) ? null : (_revisando ? _registrar : _estandarizar),
                       style: FilledButton.styleFrom(
                         backgroundColor: ColoresApp.principal,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                       ),
-                      child: guardando
+                      child: (guardando || estandarizando)
                           ? const SizedBox(
                               width: 22,
                               height: 22,
                               child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white),
                             )
-                          : const Text(
-                              'Registrar cierre',
-                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                          : Text(
+                              _revisando ? 'Registrar cierre' : 'Estandarizar y revisar',
+                              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                             ),
                     ),
                   ),

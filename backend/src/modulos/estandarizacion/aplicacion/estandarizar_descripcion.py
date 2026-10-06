@@ -19,6 +19,6 @@ def estandarizar_descripcion(texto: str, servicio: ServicioEstandarizacion) -> s
 
     resultado = servicio.estandarizar(texto).strip()
     # no se acepta un resultado vacío ni uno que pierda o cambie algún valor numérico
-    if not resultado or numeros_de(resultado) != numeros_de(texto):
+    if not resultado or set(numeros_de(resultado)) != set(numeros_de(texto)):
         raise ServicioNoDisponible()
     return resultado
