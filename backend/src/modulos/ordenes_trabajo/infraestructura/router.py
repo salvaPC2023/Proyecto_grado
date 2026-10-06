@@ -2,7 +2,7 @@ from datetime import date, datetime
 from decimal import Decimal
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 from pydantic import BaseModel, Field, field_validator
 from sqlalchemy.orm import Session
 
@@ -10,15 +10,18 @@ from src.compartido.bd import get_db
 from src.modulos.acceso_roles.infraestructura.dependencias import UsuarioAutenticado, obtener_usuario_actual, requerir_supervisor, requerir_tecnico
 from src.modulos.acceso_roles.infraestructura.repositorio_supervisores import RepositorioSupervisoresSQL
 from src.modulos.acceso_roles.infraestructura.repositorio_tecnicos import RepositorioTecnicosSQL
+from src.modulos.acceso_roles.infraestructura.repositorio_usuarios import RepositorioUsuariosSQL
 from src.modulos.ubicaciones_tecnicas.infraestructura.repositorio_ubicaciones_tecnicas import RepositorioUbicacionesTecnicasSQL
 from src.modulos.ubicaciones_tecnicas.infraestructura.router import UbicacionOut, a_ubicacion_out
 
 from ..aplicacion.crear_ot import FechasInvalidas, HorasInvalidas, PasoSolicitado, PrioridadInvalida, SinPasoPM01, SupervisorNoEncontrado, TecnicoFueraDeGrupo, UbicacionNoEncontrada, crear_ot
+from ..aplicacion.exportar_ots import RangoInvalido, exportar_ots
 from ..aplicacion.listar_ots_supervisor import listar_ots_supervisor
 from ..aplicacion.listar_ots_tecnico import listar_ots_tecnico
 from ..aplicacion.registrar_cierre_paso import CierreAnticipado, DescripcionVacia, OTYaCerrada, PasoNoEncontrado, PasoNoRegistrable, PasoYaCerrado, TiempoInvalido, registrar_cierre_paso
 from ..aplicacion.ver_detalle_ot import OTNoEncontrada, SinAccesoAOT, ver_detalle_ot
 from ..dominio.modelos import CierrePaso, ClaveControl, EstatusOT, OrdenDeTrabajo, ResultadoTrabajo, TipoOrden
+from .excel_ots import generar_excel
 from .repositorio_ordenes_trabajo import RepositorioOrdenesTrabajoSQL
 
 router_ots = APIRouter(prefix="/ordenes-trabajo", tags=["ordenes de trabajo"])
@@ -180,6 +183,36 @@ def listar_mis_ots_endpoint(fecha: date | None = None, db: Session = Depends(get
 def listar_ots_grupo_endpoint(fecha: date | None = None, db: Session = Depends(get_db), actual: UsuarioAutenticado = Depends(requerir_supervisor)):
     ots = listar_ots_supervisor(actual.id, RepositorioOrdenesTrabajoSQL(db), RepositorioTecnicosSQL(db), fecha)
     return a_lista_out(ots, RepositorioUbicacionesTecnicasSQL(db))
+
+
+# va antes de "/{ot_id}" para que "exportar" no se lea como el id de una OT
+@router_ots.get("/exportar", response_class=Response)
+def exportar_ots_endpoint(
+    desde: date | None = None,
+    hasta: date | None = None,
+    ubicacion_tecnica_id: UUID | None = None,
+    db: Session = Depends(get_db),
+    actual: UsuarioAutenticado = Depends(requerir_supervisor),
+):
+    repositorio_tecnicos = RepositorioTecnicosSQL(db)
+    try:
+        ots = exportar_ots(actual.id, RepositorioOrdenesTrabajoSQL(db), repositorio_tecnicos, desde, hasta, ubicacion_tecnica_id)
+    except RangoInvalido:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail="La fecha inicial no puede ser posterior a la final")
+
+    repositorio_usuarios = RepositorioUsuariosSQL(db)
+    tecnicos = {}
+    for tecnico in repositorio_tecnicos.listar_por_supervisor(actual.id):
+        usuario = repositorio_usuarios.obtener_por_id(tecnico.usuario_id)
+        tecnicos[tecnico.id] = " ".join(p for p in (usuario.nombre, usuario.apellido_paterno, usuario.apellido_materno) if p)
+    ubicaciones = {u.id: u for u in RepositorioUbicacionesTecnicasSQL(db).listar_ubicaciones()}
+
+    nombre = f"ordenes_de_trabajo_{desde or 'inicio'}_{hasta or 'hoy'}.xlsx"
+    return Response(
+        content=generar_excel(ots, ubicaciones, tecnicos),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f'attachment; filename="{nombre}"'},
+    )
 
 
 @router_ots.get("/{ot_id}", response_model=OrdenDeTrabajoOut)

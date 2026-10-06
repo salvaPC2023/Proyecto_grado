@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../nucleo/sesion.dart';
 import '../../nucleo/tema.dart';
+import '../pantallas/excel/pantalla_excel.dart';
 import '../pantallas/grupos/pantalla_grupos.dart';
 import '../pantallas/ordenes_trabajo/pantalla_mis_ots.dart';
 import '../pantallas/ordenes_trabajo/pantalla_nueva_ot.dart';
@@ -99,10 +100,11 @@ class BarraNavegacionInferior extends ConsumerWidget {
                     _BotonAccionRapida(
                       onTap: () => _irA(context, const PantallaNuevaOt()),
                     ),
+                  // el supervisor importa y exporta a Excel; para el técnico todavía no hace nada
                   _ItemNav(
-                    icono: Icons.assignment_outlined,
+                    icono: esSupervisor ? Icons.table_chart_outlined : Icons.assignment_outlined,
                     activo: activo == SeccionNav.ordenesTrabajo,
-                    onTap: () {},
+                    onTap: esSupervisor ? () => _irA(context, const PantallaExcel()) : () {},
                   ),
                   if (esSupervisor)
                     _ItemNav(
