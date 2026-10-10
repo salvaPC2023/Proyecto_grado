@@ -12,7 +12,7 @@ import '../pantallas/supervisores/pantalla_lista_supervisores.dart';
 import '../pantallas/tecnicos/pantalla_lista_tecnicos.dart';
 import '../pantallas/ubicaciones/pantalla_ubicaciones.dart';
 
-enum SeccionNav { inicio, agenda, ordenesTrabajo, equipoTrabajo, supervisores, grupos, ubicaciones }
+enum SeccionNav { inicio, agenda, ordenesTrabajo, equipoTrabajo, supervisores, grupos, ubicaciones, excel }
 
 const _colorIcono = ColoresApp.principal;
 
@@ -80,6 +80,11 @@ class BarraNavegacionInferior extends ConsumerWidget {
                     activo: activo == SeccionNav.ubicaciones,
                     onTap: () => _cambiarA(context, const PantallaUbicaciones()),
                   ),
+                  _ItemNav(
+                    icono: Icons.table_chart_outlined,
+                    activo: activo == SeccionNav.excel,
+                    onTap: () => _cambiarA(context, const PantallaExcel()),
+                  ),
                 ],
               )
             : Row(
@@ -103,7 +108,7 @@ class BarraNavegacionInferior extends ConsumerWidget {
                   // el supervisor importa y exporta a Excel; para el técnico todavía no hace nada
                   _ItemNav(
                     icono: esSupervisor ? Icons.table_chart_outlined : Icons.assignment_outlined,
-                    activo: activo == SeccionNav.ordenesTrabajo,
+                    activo: activo == (esSupervisor ? SeccionNav.excel : SeccionNav.ordenesTrabajo),
                     onTap: esSupervisor ? () => _irA(context, const PantallaExcel()) : () {},
                   ),
                   if (esSupervisor)

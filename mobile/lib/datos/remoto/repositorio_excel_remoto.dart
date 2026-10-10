@@ -4,7 +4,9 @@ import 'dart:typed_data';
 import 'package:dio/dio.dart';
 
 import '../../dominio/errores.dart';
+import '../../dominio/modelos/resultado_importacion.dart';
 import '../../dominio/repositorios/repositorio_excel.dart';
+import 'mapeo_json.dart';
 import 'traducir_errores.dart';
 
 String _fecha(DateTime f) => f.toIso8601String().substring(0, 10);
@@ -38,4 +40,20 @@ class RepositorioExcelRemoto implements RepositorioExcel {
       }
     });
   }
+
+  Future<ResultadoImportacion> _importar(String ruta, Uint8List archivo, String nombreArchivo) {
+    return traducirErrores(() async {
+      final datos = FormData.fromMap({'archivo': MultipartFile.fromBytes(archivo, filename: nombreArchivo)});
+      final respuesta = await _dio.post(ruta, data: datos);
+      return resultadoImportacionDesdeJson(respuesta.data as Json);
+    });
+  }
+
+  @override
+  Future<ResultadoImportacion> importarCargaInicial(Uint8List archivo, String nombreArchivo) =>
+      _importar('/importacion/carga-inicial', archivo, nombreArchivo);
+
+  @override
+  Future<ResultadoImportacion> importarParaMiGrupo(Uint8List archivo, String nombreArchivo) =>
+      _importar('/importacion/mi-grupo', archivo, nombreArchivo);
 }

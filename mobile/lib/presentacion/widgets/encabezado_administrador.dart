@@ -10,15 +10,16 @@ class EncabezadoAdministrador extends ConsumerWidget {
   const EncabezadoAdministrador({
     super.key,
     required this.titulo,
-    required this.iconoAccion,
-    required this.textoAccion,
-    required this.onAccion,
+    this.iconoAccion,
+    this.textoAccion,
+    this.onAccion,
   });
 
   final String titulo;
-  final IconData iconoAccion;
-  final String textoAccion;
-  final VoidCallback onAccion;
+  // botón de la derecha, opcional
+  final IconData? iconoAccion;
+  final String? textoAccion;
+  final VoidCallback? onAccion;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -44,7 +45,7 @@ class EncabezadoAdministrador extends ConsumerWidget {
               style: const TextStyle(color: ColoresApp.textoOscuro, fontSize: 20, fontWeight: FontWeight.bold),
             ),
           ),
-          BotonCircular(icono: iconoAccion, tooltip: textoAccion, onPressed: onAccion),
+          if (onAccion != null) BotonCircular(icono: iconoAccion!, tooltip: textoAccion ?? '', onPressed: onAccion!),
         ],
       ),
     );

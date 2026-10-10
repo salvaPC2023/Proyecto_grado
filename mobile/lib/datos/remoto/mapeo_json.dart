@@ -1,11 +1,32 @@
 import '../../dominio/modelos/grupo.dart';
 import '../../dominio/modelos/orden_trabajo.dart';
 import '../../dominio/modelos/perfil.dart';
+import '../../dominio/modelos/resultado_importacion.dart';
 import '../../dominio/modelos/supervisor.dart';
 import '../../dominio/modelos/tecnico.dart';
 
 
 typedef Json = Map<String, dynamic>;
+
+AvisoImportacion _avisoDesdeJson(Json json) =>
+    AvisoImportacion(fila: json['fila'] as int, dato: json['dato'] as String, motivo: json['motivo'] as String);
+
+ResultadoImportacion resultadoImportacionDesdeJson(Json json) {
+  return ResultadoImportacion(
+    usuariosCreados: [
+      for (final u in json['usuarios_creados'] as List)
+        UsuarioImportado(
+          fila: u['fila'] as int,
+          nombreCompleto: u['nombre_completo'] as String,
+          nombreUsuario: u['nombre_usuario'] as String,
+          rol: u['rol'] as String,
+        ),
+    ],
+    ubicacionesCreadas: json['ubicaciones_creadas'] as int,
+    omitidos: [for (final a in json['omitidos'] as List) _avisoDesdeJson(a as Json)],
+    errores: [for (final a in json['errores'] as List) _avisoDesdeJson(a as Json)],
+  );
+}
 
 Grupo grupoDesdeJson(Json json) {
   return Grupo(

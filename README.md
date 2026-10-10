@@ -92,6 +92,7 @@ Backend, desde `backend` con el entorno virtual activo:
 
 ```terminal
 cd backend
+.\.venv\Scripts\Activate.ps1
 uvicorn src.main:app --reload
 ```
 

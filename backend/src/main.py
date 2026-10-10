@@ -5,6 +5,7 @@ from src.modulos.acceso_roles.infraestructura.router import router_auth as acces
 from src.modulos.ubicaciones_tecnicas.infraestructura.router import router_ubicaciones as ubicaciones_tecnicas_router
 from src.modulos.ordenes_trabajo.infraestructura.router import router_ots as ordenes_trabajo_router
 from src.modulos.estandarizacion.infraestructura.router import router_descripciones as estandarizacion_router
+from src.modulos.importacion.infraestructura.router import router_importacion as importacion_router
 
 app = FastAPI(title="Maintenance App API", version="0.1.0")
 
@@ -24,6 +25,7 @@ app.include_router(acceso_roles_router_grupos, prefix="/api/v1")
 app.include_router(ubicaciones_tecnicas_router, prefix="/api/v1")
 app.include_router(ordenes_trabajo_router, prefix="/api/v1")
 app.include_router(estandarizacion_router, prefix="/api/v1")
+app.include_router(importacion_router, prefix="/api/v1")
 
 
 @app.get("/health")
