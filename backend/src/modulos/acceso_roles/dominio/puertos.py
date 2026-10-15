@@ -29,6 +29,16 @@ class RepositorioUsuarios(ABC):
         ...
 
 
+class RepositorioAdministradores(ABC):
+    @abstractmethod
+    def existe_alguno(self) -> bool:
+        ...
+
+    @abstractmethod
+    def crear(self, usuario_id: UUID) -> None:
+        ...
+
+
 class RepositorioTecnicos(ABC):
     @abstractmethod
     def obtener_por_id(self, id: UUID) -> Tecnico | None:

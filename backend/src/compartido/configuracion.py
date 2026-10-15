@@ -7,6 +7,9 @@ class Settings(BaseSettings):
     jwt_algorithm: str = "HS256"
     jwt_expire_minutes: int = 60
     default_technician_password: str = "ESPODI2026"
+    # administrador que se crea al arrancar si no hay ninguno; sin contraseña no se crea
+    admin_usuario_inicial: str = "admin"
+    admin_password_inicial: str = ""
     # estandarización de descripciones; sin clave el backend arranca igual, pero no podrá estandarizar
     openai_api_key: str = ""
     openai_model: str = "gpt-4o-mini"

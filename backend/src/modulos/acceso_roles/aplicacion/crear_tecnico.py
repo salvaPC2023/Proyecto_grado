@@ -4,17 +4,13 @@ from src.compartido.configuracion import settings
 from src.compartido.seguridad import hashear_password
 
 from ..dominio.modelos import Profesion, Tecnico, Usuario
+from ..dominio.nombre_usuario import generar_nombre_usuario
 from ..dominio.puertos import RepositorioTecnicos, RepositorioUsuarios
-
-
-class NombreUsuarioDuplicado(Exception):
-    pass
 
 
 def crear_tecnico(
     nombre: str,
     apellido_paterno: str,
-    nombre_usuario: str,
     grupo_id: UUID,
     profesion: Profesion,
     creado_por_id: UUID,
@@ -22,8 +18,10 @@ def crear_tecnico(
     repositorio_tecnicos: RepositorioTecnicos,
     apellido_materno: str | None = None,
 ) -> Tecnico:
-    if repositorio_usuarios.obtener_por_nombre_usuario(nombre_usuario) is not None:
-        raise NombreUsuarioDuplicado()
+    nombre_usuario = generar_nombre_usuario(
+        nombre, apellido_paterno, apellido_materno,
+        lambda candidato: repositorio_usuarios.obtener_por_nombre_usuario(candidato) is not None,
+    )
 
     usuario = Usuario(
         id=uuid4(),

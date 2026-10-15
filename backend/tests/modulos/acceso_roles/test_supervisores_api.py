@@ -12,7 +12,7 @@ from tests.modulos.acceso_roles.repositorios_falsos import RepositorioSupervisor
 DATOS = {
     "nombre": "Ana",
     "apellido_paterno": "Perez",
-    "nombre_usuario": "aperez",
+    "apellido_materno": "Lopez",
     "nombre_de_grupo": "Grupo 6",
     "horario_entrada": "07:00",
     "horario_salida": "15:00",
@@ -45,12 +45,12 @@ def test_administrador_crea_un_supervisor(cliente):
     assert respuesta.json()["activo"] is True
 
 
-def test_usuario_repetido_responde_409(cliente):
-    cliente.post("/api/v1/supervisores", json=DATOS)
+def test_dos_supervisores_con_los_mismos_apellidos_reciben_usuarios_distintos(cliente):
+    primero = cliente.post("/api/v1/supervisores", json=DATOS).json()
 
-    respuesta = cliente.post("/api/v1/supervisores", json=DATOS)
+    segundo = cliente.post("/api/v1/supervisores", json=DATOS).json()
 
-    assert respuesta.status_code == 409
+    assert primero["nombre_usuario"] != segundo["nombre_usuario"]
 
 
 def test_entrada_igual_a_salida_responde_422(cliente):
@@ -65,7 +65,7 @@ def test_lista_los_supervisores(cliente):
     respuesta = cliente.get("/api/v1/supervisores")
 
     assert respuesta.status_code == 200
-    assert [s["nombre_usuario"] for s in respuesta.json()] == ["aperez"]
+    assert [s["nombre_usuario"][:2] for s in respuesta.json()] == ["pl"]
 
 
 def test_deshabilita_un_supervisor(cliente, repositorios):

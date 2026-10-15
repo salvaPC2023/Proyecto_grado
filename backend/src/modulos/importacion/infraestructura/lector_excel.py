@@ -3,13 +3,15 @@ from zipfile import BadZipFile
 
 from openpyxl import load_workbook
 
-from ..dominio.modelos import FilaPersonal, FilaUbicacion
+from ..dominio.modelos import FilaGrupo, FilaPersonal, FilaUbicacion
 from ..dominio.puertos import PlantillaInvalida
 from ..dominio.reglas import normalizar
 
 # encabezados de cada tabla de la plantilla de SAP, en orden de izquierda a derecha
 ENCABEZADOS_PERSONAL = ["nombre completo", "grupo planificador", "supervisor"]
 ENCABEZADOS_UBICACIONES = ["sector", "subsector", "sistema", "subsistema"]
+# opcional: nombre y turno del grupo de cada supervisor; empieza en "grupo" para no confundirse con la columna Supervisor de Personal
+ENCABEZADOS_GRUPOS = ["grupo", "turno", "supervisor"]
 
 
 def _texto(valor) -> str:
@@ -41,7 +43,7 @@ def _leer_tabla(libro, encabezados: list[str]) -> list[tuple[int, list[str]]]:
     return []
 
 
-def leer_plantilla(contenido: bytes) -> tuple[list[FilaPersonal], list[FilaUbicacion]]:
+def leer_plantilla(contenido: bytes) -> tuple[list[FilaPersonal], list[FilaUbicacion], list[FilaGrupo]]:
     try:
         libro = load_workbook(BytesIO(contenido), read_only=False, data_only=True)
     except (BadZipFile, KeyError, ValueError, OSError):
@@ -49,4 +51,5 @@ def leer_plantilla(contenido: bytes) -> tuple[list[FilaPersonal], list[FilaUbica
 
     personal = [FilaPersonal(numero, *valores) for numero, valores in _leer_tabla(libro, ENCABEZADOS_PERSONAL)]
     ubicaciones = [FilaUbicacion(numero, *valores) for numero, valores in _leer_tabla(libro, ENCABEZADOS_UBICACIONES)]
-    return personal, ubicaciones
+    grupos = [FilaGrupo(numero, *valores) for numero, valores in _leer_tabla(libro, ENCABEZADOS_GRUPOS)]
+    return personal, ubicaciones, grupos

@@ -5,8 +5,8 @@ from src.compartido.configuracion import settings
 from src.compartido.seguridad import hashear_password
 
 from ..dominio.modelos import Grupo, Supervisor, Usuario
+from ..dominio.nombre_usuario import generar_nombre_usuario
 from ..dominio.puertos import RepositorioSupervisores, RepositorioUsuarios
-from .crear_tecnico import NombreUsuarioDuplicado
 
 
 class HorarioInvalido(Exception):
@@ -16,7 +16,6 @@ class HorarioInvalido(Exception):
 def crear_supervisor(
     nombre: str,
     apellido_paterno: str,
-    nombre_usuario: str,
     nombre_de_grupo: str,
     horario_entrada: time,
     horario_salida: time,
@@ -25,11 +24,13 @@ def crear_supervisor(
     apellido_materno: str | None = None,
     area_designada: str | None = None,
 ) -> Supervisor:
-    if repositorio_usuarios.obtener_por_nombre_usuario(nombre_usuario) is not None:
-        raise NombreUsuarioDuplicado()
     if horario_entrada == horario_salida:
         raise HorarioInvalido()
 
+    nombre_usuario = generar_nombre_usuario(
+        nombre, apellido_paterno, apellido_materno,
+        lambda candidato: repositorio_usuarios.obtener_por_nombre_usuario(candidato) is not None,
+    )
     usuario = repositorio_usuarios.crear(Usuario(
         id=uuid4(),
         nombre=nombre,

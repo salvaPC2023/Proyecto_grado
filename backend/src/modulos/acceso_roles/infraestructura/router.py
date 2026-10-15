@@ -13,9 +13,9 @@ from .repositorio_usuarios import RepositorioUsuariosSQL
 
 from ..aplicacion.cambiar_estado_cuenta import TecnicoNoEncontrado, cambiar_estado_cuenta
 from ..aplicacion.cambiar_estado_supervisor import SupervisorNoEncontrado, cambiar_estado_supervisor
-from ..aplicacion.cambiar_password import ContrasenaActualIncorrecta, cambiar_password
+from ..aplicacion.cambiar_password import ContrasenaActualIncorrecta, cambiar_password, PasswordDebil
 from ..aplicacion.crear_supervisor import HorarioInvalido, crear_supervisor
-from ..aplicacion.crear_tecnico import NombreUsuarioDuplicado, crear_tecnico
+from ..aplicacion.crear_tecnico import crear_tecnico
 from ..aplicacion.editar_perfil import editar_perfil
 from ..aplicacion.gestionar_grupos import GrupoNoEncontrado, asignar_supervisor, crear_grupo, listar_grupos
 from ..aplicacion.iniciar_sesion import CredencialesInvalidas, CuentaDeshabilitada, iniciar_sesion
@@ -58,7 +58,6 @@ class CrearTecnicoRequest(BaseModel):
     nombre: str
     apellido_paterno: str
     apellido_materno: str | None = None
-    nombre_usuario: str
     profesion: Profesion
 
 class TecnicoOut(BaseModel):
@@ -101,23 +100,16 @@ def crear_tecnico_endpoint(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="El supervisor no tiene un grupo asignado",
         )
-    try:
-        tecnico = crear_tecnico(
-            nombre=datos.nombre,
-            apellido_paterno=datos.apellido_paterno,
-            apellido_materno=datos.apellido_materno,
-            nombre_usuario=datos.nombre_usuario,
-            grupo_id=grupo_id,
-            profesion=datos.profesion,
-            creado_por_id=actual.id,
-            repositorio_usuarios=repositorio_usuarios,
-            repositorio_tecnicos=repositorio_tecnicos,
-        )
-    except NombreUsuarioDuplicado:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="El nombre de usuario ya está en uso",
-        )
+    tecnico = crear_tecnico(
+        nombre=datos.nombre,
+        apellido_paterno=datos.apellido_paterno,
+        apellido_materno=datos.apellido_materno,
+        grupo_id=grupo_id,
+        profesion=datos.profesion,
+        creado_por_id=actual.id,
+        repositorio_usuarios=repositorio_usuarios,
+        repositorio_tecnicos=repositorio_tecnicos,
+    )
     return a_tecnico_out(tecnico, repositorio_usuarios)
 
 
@@ -274,6 +266,11 @@ def cambiar_password_endpoint(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="La contraseña actual es incorrecta",
         )
+    except PasswordDebil as error:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail=" ".join(error.errores),
+        )
     return {"detail": "Contraseña actualizada"}
 
 
@@ -281,7 +278,6 @@ class CrearSupervisorRequest(BaseModel):
     nombre: str
     apellido_paterno: str
     apellido_materno: str | None = None
-    nombre_usuario: str
     nombre_de_grupo: str
     horario_entrada: time
     horario_salida: time
@@ -344,18 +340,12 @@ def crear_supervisor_endpoint(
             nombre=datos.nombre,
             apellido_paterno=datos.apellido_paterno,
             apellido_materno=datos.apellido_materno,
-            nombre_usuario=datos.nombre_usuario,
             nombre_de_grupo=datos.nombre_de_grupo,
             horario_entrada=datos.horario_entrada,
             horario_salida=datos.horario_salida,
             area_designada=datos.area_designada,
             repositorio_usuarios=repositorio_usuarios,
             repositorio_supervisores=repositorio_supervisores,
-        )
-    except NombreUsuarioDuplicado:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="El nombre de usuario ya está en uso",
         )
     except HorarioInvalido:
         raise HTTPException(

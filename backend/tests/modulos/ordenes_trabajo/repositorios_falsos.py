@@ -47,6 +47,18 @@ class RepositorioUbicacionesFalso(RepositorioUbicacionesTecnicas):
     def obtener_por_id(self, id):
         return next((u for u in self._ubicaciones if u.id == id), None)
 
+    def crear(self, ubicacion):
+        self._ubicaciones.append(ubicacion)
+        return ubicacion
+
+    def actualizar(self, ubicacion):
+        # reemplaza la ubicación que tenga el mismo id
+        self._ubicaciones = [ubicacion if u.id == ubicacion.id else u for u in self._ubicaciones]
+        return ubicacion
+
+    def eliminar(self, id):
+        self._ubicaciones = [u for u in self._ubicaciones if u.id != id]
+
 
 class RepositorioTecnicosFalso(RepositorioTecnicos):
     def __init__(self, supervisor_de_tecnico: dict | None = None, tecnicos: list[Tecnico] | None = None, grupo_de_supervisor: dict | None = None):

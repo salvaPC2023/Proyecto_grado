@@ -7,11 +7,11 @@ from src.modulos.acceso_roles.dominio.puertos import RepositorioSupervisores, Re
 from src.modulos.ubicaciones_tecnicas.aplicacion.gestionar_ubicaciones import NivelesIncompletos, crear_ubicacion
 from src.modulos.ubicaciones_tecnicas.dominio.puertos import RepositorioUbicacionesTecnicas, UbicacionDuplicada
 
-from ..dominio.modelos import Aviso, FilaPersonal, FilaUbicacion, ResultadoImportacion, UsuarioCreado
+from ..dominio.modelos import Aviso, FilaGrupo, FilaPersonal, FilaUbicacion, ResultadoImportacion, UsuarioCreado
 from ..dominio.puertos import ConsultaPersonal, PlantillaInvalida
-from ..dominio.reglas import generar_nombre_usuario, normalizar, profesion_de, separar_nombre
+from ..dominio.reglas import horario_de_turno, normalizar, profesion_de, separar_nombre
 
-# la plantilla no trae el horario del supervisor: se usa el turno 2 hasta que se defina
+# si el supervisor no está en la tabla de Grupos, su grupo trabaja en el turno 2
 HORARIO_POR_DEFECTO = (time(7), time(15))
 AYUDA_PERSONAL = "Personal lleva los encabezados: Nombre Completo, Grupo Planificador, Supervisor."
 AYUDA_UBICACIONES = "Ubicaciones Técnicas lleva: Sector, Subsector, Sistema, Subsistema."
@@ -26,7 +26,6 @@ class _Importacion:
 
     def __init__(self, consulta: ConsultaPersonal, repositorio_usuarios: RepositorioUsuarios, repositorio_tecnicos: RepositorioTecnicos, creado_por_id: UUID):
         self.nombres = consulta.nombres_completos()
-        self.ocupados = consulta.nombres_de_usuario()
         self.repositorio_usuarios = repositorio_usuarios
         self.repositorio_tecnicos = repositorio_tecnicos
         self.creado_por_id = creado_por_id
@@ -49,15 +48,18 @@ class _Importacion:
             return self.omitir(fila.fila, fila.nombre_completo, "Ya está registrado")
 
         nombre, paterno, materno = partes
-        nombre_usuario = generar_nombre_usuario(nombre, paterno, materno, self.ocupados)
-        crear_tecnico(
-            nombre=nombre, apellido_paterno=paterno, apellido_materno=materno, nombre_usuario=nombre_usuario,
+        tecnico = crear_tecnico(
+            nombre=nombre, apellido_paterno=paterno, apellido_materno=materno,
             grupo_id=grupo_id, profesion=profesion, creado_por_id=self.creado_por_id,
             repositorio_usuarios=self.repositorio_usuarios, repositorio_tecnicos=self.repositorio_tecnicos,
         )
         self.nombres.add(normalizar(fila.nombre_completo))
-        self.ocupados.add(nombre_usuario)
-        self.resultado.usuarios_creados.append(UsuarioCreado(fila.fila, fila.nombre_completo, nombre_usuario, "tecnico"))
+        self.resultado.usuarios_creados.append(
+            UsuarioCreado(fila.fila, fila.nombre_completo, self.nombre_usuario_de(tecnico.usuario_id), "tecnico")
+        )
+
+    def nombre_usuario_de(self, usuario_id: UUID) -> str:
+        return self.repositorio_usuarios.obtener_por_id(usuario_id).nombre_usuario
 
     def registrar_ubicaciones(self, ubicaciones: list[FilaUbicacion], repositorio_ubicaciones: RepositorioUbicacionesTecnicas) -> None:
         for fila in ubicaciones:
@@ -80,6 +82,7 @@ def importar_carga_inicial(
     repositorio_supervisores: RepositorioSupervisores,
     repositorio_tecnicos: RepositorioTecnicos,
     repositorio_ubicaciones: RepositorioUbicacionesTecnicas,
+    grupos: list[FilaGrupo] | None = None,
 ) -> ResultadoImportacion:
     """Administrador, carga inicial: ubicaciones técnicas, supervisores que falten (con su grupo) y técnicos de todos los grupos"""
     if not personal and not ubicaciones:
@@ -88,28 +91,55 @@ def importar_carga_inicial(
     importacion = _Importacion(consulta, repositorio_usuarios, repositorio_tecnicos, administrador_usuario_id)
     importacion.registrar_ubicaciones(ubicaciones, repositorio_ubicaciones)
     supervisores = consulta.supervisores_por_nombre()
+    grupo_de = {normalizar(g.supervisor): g for g in grupos or []}
+
+    def asegurar_supervisor(nombre_supervisor: str, fila: int) -> bool:
+        """Crea al supervisor con su grupo si todavía no existe; False si no se pudo"""
+        clave = normalizar(nombre_supervisor)
+        if clave in supervisores:
+            return True
+        partes = separar_nombre(nombre_supervisor)
+        if partes is None:
+            importacion.error(fila, nombre_supervisor, "El nombre del supervisor necesita al menos un nombre y un apellido")
+            return False
+        nombre, paterno, materno = partes
+
+        nombre_de_grupo, (entrada, salida) = f"Grupo {nombre} {paterno}", HORARIO_POR_DEFECTO
+        fila_grupo = grupo_de.get(clave)
+        if fila_grupo is not None:
+            nombre_de_grupo = fila_grupo.grupo or nombre_de_grupo
+            horario = horario_de_turno(fila_grupo.turno)
+            if horario is None:
+                importacion.error(fila_grupo.fila, fila_grupo.turno, "Turno desconocido (use Turno 1, 2 o 3); se asignó el turno 2")
+            else:
+                entrada, salida = horario
+
+        supervisor = crear_supervisor(
+            nombre=nombre, apellido_paterno=paterno, apellido_materno=materno,
+            nombre_de_grupo=nombre_de_grupo, horario_entrada=entrada, horario_salida=salida,
+            repositorio_usuarios=repositorio_usuarios, repositorio_supervisores=repositorio_supervisores,
+        )
+        supervisores[clave] = supervisor.id
+        importacion.nombres.add(clave)
+        importacion.resultado.usuarios_creados.append(
+            UsuarioCreado(fila, nombre_supervisor, importacion.nombre_usuario_de(supervisor.usuario_id), "supervisor")
+        )
+        return True
+
+    # primero los de la tabla de Grupos, para que también se creen los supervisores que aún no tienen técnicos
+    for fila_grupo in grupos or []:
+        if not normalizar(fila_grupo.supervisor):
+            importacion.error(fila_grupo.fila, fila_grupo.grupo, "Falta el supervisor del grupo")
+            continue
+        asegurar_supervisor(fila_grupo.supervisor, fila_grupo.fila)
 
     for fila in personal:
         clave = normalizar(fila.supervisor)
         if not clave:
             importacion.error(fila.fila, fila.nombre_completo, "Falta el supervisor")
             continue
-        if clave not in supervisores:
-            partes = separar_nombre(fila.supervisor)
-            if partes is None:
-                importacion.error(fila.fila, fila.supervisor, "El nombre del supervisor necesita al menos un nombre y un apellido")
-                continue
-            nombre, paterno, materno = partes
-            nombre_usuario = generar_nombre_usuario(nombre, paterno, materno, importacion.ocupados)
-            supervisor = crear_supervisor(
-                nombre=nombre, apellido_paterno=paterno, apellido_materno=materno, nombre_usuario=nombre_usuario,
-                nombre_de_grupo=f"Grupo {nombre} {paterno}", horario_entrada=HORARIO_POR_DEFECTO[0], horario_salida=HORARIO_POR_DEFECTO[1],
-                repositorio_usuarios=repositorio_usuarios, repositorio_supervisores=repositorio_supervisores,
-            )
-            supervisores[clave] = supervisor.id
-            importacion.nombres.add(clave)
-            importacion.ocupados.add(nombre_usuario)
-            importacion.resultado.usuarios_creados.append(UsuarioCreado(fila.fila, fila.supervisor, nombre_usuario, "supervisor"))
+        if not asegurar_supervisor(fila.supervisor, fila.fila):
+            continue
 
         grupo = repositorio_supervisores.obtener_grupo(supervisores[clave])
         if grupo is None:

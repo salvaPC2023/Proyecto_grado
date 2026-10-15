@@ -61,11 +61,12 @@ async def _leer(archivo: UploadFile):
 
 @router_importacion.post("/carga-inicial", response_model=ResultadoOut)
 async def importar_carga_inicial_endpoint(archivo: UploadFile = File(...), db: Session = Depends(get_db), actual: UsuarioAutenticado = Depends(requerir_administrador)):
-    personal, ubicaciones = await _leer(archivo)
+    personal, ubicaciones, grupos = await _leer(archivo)
     try:
         resultado = importar_carga_inicial(
             personal, ubicaciones, actual.id, ConsultaPersonalSQL(db),
             RepositorioUsuariosSQL(db), RepositorioSupervisoresSQL(db), RepositorioTecnicosSQL(db), RepositorioUbicacionesTecnicasSQL(db),
+            grupos=grupos,
         )
     except PlantillaInvalida as error:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=error.mensaje)
@@ -74,7 +75,8 @@ async def importar_carga_inicial_endpoint(archivo: UploadFile = File(...), db: S
 
 @router_importacion.post("/mi-grupo", response_model=ResultadoOut)
 async def importar_para_mi_grupo_endpoint(archivo: UploadFile = File(...), db: Session = Depends(get_db), actual: UsuarioAutenticado = Depends(requerir_supervisor)):
-    personal, ubicaciones = await _leer(archivo)
+    # la tabla de Grupos es solo para la carga inicial del administrador
+    personal, ubicaciones, _ = await _leer(archivo)
     try:
         resultado = importar_para_mi_grupo(
             personal, ubicaciones, actual.id, ConsultaPersonalSQL(db),

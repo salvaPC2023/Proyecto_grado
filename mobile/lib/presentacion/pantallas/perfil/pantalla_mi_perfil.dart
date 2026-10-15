@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../nucleo/errores.dart';
 import '../../../nucleo/sesion.dart';
 import '../../../nucleo/tema.dart';
+import '../../../nucleo/validacion_password.dart';
 import '../../viewmodels/perfil_vm.dart';
 import '../../widgets/barra_navegacion_inferior.dart';
 
@@ -45,6 +46,19 @@ class _PantallaMiPerfilState extends ConsumerState<PantallaMiPerfil> {
         ),
       );
       return;
+    }
+
+    if (passwordNueva.isNotEmpty) {
+      String? problema;
+      if (passwordNueva == passwordActual) {
+        problema = 'La nueva contraseña debe ser distinta de la actual';
+      } else if (!passwordEsValida(passwordNueva)) {
+        problema = 'La nueva contraseña no cumple los requisitos';
+      }
+      if (problema != null) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(problema)));
+        return;
+      }
     }
 
     setState(() => _guardando = true);
@@ -552,6 +566,24 @@ class _SeccionCambioPassword extends StatelessWidget {
             alAlternar: alAlternarNueva,
             textoIndicativo: 'Ingresa nueva contraseña',
           ),
+          const SizedBox(height: 8),
+          // se reconstruye solo cada vez que cambia el texto del controlador
+          ValueListenableBuilder<TextEditingValue>(
+            valueListenable: controladorNueva,
+            builder: (context, valor, _) {
+              if (valor.text.isEmpty) return const SizedBox.shrink(); // nada que mostrar
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  for (final regla in reglasPassword)
+                    _ItemRegla(
+                      texto: regla.descripcion,
+                      cumplida: regla.seCumple(valor.text),
+                    ),
+                ],
+              );
+            },
+          ),
         ],
       ),
     );
@@ -675,6 +707,32 @@ class _BotonGuardar extends StatelessWidget {
                   ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _ItemRegla extends StatelessWidget {
+  const _ItemRegla({required this.texto, required this.cumplida});
+  final String texto;
+  final bool cumplida;
+
+  @override
+  Widget build(BuildContext context) {
+    // condición ? siVerdadero : siFalso  (como "a if c else b" en Python)
+    final color = cumplida ? const Color(0xFF10B981) : ColoresApp.textoPlaceholder;
+    return Padding(
+      padding: const EdgeInsets.only(top: 4),
+      child: Row(
+        children: [
+          Icon(
+            cumplida ? Icons.check_circle : Icons.radio_button_unchecked,
+            size: 14,
+            color: color,
+          ),
+          const SizedBox(width: 6),
+          Text(texto, style: TextStyle(color: color, fontSize: 11)),
+        ],
       ),
     );
   }

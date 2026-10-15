@@ -1,5 +1,6 @@
 import re
 import unicodedata
+from datetime import time
 
 from src.modulos.acceso_roles.dominio.modelos import Profesion
 
@@ -9,6 +10,13 @@ PROFESIONES: dict[str, Profesion] = {
     "electrico": "electrico",
     "electromecanico": "electromecanico",
     "electronico": "electromecanico",
+}
+
+# los mismos turnos que la app ofrece al registrar un supervisor
+TURNOS: dict[int, tuple[time, time]] = {
+    1: (time(23), time(7)),
+    2: (time(7), time(15)),
+    3: (time(15), time(23)),
 }
 
 
@@ -34,19 +42,7 @@ def separar_nombre(nombre_completo: str) -> tuple[str, str, str | None] | None:
     return " ".join(palabras[:-2]), palabras[-2], palabras[-1]
 
 
-def generar_nombre_usuario(nombre: str, apellido_paterno: str, apellido_materno: str | None, ocupados: set[str]) -> str:
-    """Inicial del nombre + apellido paterno (cmamani); si está ocupado, + inicial del materno (pvargasm); si no, un número"""
-    def limpio(texto: str) -> str:
-        return re.sub(r"[^a-z]", "", normalizar(texto))
-
-    base = limpio(nombre)[:1] + limpio(apellido_paterno)
-    candidatos = [base]
-    if apellido_materno:
-        candidatos.append(base + limpio(apellido_materno)[:1])
-    for candidato in candidatos:
-        if candidato not in ocupados:
-            return candidato
-    numero = 2
-    while f"{candidatos[-1]}{numero}" in ocupados:
-        numero += 1
-    return f"{candidatos[-1]}{numero}"
+def horario_de_turno(turno: str) -> tuple[time, time] | None:
+    """Acepta "Turno 1", "turno 2" o solo "3"; None si no es un turno conocido"""
+    numero = re.search(r"\d+", turno)
+    return TURNOS.get(int(numero.group())) if numero else None

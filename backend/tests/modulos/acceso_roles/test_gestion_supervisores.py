@@ -7,16 +7,15 @@ from src.compartido.configuracion import settings
 from src.compartido.seguridad import verificar_password
 from src.modulos.acceso_roles.aplicacion.cambiar_estado_supervisor import SupervisorNoEncontrado, cambiar_estado_supervisor
 from src.modulos.acceso_roles.aplicacion.crear_supervisor import HorarioInvalido, crear_supervisor
-from src.modulos.acceso_roles.aplicacion.crear_tecnico import NombreUsuarioDuplicado
 from src.modulos.acceso_roles.aplicacion.listar_supervisores import listar_supervisores
 from tests.modulos.acceso_roles.repositorios_falsos import RepositorioSupervisoresFalso, RepositorioUsuariosFalso, crear_supervisor as supervisor_de, crear_usuario
 
 
-def _crear(repositorio_usuarios, repositorio_supervisores, nombre_usuario="aperez", entrada=time(7), salida=time(15)):
+def _crear(repositorio_usuarios, repositorio_supervisores, entrada=time(7), salida=time(15)):
     return crear_supervisor(
         nombre="Ana",
         apellido_paterno="Perez",
-        nombre_usuario=nombre_usuario,
+        apellido_materno="Lopez",
         nombre_de_grupo="Grupo Suministros",
         horario_entrada=entrada,
         horario_salida=salida,
@@ -38,24 +37,27 @@ def test_crea_el_supervisor_con_su_grupo():
 def test_el_supervisor_nuevo_usa_la_password_inicial_y_debe_cambiarla():
     repositorio_usuarios = RepositorioUsuariosFalso()
 
-    _crear(repositorio_usuarios, RepositorioSupervisoresFalso())
+    supervisor = _crear(repositorio_usuarios, RepositorioSupervisoresFalso())
 
-    usuario = repositorio_usuarios.obtener_por_nombre_usuario("aperez")
+    usuario = repositorio_usuarios.obtener_por_id(supervisor.usuario_id)
     assert verificar_password(settings.default_technician_password, usuario.password_hash)
     assert usuario.debe_cambiar_password is True
+
+
+def test_el_usuario_del_supervisor_se_genera_con_las_iniciales_de_los_apellidos():
+    repositorio_usuarios = RepositorioUsuariosFalso()
+
+    supervisor = _crear(repositorio_usuarios, RepositorioSupervisoresFalso())
+
+    nombre_usuario = repositorio_usuarios.obtener_por_id(supervisor.usuario_id).nombre_usuario
+    assert len(nombre_usuario) == 8
+    assert nombre_usuario.startswith("pl")
 
 
 def test_se_permite_un_turno_de_noche():
     supervisor = _crear(RepositorioUsuariosFalso(), RepositorioSupervisoresFalso(), entrada=time(23), salida=time(7))
 
     assert supervisor.horario_salida == time(7)
-
-
-def test_nombre_de_usuario_repetido_lanza_error():
-    repositorio_usuarios = RepositorioUsuariosFalso([crear_usuario(nombre_usuario="aperez")])
-
-    with pytest.raises(NombreUsuarioDuplicado):
-        _crear(repositorio_usuarios, RepositorioSupervisoresFalso())
 
 
 def test_entrada_igual_a_salida_lanza_error():

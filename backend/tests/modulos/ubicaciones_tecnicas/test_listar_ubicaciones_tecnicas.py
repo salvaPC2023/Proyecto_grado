@@ -2,18 +2,7 @@ from uuid import uuid4
 
 from src.modulos.ubicaciones_tecnicas.aplicacion.listar_ubicaciones_tecnicas import listar_ubicaciones_tecnicas
 from src.modulos.ubicaciones_tecnicas.dominio.modelos import UbicacionTecnica
-from src.modulos.ubicaciones_tecnicas.dominio.puertos import RepositorioUbicacionesTecnicas
-
-
-class RepositorioUbicacionesFalso(RepositorioUbicacionesTecnicas):
-    def __init__(self, ubicaciones: list[UbicacionTecnica]):
-        self._ubicaciones = ubicaciones
-
-    def listar_ubicaciones(self):
-        return list(self._ubicaciones)
-
-    def obtener_por_id(self, id):
-        return next((u for u in self._ubicaciones if u.id == id), None)
+from tests.modulos.ordenes_trabajo.repositorios_falsos import RepositorioUbicacionesFalso
 
 
 def test_devuelve_todas_las_ubicaciones():

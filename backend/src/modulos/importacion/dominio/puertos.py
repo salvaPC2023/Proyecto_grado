@@ -19,10 +19,6 @@ class ConsultaPersonal(ABC):
         ...
 
     @abstractmethod
-    def nombres_de_usuario(self) -> set[str]:
-        ...
-
-    @abstractmethod
     def supervisores_por_nombre(self) -> dict[str, UUID]:
         """Nombre completo normalizado -> id del supervisor"""
         ...

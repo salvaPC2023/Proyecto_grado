@@ -20,9 +20,6 @@ class ConsultaPersonalSQL(ConsultaPersonal):
     def nombres_completos(self) -> set[str]:
         return {_nombre_completo(u) for u in self._sesion.scalars(select(UsuarioORM)).all()}
 
-    def nombres_de_usuario(self) -> set[str]:
-        return set(self._sesion.scalars(select(UsuarioORM.nombre_usuario)).all())
-
     def supervisores_por_nombre(self) -> dict[str, UUID]:
         filas = self._sesion.execute(select(SupervisorORM.id, UsuarioORM).join(UsuarioORM, SupervisorORM.usuario_id == UsuarioORM.id)).all()
         return {_nombre_completo(usuario): supervisor_id for supervisor_id, usuario in filas}

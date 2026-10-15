@@ -10,6 +10,14 @@ class FilaPersonal:
 
 
 @dataclass
+class FilaGrupo:
+    fila: int
+    grupo: str
+    turno: str
+    supervisor: str
+
+
+@dataclass
 class FilaUbicacion:
     fila: int
     sector: str

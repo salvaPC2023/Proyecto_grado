@@ -1,5 +1,14 @@
+import logging
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
+from src.compartido.bd import SessionLocal
+from src.compartido.configuracion import settings
+from src.modulos.acceso_roles.aplicacion.asegurar_administrador import asegurar_administrador
+from src.modulos.acceso_roles.infraestructura.repositorio_administradores import RepositorioAdministradoresSQL
+from src.modulos.acceso_roles.infraestructura.repositorio_usuarios import RepositorioUsuariosSQL
 
 from src.modulos.acceso_roles.infraestructura.router import router_auth as acceso_roles_router_auth, router_perfil as acceso_roles_router_perfil, router_tecnicos as acceso_roles_router_tecnicos, router_supervisores as acceso_roles_router_supervisores, router_grupos as acceso_roles_router_grupos
 from src.modulos.ubicaciones_tecnicas.infraestructura.router import router_ubicaciones as ubicaciones_tecnicas_router
@@ -7,7 +16,26 @@ from src.modulos.ordenes_trabajo.infraestructura.router import router_ots as ord
 from src.modulos.estandarizacion.infraestructura.router import router_descripciones as estandarizacion_router
 from src.modulos.importacion.infraestructura.router import router_importacion as importacion_router
 
-app = FastAPI(title="Maintenance App API", version="0.1.0")
+registro = logging.getLogger("uvicorn.error")
+
+
+@asynccontextmanager
+async def ciclo_de_vida(_: FastAPI):
+    # siempre debe haber un administrador para que la empresa pueda hacer la carga inicial
+    if not settings.admin_password_inicial:
+        registro.warning("ADMIN_PASSWORD_INICIAL está vacío en .env: no se creará el administrador inicial")
+    else:
+        with SessionLocal() as sesion:
+            creado = asegurar_administrador(
+                settings.admin_usuario_inicial, settings.admin_password_inicial,
+                RepositorioUsuariosSQL(sesion), RepositorioAdministradoresSQL(sesion),
+            )
+        if creado:
+            registro.info("Administrador inicial creado: %s", settings.admin_usuario_inicial)
+    yield
+
+
+app = FastAPI(title="Maintenance App API", version="0.1.0", lifespan=ciclo_de_vida)
 
 app.add_middleware(
     CORSMiddleware,
