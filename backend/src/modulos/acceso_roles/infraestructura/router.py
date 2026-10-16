@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 from src.compartido.bd import get_db
+from src.compartido.configuracion import settings
 from ..dominio.modelos import Profesion
 from .dependencias import UsuarioAutenticado, obtener_usuario_actual, obtener_usuario_en_primer_acceso, requerir_administrador, requerir_supervisor
 from .repositorio_grupos import RepositorioGruposSQL
@@ -76,8 +77,15 @@ class TecnicoOut(BaseModel):
     apellido_materno: str | None
     nombre_usuario: str
     activo: bool
+    grupo_nombre: str | None = None
 
-def a_tecnico_out(tecnico, repositorio_usuarios: RepositorioUsuariosSQL) -> TecnicoOut:
+
+class TecnicoCreadoOut(TecnicoOut):
+    # solo al crearlo: quien lo registra se la entrega junto con el usuario generado
+    password_inicial: str
+
+
+def a_tecnico_out(tecnico, repositorio_usuarios: RepositorioUsuariosSQL, repositorio_tecnicos: RepositorioTecnicosSQL) -> TecnicoOut:
     usuario = repositorio_usuarios.obtener_por_id(tecnico.usuario_id)
     return TecnicoOut(
         id=tecnico.id,
@@ -89,10 +97,11 @@ def a_tecnico_out(tecnico, repositorio_usuarios: RepositorioUsuariosSQL) -> Tecn
         apellido_materno=usuario.apellido_materno,
         nombre_usuario=usuario.nombre_usuario,
         activo=usuario.activo,
+        grupo_nombre=repositorio_tecnicos.obtener_nombre_grupo(tecnico.grupo_id),
     )
 
 
-@router_tecnicos.post("", response_model=TecnicoOut, status_code=status.HTTP_201_CREATED)
+@router_tecnicos.post("", response_model=TecnicoCreadoOut, status_code=status.HTTP_201_CREATED)
 def crear_tecnico_endpoint(
     datos: CrearTecnicoRequest,
     db: Session = Depends(get_db),
@@ -116,7 +125,8 @@ def crear_tecnico_endpoint(
         repositorio_usuarios=repositorio_usuarios,
         repositorio_tecnicos=repositorio_tecnicos,
     )
-    return a_tecnico_out(tecnico, repositorio_usuarios)
+    salida = a_tecnico_out(tecnico, repositorio_usuarios, repositorio_tecnicos)
+    return TecnicoCreadoOut(**salida.model_dump(), password_inicial=settings.default_technician_password)
 
 
 @router_tecnicos.get("", response_model=list[TecnicoOut])
@@ -127,7 +137,7 @@ def listar_tecnicos_endpoint(
     repositorio_usuarios = RepositorioUsuariosSQL(db)
     repositorio_tecnicos = RepositorioTecnicosSQL(db)
     tecnicos = listar_tecnicos(actual.id, repositorio_tecnicos)
-    return [a_tecnico_out(t, repositorio_usuarios) for t in tecnicos]
+    return [a_tecnico_out(t, repositorio_usuarios, repositorio_tecnicos) for t in tecnicos]
 
 
 class CambiarEstadoRequest(BaseModel):
@@ -328,6 +338,11 @@ class SupervisorOut(BaseModel):
     grupo_nombre: str | None
 
 
+class SupervisorCreadoOut(SupervisorOut):
+    # solo al crearlo: el administrador se la entrega junto con el usuario generado
+    password_inicial: str
+
+
 def a_supervisor_out(supervisor, repositorio_usuarios: RepositorioUsuariosSQL, repositorio_supervisores: RepositorioSupervisoresSQL) -> SupervisorOut:
     usuario = repositorio_usuarios.obtener_por_id(supervisor.usuario_id)
     grupo = repositorio_supervisores.obtener_grupo(supervisor.id)
@@ -357,7 +372,7 @@ def listar_supervisores_endpoint(
     return [a_supervisor_out(s, repositorio_usuarios, repositorio_supervisores) for s in supervisores]
 
 
-@router_supervisores.post("", response_model=SupervisorOut, status_code=status.HTTP_201_CREATED)
+@router_supervisores.post("", response_model=SupervisorCreadoOut, status_code=status.HTTP_201_CREATED)
 def crear_supervisor_endpoint(
     datos: CrearSupervisorRequest,
     db: Session = Depends(get_db),
@@ -382,7 +397,8 @@ def crear_supervisor_endpoint(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail="La hora de entrada y la de salida no pueden ser iguales",
         )
-    return a_supervisor_out(supervisor, repositorio_usuarios, repositorio_supervisores)
+    salida = a_supervisor_out(supervisor, repositorio_usuarios, repositorio_supervisores)
+    return SupervisorCreadoOut(**salida.model_dump(), password_inicial=settings.default_technician_password)
 
 
 @router_supervisores.patch("/{supervisor_id}/estado", status_code=status.HTTP_200_OK)

@@ -14,7 +14,7 @@ import '../../viewmodels/supervisores_vm.dart';
 import '../../viewmodels/tecnicos_vm.dart';
 import '../../viewmodels/ubicaciones_vm.dart';
 import '../../widgets/barra_navegacion_inferior.dart';
-import '../../widgets/encabezado_administrador.dart';
+import '../../widgets/encabezado_seccion.dart';
 import '../ordenes_trabajo/componentes_ot.dart';
 import '../ordenes_trabajo/formato_ot.dart';
 
@@ -141,7 +141,7 @@ class _PantallaExcelState extends ConsumerState<PantallaExcel> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            esAdministrador ? const EncabezadoAdministrador(titulo: 'Excel') : const EncabezadoOts(titulo: 'Excel'),
+            esAdministrador ? const EncabezadoSeccion(titulo: 'Excel') : const EncabezadoOts(titulo: 'Excel'),
             Expanded(
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(20, 4, 20, 40),

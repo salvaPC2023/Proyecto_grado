@@ -85,7 +85,7 @@ class PantallaListaTecnicos extends ConsumerWidget {
                                   id: tecnicos[i].id,
                                   nombreCompleto: tecnicos[i].nombreCompleto,
                                   nombreUsuario: tecnicos[i].nombreUsuario,
-                                  grupo: 'Grupo 1 - Suministros',
+                                  grupo: tecnicos[i].grupoNombre ?? '—',
                                   profesion: tecnicos[i].profesion,
                                   activo: tecnicos[i].activo,
                                 ),

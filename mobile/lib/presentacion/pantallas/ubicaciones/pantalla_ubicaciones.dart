@@ -6,7 +6,7 @@ import '../../../nucleo/errores.dart';
 import '../../../nucleo/tema.dart';
 import '../../viewmodels/ubicaciones_vm.dart';
 import '../../widgets/barra_navegacion_inferior.dart';
-import '../../widgets/encabezado_administrador.dart';
+import '../../widgets/encabezado_seccion.dart';
 
 const _niveles = ['Sector *', 'Subsector', 'Sistema', 'Subsistema'];
 
@@ -72,7 +72,7 @@ class PantallaUbicaciones extends ConsumerWidget {
       body: SafeArea(
         child: Column(
           children: [
-            EncabezadoAdministrador(
+            EncabezadoSeccion(
               titulo: 'Ubicaciones técnicas',
               iconoAccion: Icons.add_location_alt_outlined,
               textoAccion: 'Nueva ubicación',

@@ -49,6 +49,7 @@ Supervisor supervisorDesdeJson(Json json) {
     horarioEntrada: json['horario_entrada'] as String,
     horarioSalida: json['horario_salida'] as String,
     grupoNombre: json['grupo_nombre'] as String?,
+    passwordInicial: json['password_inicial'] as String?,
   );
 }
 
@@ -63,6 +64,8 @@ Tecnico tecnicoDesdeJson(Json json) {
     apellidoMaterno: json['apellido_materno'] as String?,
     nombreUsuario: json['nombre_usuario'] as String,
     activo: json['activo'] as bool,
+    grupoNombre: json['grupo_nombre'] as String?,
+    passwordInicial: json['password_inicial'] as String?,
   );
 }
 

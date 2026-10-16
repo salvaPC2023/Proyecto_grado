@@ -8,18 +8,20 @@ Future<void> mostrarDatosDeAcceso(
   BuildContext context, {
   required String titulo,
   required String nombreUsuario,
+  required String passwordInicial,
 }) {
   return showDialog<void>(
     context: context,
     barrierDismissible: false, // obliga a tocar "Entendido": el usuario no se puede adivinar
-    builder: (_) => _DialogoDatosAcceso(titulo: titulo, nombreUsuario: nombreUsuario),
+    builder: (_) => _DialogoDatosAcceso(titulo: titulo, nombreUsuario: nombreUsuario, passwordInicial: passwordInicial),
   );
 }
 
 class _DialogoDatosAcceso extends StatelessWidget {
-  const _DialogoDatosAcceso({required this.titulo, required this.nombreUsuario});
+  const _DialogoDatosAcceso({required this.titulo, required this.nombreUsuario, required this.passwordInicial});
   final String titulo;
   final String nombreUsuario;
+  final String passwordInicial;
 
   @override
   Widget build(BuildContext context) {
@@ -72,12 +74,12 @@ class _DialogoDatosAcceso extends StatelessWidget {
                     valor: nombreUsuario,
                   ),
                   const SizedBox(height: 10),
-                  const _FilaCredencial(
+                  _FilaCredencial(
                     icono: Icons.lock_outline,
-                    colorIcono: Color(0xFF4F46E5),
-                    fondoIcono: Color(0xFFEEF2FF),
+                    colorIcono: const Color(0xFF4F46E5),
+                    fondoIcono: const Color(0xFFEEF2FF),
                     etiqueta: 'CONTRASEÑA TEMPORAL',
-                    valor: 'ESPODI2026',
+                    valor: passwordInicial, // la define el backend en su configuración
                   ),
                 ],
               ),

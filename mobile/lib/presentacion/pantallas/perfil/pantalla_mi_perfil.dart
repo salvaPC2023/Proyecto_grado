@@ -97,7 +97,7 @@ class _PantallaMiPerfilState extends ConsumerState<PantallaMiPerfil> {
   @override
   Widget build(BuildContext context) {
     final estadoPerfil = ref.watch(perfilViewModelProvider);
-    final esSupervisor = ref.watch(sesionProvider)?.esSupervisor ?? false;
+    final rol = ref.watch(sesionProvider)?.rol;
 
     return Scaffold(
       backgroundColor: ColoresApp.fondo,
@@ -151,12 +151,13 @@ class _PantallaMiPerfilState extends ConsumerState<PantallaMiPerfil> {
                           icono: Icons.lock_outline,
                         ),
                         const SizedBox(height: 16),
-                        if (!esSupervisor) ...[
+                                                if (rol == 'tecnico') ...[
                           _CampoGrupo(valor: perfil.grupoNombre ?? '—'),
                           const SizedBox(height: 16),
                           _CampoProfesion(valor: perfil.profesion ?? '—'),
                           const SizedBox(height: 16),
-                        ] else ...[
+                        ],
+                        if (rol == 'supervisor') ...[
                           _CampoBloqueado(
                             etiqueta: 'Grupo a cargo',
                             valor: perfil.grupoNombre ?? '—',
@@ -165,11 +166,24 @@ class _PantallaMiPerfilState extends ConsumerState<PantallaMiPerfil> {
                           const SizedBox(height: 16),
                           _CampoBloqueado(
                             etiqueta: 'Horario',
-                            valor: perfil.horarioEntrada != null &&
-                                    perfil.horarioSalida != null
+                            valor: perfil.horarioEntrada != null && perfil.horarioSalida != null
                                 ? '${perfil.horarioEntrada!.substring(0, 5)} - ${perfil.horarioSalida!.substring(0, 5)}'
                                 : '—',
                             icono: Icons.schedule_outlined,
+                          ),
+                          const SizedBox(height: 16),
+                          _CampoBloqueado(
+                            etiqueta: 'Área designada',
+                            valor: perfil.areaDesignada ?? '—',
+                            icono: Icons.factory_outlined,
+                          ),
+                          const SizedBox(height: 16),
+                        ],
+                        if (rol == 'administrador') ...[
+                          const _CampoBloqueado(
+                            etiqueta: 'Rol en el sistema',
+                            valor: 'Administrador: gestiona supervisores, grupos, ubicaciones y la carga inicial',
+                            icono: Icons.admin_panel_settings_outlined,
                           ),
                           const SizedBox(height: 16),
                         ],
@@ -279,10 +293,8 @@ class _AvatarConBadge extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final esSupervisor = ref.watch(sesionProvider)?.esSupervisor ?? false;
-    final imagenAvatar = esSupervisor
-        ? 'assets/images/icono_supervisor.png'
-        : 'assets/images/icono_tecnico.png';
+    final sesion = ref.watch(sesionProvider);
+    final imagenAvatar = sesion?.imagenAvatar ?? 'assets/images/icono_tecnico.png';
     return Column(
       children: [
         Container(
@@ -292,13 +304,9 @@ class _AvatarConBadge extends ConsumerWidget {
             borderRadius: BorderRadius.circular(9999),
             border: Border.all(color: ColoresApp.badgeBorde),
           ),
-          child: const Text(
-            'Formulario de Registro',
-            style: TextStyle(
-              color: ColoresApp.principal,
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-            ),
+          child: Text(
+            sesion?.etiquetaRol ?? '',
+            style: const TextStyle( /* el mismo estilo que ya tiene */ ),
           ),
         ),
         const SizedBox(height: 16),

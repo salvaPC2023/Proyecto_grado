@@ -20,6 +20,17 @@ class SesionUsuario {
 
   bool get esSupervisor => rol == 'supervisor';
   bool get esAdministrador => rol == 'administrador';
+  /// Imagen segun rol; se conoce desde el login
+  String get imagenAvatar => switch (rol) {
+        'administrador' => 'assets/images/icono_administrador.png',
+        'supervisor' => 'assets/images/icono_supervisor.png',
+        _ => 'assets/images/icono_tecnico.png',
+      };
+  String get etiquetaRol => switch (rol) {
+        'administrador' => 'Administrador',
+        'supervisor' => 'Supervisor',
+        _ => 'Técnico',
+      };
 
   SesionUsuario copyWith({String? id, String? nombreCompleto, String? nombreUsuario}) {
     return SesionUsuario(

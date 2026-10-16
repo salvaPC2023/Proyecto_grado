@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../dominio/modelos/tecnico.dart';
 import '../../../nucleo/errores.dart';
 import '../../../nucleo/tema.dart';
+import '../../viewmodels/perfil_vm.dart';
 import '../../viewmodels/tecnicos_vm.dart';
 import '../../widgets/barra_navegacion_inferior.dart';
 import '../../widgets/dialogo_datos_acceso.dart';
@@ -82,7 +83,12 @@ class _PantallaRegistrarTecnicoState
     }
 
     if (!mounted) return;
-    await mostrarDatosDeAcceso(context, titulo: '¡Técnico registrado!', nombreUsuario: tecnico.nombreUsuario);
+    await mostrarDatosDeAcceso(
+      context,
+      titulo: '¡Técnico registrado!',
+      nombreUsuario: tecnico.nombreUsuario,
+      passwordInicial: tecnico.passwordInicial ?? '—',
+    );
     if (!mounted) return;
     Navigator.of(context).pop();
   }
@@ -103,21 +109,21 @@ class _PantallaRegistrarTecnicoState
                   children: [
                     const _AvatarConBadge(),
                     const SizedBox(height: 20),
-                    _EtiquetaCampo(texto: 'Nombre', obligatorio: true),
+                    _EtiquetaCampo('Nombre'),
                     const SizedBox(height: 6),
                     _CampoTexto(
                       controlador: _controladorNombre,
                       textoIndicativo: 'Ej. Carlos',
                     ),
                     const SizedBox(height: 16),
-                    _EtiquetaCampo(texto: 'Apellido Paterno', obligatorio: true),
+                    _EtiquetaCampo('Primer Apellido'),
                     const SizedBox(height: 6),
                     _CampoTexto(
                       controlador: _controladorApellidoPaterno,
                       textoIndicativo: 'Ej. Mendoza',
                     ),
                     const SizedBox(height: 16),
-                    _EtiquetaCampo(texto: 'Apellido Materno', obligatorio: false),
+                    _EtiquetaCampo('Segundo Apellido'),
                     const SizedBox(height: 6),
                     _CampoTexto(
                       controlador: _controladorApellidoMaterno,
@@ -250,29 +256,7 @@ class _AvatarConBadge extends StatelessWidget {
             const CircleAvatar(
               radius: 55.5,
               backgroundColor: Colors.white,
-              child: Icon(Icons.person_outline,
-                  size: 60, color: ColoresApp.textoPlaceholder),
-            ),
-            Positioned(
-              right: -4,
-              bottom: -4,
-              child: Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: ColoresApp.principal,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 2),
-                  boxShadow: const [
-                    BoxShadow(
-                      color: Color(0x4D2563EB),
-                      blurRadius: 15,
-                      offset: Offset(0, 6),
-                    ),
-                  ],
-                ),
-                child: const Icon(Icons.camera_alt, size: 18, color: Colors.white),
-              ),
+              backgroundImage: AssetImage('assets/images/icono_tecnico.png'),
             ),
           ],
         ),
@@ -282,59 +266,18 @@ class _AvatarConBadge extends StatelessWidget {
 }
 
 class _EtiquetaCampo extends StatelessWidget {
-  const _EtiquetaCampo({required this.texto, required this.obligatorio});
+  const _EtiquetaCampo(this.texto);
   final String texto;
-  final bool obligatorio;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        RichText(
-          text: TextSpan(
-            style: const TextStyle(
-              color: ColoresApp.textoLabel,
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-            ),
-            children: [
-              TextSpan(text: texto),
-              if (obligatorio)
-                const TextSpan(
-                  text: ' *',
-                  style: TextStyle(color: ColoresApp.principal),
-                ),
-            ],
-          ),
-        ),
-        if (obligatorio)
-          const Text(
-            'OBLIGATORIO',
-            style: TextStyle(
-              color: ColoresApp.textoPlaceholder,
-              fontSize: 10,
-              fontWeight: FontWeight.w500,
-              letterSpacing: 0.5,
-            ),
-          )
-        else
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF1F5F9),
-              borderRadius: BorderRadius.circular(9999),
-            ),
-            child: const Text(
-              'OPCIONAL',
-              style: TextStyle(
-                color: ColoresApp.textoPlaceholder,
-                fontSize: 10,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-      ],
+    return Text(
+      texto,
+      style: const TextStyle(
+        color: ColoresApp.textoLabel,
+        fontSize: 12,
+        fontWeight: FontWeight.bold,
+      ),
     );
   }
 }
@@ -375,17 +318,19 @@ class _CampoTexto extends StatelessWidget {
   }
 }
 
-class _CampoGrupoAutomatico extends StatelessWidget {
+/// El técnico queda en el grupo del supervisor que lo registra: se muestra el de su perfil
+class _CampoGrupoAutomatico extends ConsumerWidget {
   const _CampoGrupoAutomatico();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final grupo = ref.watch(perfilViewModelProvider).value?.grupoNombre ?? '—';
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           children: const [
-            _EtiquetaCampo(texto: 'Grupo', obligatorio: false),
+            _EtiquetaCampo('Grupo'),
           ],
         ),
         const SizedBox(height: 6),
@@ -408,15 +353,18 @@ class _CampoGrupoAutomatico extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 8),
-              const Text(
-                'Grupo 1 - Suministros',
-                style: TextStyle(
-                  color: ColoresApp.textoLabel,
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
+              Expanded(
+                child: Text(
+                  grupo,
+                  overflow: TextOverflow.ellipsis, // nombres de grupo largos no desbordan la fila
+                  style: const TextStyle(
+                    color: ColoresApp.textoLabel,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
-              const Spacer(),
+              const SizedBox(width: 8),
               const Text(
                 'Mismo grupo del creador',
                 style: TextStyle(
@@ -442,7 +390,7 @@ class _SelectorProfesion extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _EtiquetaCampo(texto: 'Profesión / Especialidad', obligatorio: true),
+        const _EtiquetaCampo('Profesión / Especialidad'),
         const SizedBox(height: 8),
         Row(
           children: _Profesion.values
@@ -547,7 +495,7 @@ class _AvisoCredenciales extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'El usuario se generará automáticamente y la contraseña inicial será ESPODI2026',
+                  'El usuario se genera automáticamente; al guardar verás sus datos de acceso',
                   style: TextStyle(
                     color: ColoresApp.textoOscuro,
                     fontSize: 12,

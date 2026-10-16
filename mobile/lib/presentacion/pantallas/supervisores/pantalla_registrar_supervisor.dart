@@ -66,7 +66,12 @@ class _PantallaRegistrarSupervisorState extends ConsumerState<PantallaRegistrarS
     }
 
     if (!mounted) return;
-    await mostrarDatosDeAcceso(context, titulo: '¡Supervisor registrado!', nombreUsuario: supervisor.nombreUsuario);
+    await mostrarDatosDeAcceso(
+      context,
+      titulo: '¡Supervisor registrado!',
+      nombreUsuario: supervisor.nombreUsuario,
+      passwordInicial: supervisor.passwordInicial ?? '—',
+    );
     if (!mounted) return;
     Navigator.of(context).pop();
   }
@@ -83,11 +88,11 @@ class _PantallaRegistrarSupervisorState extends ConsumerState<PantallaRegistrarS
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(21, 8, 21, 110),
                 children: [
-                  _Campo(etiqueta: 'Nombre *', controlador: _nombre, indicativo: 'Ej. Ana'),
-                  _Campo(etiqueta: 'Apellido Paterno *', controlador: _apellidoPaterno, indicativo: 'Ej. Rojas'),
-                  _Campo(etiqueta: 'Apellido Materno', controlador: _apellidoMaterno, indicativo: 'Ej. Salazar'),
-                  _Campo(etiqueta: 'Nombre del Grupo *', controlador: _grupo, indicativo: 'Ej. Grupo Suministros'),
-                  const _Etiqueta('Turno del grupo *'),
+                  _Campo(etiqueta: 'Nombre', controlador: _nombre, indicativo: 'Ej. Ana'),
+                  _Campo(etiqueta: 'Primer Apellido', controlador: _apellidoPaterno, indicativo: 'Ej. Rojas'),
+                  _Campo(etiqueta: 'Segundo Apellido', controlador: _apellidoMaterno, indicativo: 'Ej. Salazar'),
+                  _Campo(etiqueta: 'Nombre del Grupo', controlador: _grupo, indicativo: 'Ej. Grupo Suministros'),
+                  const _Etiqueta('Turno del grupo'),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12),
                     decoration: BoxDecoration(

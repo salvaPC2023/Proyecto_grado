@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:maintenance_app/dominio/modelos/orden_trabajo.dart';
 import 'package:maintenance_app/nucleo/sesion.dart';
 import 'package:maintenance_app/presentacion/pantallas/inicio/pantalla_inicio.dart';
 import 'package:maintenance_app/presentacion/pantallas/supervisores/pantalla_lista_supervisores.dart';
 
 import '../modulos/acceso_roles/repositorios_falsos.dart';
+import '../modulos/ordenes_trabajo/repositorios_falsos.dart';
 import 'app_de_prueba.dart';
 
 void main() {
@@ -73,6 +75,49 @@ void main() {
       expect(find.byIcon(Icons.groups_outlined), findsOneWidget);
       expect(find.byIcon(Icons.place_outlined), findsOneWidget);
       expect(find.text('Ana Rojas'), findsOneWidget);
+    });
+  });
+
+  group('tarjeta de progreso con las OTs de hoy', () {
+    testWidgets('muestra el avance real de los pasos PM01', (tester) async {
+      // la OT de ejemplo tiene un solo paso PM01, todavía sin cerrar
+      await montarPantalla(tester, const PantallaInicio(), sesion: perfilTecnico);
+
+      expect(find.text('0%'), findsOneWidget);
+      expect(find.text('Te queda 1 paso por cerrar'), findsOneWidget);
+    });
+
+    testWidgets('con todos los pasos cerrados la jornada está completa', (tester) async {
+      final cerrada = crearOt(pasos: [
+        PasoOt(
+          id: 'p2',
+          numeroPaso: 2,
+          descripcion: 'Cambiar filtro',
+          claveControl: 'PM01',
+          horasPlanificadas: 2,
+          cierre: CierrePaso(
+            id: 'c1',
+            fechaHoraNotificacion: DateTime(2026, 10, 5, 10),
+            tiempoRealTrabajado: 2,
+            trabajoFinalizado: true,
+            sinTrabajoRealizado: false,
+            resultadoTrabajo: 'ejecutado',
+            descripcionTrabajoRealizado: 'Se cambió el filtro',
+          ),
+        ),
+      ]);
+      await montarPantalla(tester, const PantallaInicio(),
+          sesion: perfilTecnico, ordenes: RepositorioOrdenesTrabajoFalso(ots: [cerrada]));
+
+      expect(find.text('100%'), findsOneWidget);
+      expect(find.text('¡Completaste tu jornada!'), findsOneWidget);
+    });
+
+    testWidgets('sin OTs para hoy lo indica', (tester) async {
+      await montarPantalla(tester, const PantallaInicio(),
+          sesion: perfilTecnico, ordenes: RepositorioOrdenesTrabajoFalso(ots: []));
+
+      expect(find.text('No tienes órdenes para hoy'), findsOneWidget);
     });
   });
 }

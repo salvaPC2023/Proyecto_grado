@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../nucleo/sesion.dart';
 import '../../nucleo/tema.dart';
-import '../pantallas/autenticacion/pantalla_inicio_sesion.dart';
+import 'encabezado_usuario.dart';
 
-/// El administrador no tiene pantalla de inicio: cada pantalla suya permite cerrar sesión
-class EncabezadoAdministrador extends ConsumerWidget {
-  const EncabezadoAdministrador({
+/// Encabezado en comun y el titulo de la seccion y su boton de accion.
+class EncabezadoSeccion extends ConsumerWidget {
+  const EncabezadoSeccion({
     super.key,
     required this.titulo,
     this.iconoAccion,
@@ -25,27 +24,22 @@ class EncabezadoAdministrador extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          BotonCircular(
-            icono: Icons.logout,
-            tooltip: 'Cerrar sesión',
-            onPressed: () {
-              ref.read(sesionProvider.notifier).cerrarSesion();
-              Navigator.of(context).pushAndRemoveUntil(
-                MaterialPageRoute(builder: (_) => const PantallaInicioSesion()),
-                (ruta) => false,
-              );
-            },
+          const EncabezadoUsuario(), // el mismo que ven técnico y supervisor
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  titulo,
+                  style: const TextStyle(color: ColoresApp.textoOscuro, fontSize: 20, fontWeight: FontWeight.bold),
+                ),
+              ),
+              if (onAccion != null) BotonCircular(icono: iconoAccion!, tooltip: textoAccion ?? '', onPressed: onAccion!),
+            ],
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              titulo,
-              style: const TextStyle(color: ColoresApp.textoOscuro, fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-          ),
-          if (onAccion != null) BotonCircular(icono: iconoAccion!, tooltip: textoAccion ?? '', onPressed: onAccion!),
         ],
       ),
     );

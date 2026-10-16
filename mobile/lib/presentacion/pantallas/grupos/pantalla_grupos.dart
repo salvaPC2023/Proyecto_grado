@@ -8,7 +8,7 @@ import '../../../nucleo/tema.dart';
 import '../../viewmodels/grupos_vm.dart';
 import '../../viewmodels/supervisores_vm.dart';
 import '../../widgets/barra_navegacion_inferior.dart';
-import '../../widgets/encabezado_administrador.dart';
+import '../../widgets/encabezado_seccion.dart';
 
 class PantallaGrupos extends ConsumerWidget {
   const PantallaGrupos({super.key});
@@ -83,7 +83,7 @@ class PantallaGrupos extends ConsumerWidget {
       body: SafeArea(
         child: Column(
           children: [
-            EncabezadoAdministrador(
+            EncabezadoSeccion(
               titulo: 'Grupos',
               iconoAccion: Icons.group_add,
               textoAccion: 'Nuevo grupo',

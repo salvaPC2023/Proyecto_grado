@@ -9,6 +9,7 @@ class Supervisor {
     required this.horarioEntrada,
     required this.horarioSalida,
     this.grupoNombre,
+    this.passwordInicial,
   });
 
   final String id;
@@ -20,6 +21,8 @@ class Supervisor {
   final String horarioEntrada;
   final String horarioSalida;
   final String? grupoNombre;
+  // solo viene en la respuesta al registrarlo, para mostrarla en el diálogo de datos de acceso
+  final String? passwordInicial;
 
   String get nombreCompleto => [nombre, apellidoPaterno, apellidoMaterno]
       .where((p) => p != null && p.isNotEmpty)

@@ -114,6 +114,7 @@ const tecnicoLuis = Tecnico(
   apellidoMaterno: 'Mamani',
   nombreUsuario: 'lquispe',
   activo: true,
+  grupoNombre: 'Grupo Taller',
 );
 
 const tecnicoMarco = Tecnico(

@@ -4,6 +4,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from src.compartido.bd import get_db
+from src.compartido.configuracion import settings
 from src.main import app
 from src.modulos.acceso_roles.infraestructura import router
 from src.modulos.acceso_roles.infraestructura.dependencias import UsuarioAutenticado, obtener_usuario_actual
@@ -43,6 +44,16 @@ def test_administrador_crea_un_supervisor(cliente):
     assert respuesta.status_code == 201
     assert respuesta.json()["grupo_nombre"] == "Grupo 6"
     assert respuesta.json()["activo"] is True
+    # la contraseña inicial sale de la configuración del backend, no está escrita en la app
+    assert respuesta.json()["password_inicial"] == settings.default_technician_password
+
+
+def test_la_lista_no_muestra_la_password_inicial(cliente):
+    cliente.post("/api/v1/supervisores", json=DATOS)
+
+    respuesta = cliente.get("/api/v1/supervisores")
+
+    assert "password_inicial" not in respuesta.json()[0]
 
 
 def test_dos_supervisores_con_los_mismos_apellidos_reciben_usuarios_distintos(cliente):

@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../dominio/modelos/orden_trabajo.dart';
 import '../../../nucleo/sesion.dart';
 import '../../../nucleo/tema.dart';
 import '../../widgets/barra_navegacion_inferior.dart';
-import '../autenticacion/pantalla_inicio_sesion.dart';
+import '../../viewmodels/ordenes_trabajo_vm.dart';
+import '../../widgets/encabezado_usuario.dart';
 import '../ordenes_trabajo/pantalla_mis_ots.dart';
 import '../ordenes_trabajo/pantalla_ots_grupo.dart';
-import '../perfil/pantalla_mi_perfil.dart';
-
 
 class PantallaInicio extends ConsumerWidget {
   const PantallaInicio({super.key});
@@ -16,9 +16,9 @@ class PantallaInicio extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final sesion = ref.watch(sesionProvider);
-    final nombreUsuario = sesion?.nombreCompleto ?? '';
-    // solo para técnicos y supervisores; el administrador entra directo a sus pantallas
-    final rol = sesion?.esSupervisor == true ? 'Supervisor' : 'Técnico';
+    final esSupervisor = sesion?.esSupervisor == true;
+    // las mismas OTs de hoy que se ven al tocar "Ver Órdenes de Trabajo"
+    final otsDeHoy = esSupervisor ? ref.watch(otsGrupoViewModelProvider) : ref.watch(misOtsViewModelProvider);
 
     return Scaffold(
       backgroundColor: ColoresApp.fondo,
@@ -28,23 +28,16 @@ class PantallaInicio extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _Encabezado(
-                nombreUsuario: nombreUsuario,
-                rol: rol,
-                onCerrarSesion: () {
-                  ref.read(sesionProvider.notifier).cerrarSesion();
-                  Navigator.of(context).pushAndRemoveUntil(
-                    MaterialPageRoute(builder: (_) => const PantallaInicioSesion()),
-                    (route) => false,
-                  );
-                },
-              ),
+              const EncabezadoUsuario(),
               const SizedBox(height: 20),
               _TarjetaProgreso(
                 textoBoton: 'Ver Órdenes de Trabajo',
+                esSupervisor: esSupervisor,
+                ots: otsDeHoy.value ?? const [],
+                cargando: otsDeHoy.isLoading,
                 onVerOts: () => Navigator.of(context).push(
                   MaterialPageRoute(
-                    builder: (_) => sesion?.esSupervisor == true ? const PantallaOtsGrupo() : const PantallaMisOts(),
+                    builder: (_) => esSupervisor ? const PantallaOtsGrupo() : const PantallaMisOts(),
                   ),
                 ),
               ),
@@ -61,104 +54,34 @@ class PantallaInicio extends ConsumerWidget {
   }
 }
 
-class _Encabezado extends StatelessWidget {
-  const _Encabezado({
-    required this.nombreUsuario,
-    required this.rol,
-    required this.onCerrarSesion,
-  });
-  final String nombreUsuario;
-  final String rol;
-  final VoidCallback onCerrarSesion;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        GestureDetector(
-          onTap: () => Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const PantallaMiPerfil()),
-          ),
-          child: Stack(
-            clipBehavior: Clip.none,
-            children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(color: const Color(0xFF60A5FA), width: 2),
-                ),
-                padding: const EdgeInsets.all(2),
-                child: const CircleAvatar(
-                  backgroundColor: Colors.white,
-                  child: Icon(Icons.person, color: ColoresApp.textoPlaceholder),
-                ),
-              ),
-              Positioned(
-                right: 0,
-                bottom: 0,
-                child: Container(
-                  width: 12,
-                  height: 12,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF10B981),
-                    shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white, width: 2),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(width: 14),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                '¡Bienvenido!',
-                style: TextStyle(
-                  color: ColoresApp.textoSuave,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              Text(
-                '$rol $nombreUsuario',
-                style: const TextStyle(
-                  color: Color(0xFF0F172A),
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-        ),
-        InkWell(
-          borderRadius: BorderRadius.circular(9999),
-          onTap: onCerrarSesion,
-          child: Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.8),
-              shape: BoxShape.circle,
-              border: Border.all(color: const Color(0xFFF1F5F9)),
-            ),
-            child: const Icon(Icons.logout,
-                size: 20, color: ColoresApp.textoOscuro),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
 class _TarjetaProgreso extends StatelessWidget {
-  const _TarjetaProgreso({this.onVerOts, required this.textoBoton});
+  const _TarjetaProgreso({
+    this.onVerOts,
+    required this.textoBoton,
+    required this.esSupervisor,
+    required this.ots,
+    required this.cargando,
+  });
   final VoidCallback? onVerOts;
   final String textoBoton;
+  final bool esSupervisor;
+  final List<OrdenTrabajo> ots;
+  final bool cargando;
+
+  // fold suma sobre la lista, como sum() en Python
+  int get _pasosTotales => ots.fold(0, (total, ot) => total + ot.pm01Total);
+  int get _pasosCerrados => ots.fold(0, (total, ot) => total + ot.pm01Cerrados);
+  double get _fraccion => _pasosTotales == 0 ? 0 : _pasosCerrados / _pasosTotales;
+
+  String get _mensaje {
+    if (cargando) return 'Cargando tus órdenes de hoy...';
+    final pendientes = _pasosTotales - _pasosCerrados;
+    if (_pasosTotales == 0) return esSupervisor ? 'Tu grupo no tiene órdenes para hoy' : 'No tienes órdenes para hoy';
+    if (pendientes == 0) return esSupervisor ? '¡El grupo completó la jornada!' : '¡Completaste tu jornada!';
+    if (_fraccion >= 0.75) return esSupervisor ? '¡La jornada del grupo está casi completa!' : '¡Tu jornada está casi completa!';
+    if (pendientes == 1) return esSupervisor ? 'Al grupo le queda 1 paso por cerrar' : 'Te queda 1 paso por cerrar';
+    return esSupervisor ? 'Al grupo le quedan $pendientes pasos por cerrar' : 'Te quedan $pendientes pasos por cerrar';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -178,9 +101,9 @@ class _TarjetaProgreso extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'PROGRESO TOTAL',
-                  style: TextStyle(
+                Text(
+                  esSupervisor ? 'PROGRESO DEL GRUPO HOY' : 'PROGRESO DE HOY',
+                  style: const TextStyle(
                     color: Color(0xFFBFDBFE),
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
@@ -188,9 +111,9 @@ class _TarjetaProgreso extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 8),
-                const Text(
-                  '¡Tu jornada está casi\ncompleta!',
-                  style: TextStyle(
+                Text(
+                  _mensaje,
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
@@ -230,15 +153,15 @@ class _TarjetaProgreso extends StatelessWidget {
                   width: 96,
                   height: 96,
                   child: CircularProgressIndicator(
-                    value: 0.85,
+                    value: _fraccion, // nunca null: un indicador sin valor gira sin parar
                     strokeWidth: 8,
                     backgroundColor: Colors.white.withValues(alpha: 0.2),
                     valueColor: const AlwaysStoppedAnimation(Colors.white),
                   ),
                 ),
-                const Text(
-                  '85%',
-                  style: TextStyle(
+                Text(
+                  '${(_fraccion * 100).round()}%',
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 18,
                     fontWeight: FontWeight.w800,
@@ -253,11 +176,68 @@ class _TarjetaProgreso extends StatelessWidget {
   }
 }
 
-class _SeccionAvisos extends StatelessWidget {
+class _Aviso {
+  const _Aviso({
+    required this.categoria,
+    required this.colorCategoria,
+    required this.icono,
+    required this.titulo,
+    required this.estado,
+    required this.progreso,
+    required this.colorProgreso,
+  });
+  final String categoria;
+  final Color colorCategoria;
+  final IconData icono;
+  final String titulo;
+  final String estado;
+  final double progreso;
+  final Color colorProgreso;
+}
+
+const _avisos = [
+  _Aviso(
+    categoria: 'Seguridad',
+    colorCategoria: Color(0xFFF59E0B),
+    icono: Icons.health_and_safety_outlined,
+    titulo: 'Seguridad Industrial: Uso obligatorio de EPP en subestaciones',
+    estado: 'Prioridad Alta',
+    progreso: 0.7,
+    colorProgreso: Color(0xFF2563EB),
+  ),
+  _Aviso(
+    categoria: 'Mantenimiento',
+    colorCategoria: Color(0xFF0284C7),
+    icono: Icons.local_fire_department_outlined,
+    titulo: 'Mantenimiento Preventivo Calderas: Protocolo Q2',
+    estado: 'Procedimiento',
+    progreso: 0.45,
+    colorProgreso: Color(0xFFF59E0B),
+  ),
+  // agrega un tercero para probar mejor los puntitos
+];
+
+class _SeccionAvisos extends StatefulWidget {
   const _SeccionAvisos();
 
   @override
+  State<_SeccionAvisos> createState() => _SeccionAvisosState();
+}
+
+class _SeccionAvisosState extends State<_SeccionAvisos> {
+  final _controlador = PageController(viewportFraction: 0.88); // cada tarjeta ocupa el 88% del ancho y se asoma la siguiente
+  int _paginaActual = 0;
+
+  @override
+  void dispose() {
+    _controlador.dispose(); // los controladores se liberan igual que los TextEditingController
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final anchoPantalla = MediaQuery.sizeOf(context).width;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -265,11 +245,7 @@ class _SeccionAvisos extends StatelessWidget {
           children: [
             const Text(
               'Tablón de anuncios',
-              style: TextStyle(
-                color: Color(0xFF0F172A),
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(color: Color(0xFF0F172A), fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(width: 8),
             _BadgeMas(onTap: () {}),
@@ -277,31 +253,41 @@ class _SeccionAvisos extends StatelessWidget {
         ),
         const SizedBox(height: 14),
         SizedBox(
-          height: 245,
-          child: ListView(
-            scrollDirection: Axis.horizontal,
-            children: const [
-              _TarjetaAviso(
-                categoria: 'Seguridad',
-                colorCategoria: Color(0xFFF59E0B),
-                icono: Icons.health_and_safety_outlined,
-                titulo: 'Seguridad Industrial: Uso obligatorio de EPP en subestaciones',
-                estado: 'Prioridad Alta',
-                progreso: 0.7,
-                colorProgreso: Color(0xFF2563EB),
+          height: 230,
+          // deja que el carrusel use todo el ancho de la pantalla, sin el margen de 20,
+          // para que las tarjetas no se corten contra una pared invisible al deslizar
+          child: OverflowBox(
+            minWidth: anchoPantalla,
+            maxWidth: anchoPantalla,
+            child: PageView.builder(
+              controller: _controlador,
+              itemCount: _avisos.length,
+              onPageChanged: (pagina) => setState(() => _paginaActual = pagina),
+              itemBuilder: (context, i) => Padding(
+                // espacio entre tarjetas y para que no se corte la sombra
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                child: _TarjetaAviso(aviso: _avisos[i]),
               ),
-              SizedBox(width: 12),
-              _TarjetaAviso(
-                categoria: 'Mantenimiento',
-                colorCategoria: Color(0xFF0284C7),
-                icono: Icons.local_fire_department_outlined,
-                titulo: 'Mantenimiento Preventivo Calderas: Protocolo Q2',
-                estado: 'Procedimiento',
-                progreso: 0.45,
-                colorProgreso: Color(0xFFF59E0B),
-              ),
-            ],
+            ),
           ),
+        ),
+        const SizedBox(height: 10),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            for (var i = 0; i < _avisos.length; i++)
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 250),
+                margin: const EdgeInsets.symmetric(horizontal: 3),
+                // el punto activo se alarga y toma el color principal
+                width: i == _paginaActual ? 18 : 6,
+                height: 6,
+                decoration: BoxDecoration(
+                  color: i == _paginaActual ? ColoresApp.principal : const Color(0xFFCBD5E1),
+                  borderRadius: BorderRadius.circular(9999),
+                ),
+              ),
+          ],
         ),
       ],
     );
@@ -337,28 +323,13 @@ class _BadgeMas extends StatelessWidget {
 }
 
 class _TarjetaAviso extends StatelessWidget {
-  const _TarjetaAviso({
-    required this.categoria,
-    required this.colorCategoria,
-    required this.icono,
-    required this.titulo,
-    required this.estado,
-    required this.progreso,
-    required this.colorProgreso,
-  });
-
-  final String categoria;
-  final Color colorCategoria;
-  final IconData icono;
-  final String titulo;
-  final String estado;
-  final double progreso;
-  final Color colorProgreso;
+  const _TarjetaAviso({required this.aviso});
+  final _Aviso aviso;
 
   @override
   Widget build(BuildContext context) {
+    // el ancho lo decide el PageView
     return Container(
-      width: 240,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -373,14 +344,15 @@ class _TarjetaAviso extends StatelessWidget {
         children: [
           Stack(
             children: [
-              AspectRatio(
-                aspectRatio: 16 / 9,
+              SizedBox(
+                height: 110,
+                width: double.infinity,
                 child: Container(
                   decoration: BoxDecoration(
                     color: const Color(0xFFF1F5F9),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Icon(icono, size: 32, color: colorCategoria),
+                  child: Icon(aviso.icono, size: 32, color: aviso.colorCategoria),
                 ),
               ),
               Positioned(
@@ -389,11 +361,11 @@ class _TarjetaAviso extends StatelessWidget {
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                   decoration: BoxDecoration(
-                    color: colorCategoria.withValues(alpha: 0.9),
+                    color: aviso.colorCategoria.withValues(alpha: 0.9),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Text(
-                    categoria,
+                    aviso.categoria,
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 10,
@@ -408,7 +380,7 @@ class _TarjetaAviso extends StatelessWidget {
           SizedBox(
             height: 39,
             child: Text(
-              titulo,
+              aviso.titulo,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(
@@ -429,7 +401,7 @@ class _TarjetaAviso extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  estado,
+                  aviso.estado,
                   style: const TextStyle(
                     color: ColoresApp.textoPlaceholder,
                     fontSize: 10,
@@ -441,9 +413,9 @@ class _TarjetaAviso extends StatelessWidget {
                     width: 64,
                     height: 6,
                     child: LinearProgressIndicator(
-                      value: progreso,
+                      value: aviso.progreso,
                       backgroundColor: const Color(0xFFF1F5F9),
-                      valueColor: AlwaysStoppedAnimation(colorProgreso),
+                      valueColor: AlwaysStoppedAnimation(aviso.colorProgreso),
                     ),
                   ),
                 ),

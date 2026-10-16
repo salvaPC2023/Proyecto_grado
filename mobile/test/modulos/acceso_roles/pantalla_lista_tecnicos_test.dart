@@ -36,6 +36,7 @@ void main() {
     await tocar(tester, find.byIcon(Icons.chevron_right));
 
     expect(find.text('Perfil del Técnico'), findsOneWidget);
+    expect(find.text('Grupo Taller'), findsOneWidget); // el grupo real del técnico, no uno fijo
   });
 
   testWidgets('abre el registro de técnicos y vuelve a la lista', (tester) async {

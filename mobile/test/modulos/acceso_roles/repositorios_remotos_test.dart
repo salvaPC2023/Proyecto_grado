@@ -26,6 +26,8 @@ const tecnicoJson = {
   'apellido_materno': 'Mamani',
   'nombre_usuario': 'lquispe', // lo genera el backend y viene en la respuesta
   'activo': true,
+  'grupo_nombre': 'Grupo Taller',
+  'password_inicial': 'Clave#Inicial', // la define el backend; la app no la tiene escrita
 };
 
 void main() {
@@ -103,6 +105,8 @@ void main() {
 
     expect(tecnicos.single.nombreCompleto, 'Luis Quispe Mamani');
     expect(creado.nombreUsuario, 'lquispe');
+    expect(creado.grupoNombre, 'Grupo Taller');
+    expect(creado.passwordInicial, 'Clave#Inicial');
     expect(adaptador.ultima.data.containsKey('nombre_usuario'), isFalse);
   });
 
