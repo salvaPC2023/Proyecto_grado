@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../dominio/modelos/supervisor.dart';
 import '../../../nucleo/errores.dart';
 import '../../../nucleo/tema.dart';
 import '../../viewmodels/supervisores_vm.dart';
 import '../../widgets/barra_navegacion_inferior.dart';
+import '../../widgets/dialogo_datos_acceso.dart';
 
 /// Turnos del departamento; el grupo del supervisor trabaja en uno de ellos
 const turnos = {
@@ -24,14 +26,13 @@ class _PantallaRegistrarSupervisorState extends ConsumerState<PantallaRegistrarS
   final _nombre = TextEditingController();
   final _apellidoPaterno = TextEditingController();
   final _apellidoMaterno = TextEditingController();
-  final _usuario = TextEditingController();
   final _grupo = TextEditingController();
   String _turno = turnos.keys.elementAt(1);
   bool _guardando = false;
 
   @override
   void dispose() {
-    for (final c in [_nombre, _apellidoPaterno, _apellidoMaterno, _usuario, _grupo]) {
+    for (final c in [_nombre, _apellidoPaterno, _apellidoMaterno, _grupo]) {
       c.dispose();
     }
     super.dispose();
@@ -39,31 +40,35 @@ class _PantallaRegistrarSupervisorState extends ConsumerState<PantallaRegistrarS
 
   Future<void> _guardar() async {
     final mensajero = ScaffoldMessenger.of(context);
-    if ([_nombre, _apellidoPaterno, _usuario, _grupo].any((c) => c.text.trim().isEmpty)) {
+    if ([_nombre, _apellidoPaterno, _grupo].any((c) => c.text.trim().isEmpty)) {
       mensajero.showSnackBar(const SnackBar(content: Text('Completa los campos obligatorios')));
       return;
     }
 
     setState(() => _guardando = true);
     final (entrada, salida) = turnos[_turno]!;
+    final Supervisor supervisor;
     try {
-      await ref.read(supervisoresViewModelProvider.notifier).crear(
+      supervisor = await ref.read(supervisoresViewModelProvider.notifier).crear(
             nombre: _nombre.text.trim(),
             apellidoPaterno: _apellidoPaterno.text.trim(),
             apellidoMaterno: _apellidoMaterno.text.trim().isEmpty ? null : _apellidoMaterno.text.trim(),
-            nombreUsuario: _usuario.text.trim(),
             nombreDeGrupo: _grupo.text.trim(),
             horarioEntrada: entrada,
             horarioSalida: salida,
           );
-      if (!mounted) return;
-      Navigator.of(context).pop();
-      mensajero.showSnackBar(const SnackBar(content: Text('Supervisor registrado')));
     } catch (e) {
       mensajero.showSnackBar(SnackBar(content: Text(mensajeDeError(e))));
+      return;
     } finally {
+      // así el indicador no sigue girando detrás del diálogo
       if (mounted) setState(() => _guardando = false);
     }
+
+    if (!mounted) return;
+    await mostrarDatosDeAcceso(context, titulo: '¡Supervisor registrado!', nombreUsuario: supervisor.nombreUsuario);
+    if (!mounted) return;
+    Navigator.of(context).pop();
   }
 
   @override
@@ -81,7 +86,6 @@ class _PantallaRegistrarSupervisorState extends ConsumerState<PantallaRegistrarS
                   _Campo(etiqueta: 'Nombre *', controlador: _nombre, indicativo: 'Ej. Ana'),
                   _Campo(etiqueta: 'Apellido Paterno *', controlador: _apellidoPaterno, indicativo: 'Ej. Rojas'),
                   _Campo(etiqueta: 'Apellido Materno', controlador: _apellidoMaterno, indicativo: 'Ej. Salazar'),
-                  _Campo(etiqueta: 'Nombre de Usuario *', controlador: _usuario, indicativo: 'arojas_sup'),
                   _Campo(etiqueta: 'Nombre del Grupo *', controlador: _grupo, indicativo: 'Ej. Grupo Suministros'),
                   const _Etiqueta('Turno del grupo *'),
                   Container(
@@ -102,7 +106,7 @@ class _PantallaRegistrarSupervisorState extends ConsumerState<PantallaRegistrarS
                   ),
                   const SizedBox(height: 16),
                   const Text(
-                    'La contraseña inicial es la del sistema; el supervisor deberá cambiarla.',
+                    'La contraseña y nombre de usuario inicial es del sistema; el supervisor deberá cambiarla.',
                     style: TextStyle(color: ColoresApp.textoSuave, fontSize: 12),
                   ),
                   const SizedBox(height: 20),

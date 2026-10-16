@@ -17,6 +17,23 @@ class RepositorioAutenticacionRemoto implements RepositorioAutenticacion {
       return ResultadoLogin(
         token: respuesta.data['access_token'] as String,
         rol: respuesta.data['role'] as String,
+        debeCambiarCredenciales: respuesta.data['debe_cambiar_credenciales'] as bool? ?? false,
+      );
+    });
+  }
+
+  @override
+  Future<void> completarPrimerAcceso({
+    required String token,
+    required String nombreUsuario,
+    required String passwordNueva,
+  }) {
+    return traducirErrores(() async {
+      await _dio.patch(
+        '/perfil/primer-acceso',
+        data: {'nombre_usuario': nombreUsuario, 'password_nueva': passwordNueva},
+        // sin sesión abierta el interceptor no pone el token: se envía a mano
+        options: Options(headers: {'Authorization': 'Bearer $token'}),
       );
     });
   }

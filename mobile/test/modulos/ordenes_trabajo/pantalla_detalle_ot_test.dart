@@ -33,6 +33,7 @@ void main() {
     await tocar(tester, find.text('Registrar cierre'));
     await tester.enterText(find.byType(TextField).at(0), '2');
     await tester.enterText(find.byType(TextField).at(1), 'Se cambió el filtro');
+    await tocar(tester, find.widgetWithText(FilledButton, 'Estandarizar y revisar'));
     await tocar(tester, find.widgetWithText(FilledButton, 'Registrar cierre'));
 
     expect(find.text('Cierre registrado'), findsOneWidget);

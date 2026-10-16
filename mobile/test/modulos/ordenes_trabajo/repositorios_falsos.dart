@@ -1,8 +1,15 @@
 import 'package:maintenance_app/dominio/errores.dart';
 import 'package:maintenance_app/dominio/modelos/orden_trabajo.dart';
+import 'package:maintenance_app/dominio/repositorios/repositorio_estandarizacion.dart';
 import 'package:maintenance_app/dominio/repositorios/repositorio_ordenes_trabajo.dart';
 
 // Implementaciones en memoria, no se llama a la API real
+
+/// Devuelve el texto en mayúsculas, para distinguirlo del original sin llamar a OpenAI
+class RepositorioEstandarizacionFalso implements RepositorioEstandarizacion {
+  @override
+  Future<String> estandarizar(String texto) async => texto.toUpperCase();
+}
 
 const ubicacionTransformador = UbicacionTecnica(
   id: 'ub1',

@@ -24,7 +24,7 @@ const tecnicoJson = {
   'nombre': 'Luis',
   'apellido_paterno': 'Quispe',
   'apellido_materno': 'Mamani',
-  'nombre_usuario': 'lquispe',
+  'nombre_usuario': 'lquispe', // lo genera el backend y viene en la respuesta
   'activo': true,
 };
 
@@ -38,6 +38,29 @@ void main() {
     expect(adaptador.ultima.path, '/auth/login');
     expect(adaptador.ultima.data, {'nombre_usuario': 'ana', 'password': '1234'});
     expect(resultado.token, 'abc');
+    expect(resultado.debeCambiarCredenciales, isFalse);
+  });
+
+  test('el login avisa si el usuario debe cambiar sus datos', () async {
+    final adaptador = AdaptadorHttpFalso(
+        (_) => {'access_token': 'abc', 'role': 'tecnico', 'debe_cambiar_credenciales': true});
+    final repositorio = RepositorioAutenticacionRemoto(crearDioFalso(adaptador));
+
+    final resultado = await repositorio.iniciarSesion('mqjgeubu', 'ESPODI2026');
+
+    expect(resultado.debeCambiarCredenciales, isTrue);
+  });
+
+  test('el primer acceso envía los datos nuevos con el token del login', () async {
+    final adaptador = AdaptadorHttpFalso((_) => {'detail': 'Datos de acceso actualizados'});
+    final repositorio = RepositorioAutenticacionRemoto(crearDioFalso(adaptador));
+
+    await repositorio.completarPrimerAcceso(token: 'abc', nombreUsuario: 'cmamani', passwordNueva: 'Segura#26');
+
+    expect(adaptador.ultima.method, 'PATCH');
+    expect(adaptador.ultima.path, '/perfil/primer-acceso');
+    expect(adaptador.ultima.headers['Authorization'], 'Bearer abc');
+    expect(adaptador.ultima.data, {'nombre_usuario': 'cmamani', 'password_nueva': 'Segura#26'});
   });
 
   test('el error del backend llega como ErrorDeAplicacion', () {
@@ -75,12 +98,12 @@ void main() {
     final creado = await repositorio.crear(
       nombre: 'Luis',
       apellidoPaterno: 'Quispe',
-      nombreUsuario: 'lquispe',
       profesion: 'electrico',
     );
 
     expect(tecnicos.single.nombreCompleto, 'Luis Quispe Mamani');
     expect(creado.nombreUsuario, 'lquispe');
+    expect(adaptador.ultima.data.containsKey('nombre_usuario'), isFalse);
   });
 
   test('cambiar el estado de un técnico', () async {

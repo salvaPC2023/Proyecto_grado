@@ -4,8 +4,16 @@ import unicodedata
 from collections.abc import Callable
 
 LONGITUD = 8
+LONGITUD_MINIMA = 4
 # sin 0/o ni 1/l/i, para que no se confundan al dictar o leer el usuario
 ALFABETO = "abcdefghjkmnpqrstuvwxyz23456789"
+
+
+def validar_nombre_usuario(nombre_usuario: str) -> str | None:
+    """Regla para el usuario que la persona elige en su primer acceso; None si es válido"""
+    if not re.fullmatch(rf"[a-z0-9]{{{LONGITUD_MINIMA},{LONGITUD}}}", nombre_usuario):
+        return f"El usuario debe tener entre {LONGITUD_MINIMA} y {LONGITUD} caracteres, solo letras minúsculas y números."
+    return None
 
 
 def _inicial(texto: str) -> str:

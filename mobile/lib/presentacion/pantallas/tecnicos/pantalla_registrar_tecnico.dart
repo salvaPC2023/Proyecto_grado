@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../dominio/modelos/tecnico.dart';
 import '../../../nucleo/errores.dart';
 import '../../../nucleo/tema.dart';
 import '../../viewmodels/tecnicos_vm.dart';
 import '../../widgets/barra_navegacion_inferior.dart';
+import '../../widgets/dialogo_datos_acceso.dart';
 
 
 enum _Profesion { electrico, mecanico, electromecanico }
@@ -36,7 +38,6 @@ class _PantallaRegistrarTecnicoState
   final _controladorNombre = TextEditingController();
   final _controladorApellidoPaterno = TextEditingController();
   final _controladorApellidoMaterno = TextEditingController();
-  final _controladorUsuario = TextEditingController();
   _Profesion _profesionSeleccionada = _Profesion.electrico;
   bool _guardando = false;
 
@@ -45,41 +46,45 @@ class _PantallaRegistrarTecnicoState
     _controladorNombre.dispose();
     _controladorApellidoPaterno.dispose();
     _controladorApellidoMaterno.dispose();
-    _controladorUsuario.dispose();
     super.dispose();
   }
 
   Future<void> _guardar() async {
     final nombre = _controladorNombre.text.trim();
     final apellidoPaterno = _controladorApellidoPaterno.text.trim();
-    final nombreUsuario = _controladorUsuario.text.trim();
-    if (nombre.isEmpty || apellidoPaterno.isEmpty || nombreUsuario.isEmpty) {
+    if (nombre.isEmpty || apellidoPaterno.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Completa los campos obligatorios')),
       );
       return;
     }
 
-    setState(() => _guardando = true);
+    setState(() => _guardando = true); // desactiva el boton y muestra el indicador
+    final Tecnico tecnico;
     try {
-      await ref.read(tecnicosViewModelProvider.notifier).crear(
+      tecnico = await ref.read(tecnicosViewModelProvider.notifier).crear(
             nombre: nombre,
             apellidoPaterno: apellidoPaterno,
             apellidoMaterno: _controladorApellidoMaterno.text.trim().isEmpty
                 ? null
                 : _controladorApellidoMaterno.text.trim(),
-            nombreUsuario: nombreUsuario,
             profesion: _profesionSeleccionada.name,
           );
-      if (!mounted) return;
-      Navigator.of(context).pop();
     } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(mensajeDeError(e))));
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(mensajeDeError(e))));
+      }
+      return;
     } finally {
+      // se ejecuta siempre, haya error o no; así el indicador no sigue girando detrás del diálogo
       if (mounted) setState(() => _guardando = false);
     }
+
+    if (!mounted) return;
+    await mostrarDatosDeAcceso(context, titulo: '¡Técnico registrado!', nombreUsuario: tecnico.nombreUsuario);
+    if (!mounted) return;
+    Navigator.of(context).pop();
   }
 
   @override
@@ -118,15 +123,6 @@ class _PantallaRegistrarTecnicoState
                       controlador: _controladorApellidoMaterno,
                       textoIndicativo: 'Ej. Salazar',
                     ),
-                    const SizedBox(height: 16),
-                    _EtiquetaCampo(texto: 'Nombre de Usuario', obligatorio: true),
-                    const SizedBox(height: 6),
-                    _CampoTexto(
-                      controlador: _controladorUsuario,
-                      textoIndicativo: 'cmendoza_tec',
-                      prefijo: '@',
-                    ),
-                    const SizedBox(height: 16),
                     const _CampoGrupoAutomatico(),
                     const SizedBox(height: 16),
                     _SelectorProfesion(
@@ -347,11 +343,9 @@ class _CampoTexto extends StatelessWidget {
   const _CampoTexto({
     required this.controlador,
     required this.textoIndicativo,
-    this.prefijo,
   });
   final TextEditingController controlador;
   final String textoIndicativo;
-  final String? prefijo;
 
   @override
   Widget build(BuildContext context) {
@@ -361,11 +355,6 @@ class _CampoTexto extends StatelessWidget {
       decoration: InputDecoration(
         hintText: textoIndicativo,
         hintStyle: const TextStyle(color: ColoresApp.textoPlaceholder),
-        prefixText: prefijo,
-        prefixStyle: const TextStyle(
-          color: ColoresApp.textoPlaceholder,
-          fontWeight: FontWeight.w500,
-        ),
         filled: true,
         fillColor: ColoresApp.campoFondo,
         contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -558,7 +547,7 @@ class _AvisoCredenciales extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'La contraseña inicial será ESPODI2026',
+                  'El usuario se generará automáticamente y la contraseña inicial será ESPODI2026',
                   style: TextStyle(
                     color: ColoresApp.textoOscuro,
                     fontSize: 12,
@@ -567,7 +556,7 @@ class _AvisoCredenciales extends StatelessWidget {
                 ),
                 SizedBox(height: 2),
                 Text(
-                  'El técnico deberá cambiarla en su primer inicio de sesión.',
+                  'El técnico deberá cambiar su nombre de usuario y contraseña en su primer inicio de sesión.',
                   style: TextStyle(
                     color: Color(0xCC131D8C),
                     fontSize: 11,

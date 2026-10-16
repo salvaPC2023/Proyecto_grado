@@ -7,7 +7,6 @@ abstract interface class RepositorioTecnicos {
     required String nombre,
     required String apellidoPaterno,
     String? apellidoMaterno,
-    required String nombreUsuario,
     required String profesion,
   });
 

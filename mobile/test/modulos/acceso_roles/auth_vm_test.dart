@@ -20,10 +20,10 @@ void main() {
   test('con credenciales correctas guarda la sesión con el perfil', () async {
     final contenedor = _crearContenedor(RepositorioAutenticacionFalso());
 
-    final exito =
+    final resultado =
         await contenedor.read(authViewModelProvider.notifier).iniciarSesion('ana', '1234');
 
-    expect(exito, isTrue);
+    expect(resultado, ResultadoInicioSesion.ingreso);
     final sesion = contenedor.read(sesionProvider)!;
     expect(sesion.token, 'token-falso');
     expect(sesion.nombreCompleto, 'Ana Rojas');
@@ -33,11 +33,34 @@ void main() {
   test('si el login falla deja la sesión vacía y el estado en error', () async {
     final contenedor = _crearContenedor(RepositorioAutenticacionFalso(error: const ErrorDeAplicacion('Credenciales inválidas')));
 
-    final exito =
+    final resultado =
         await contenedor.read(authViewModelProvider.notifier).iniciarSesion('ana', 'mala');
 
-    expect(exito, isFalse);
+    expect(resultado, ResultadoInicioSesion.fallo);
     expect(contenedor.read(sesionProvider), isNull);
     expect(contenedor.read(authViewModelProvider).error, isA<ErrorDeAplicacion>());
+  });
+
+  test('un usuario recién creado no abre la sesión hasta cambiar sus datos', () async {
+    final contenedor = _crearContenedor(RepositorioAutenticacionFalso(recienCreado: true));
+
+    final resultado =
+        await contenedor.read(authViewModelProvider.notifier).iniciarSesion('mqjgeubu', 'ESPODI2026');
+
+    expect(resultado, ResultadoInicioSesion.primerAcceso);
+    expect(contenedor.read(sesionProvider), isNull);
+  });
+
+  test('el primer acceso usa el token del login y no abre la sesión', () async {
+    final auth = RepositorioAutenticacionFalso(recienCreado: true);
+    final contenedor = _crearContenedor(auth);
+    final vm = contenedor.read(authViewModelProvider.notifier);
+    await vm.iniciarSesion('mqjgeubu', 'ESPODI2026');
+
+    await vm.completarPrimerAcceso(nombreUsuario: 'cmamani', passwordNueva: 'Segura#26');
+
+    expect(auth.tokenPrimerAcceso, 'token-falso');
+    expect(auth.usuarioNuevo, 'cmamani');
+    expect(contenedor.read(sesionProvider), isNull); // debe volver a iniciar sesión
   });
 }

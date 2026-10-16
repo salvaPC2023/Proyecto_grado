@@ -43,6 +43,8 @@ class RepositorioUsuariosFalso(RepositorioUsuarios):
         return usuario
 
     def actualizar(self, usuario):
+        # si cambió el nombre de usuario, se quita la entrada con el nombre anterior
+        self.usuarios = {nombre: u for nombre, u in self.usuarios.items() if u.id != usuario.id}
         self.usuarios[usuario.nombre_usuario] = usuario
         return usuario
 

@@ -16,25 +16,24 @@ class SupervisoresViewModel extends AsyncNotifier<List<Supervisor>> {
     state = await AsyncValue.guard(() => ref.read(repositorioSupervisoresProvider).listar());
   }
 
-  Future<void> crear({
+  Future<Supervisor> crear({
     required String nombre,
     required String apellidoPaterno,
     String? apellidoMaterno,
-    required String nombreUsuario,
     required String nombreDeGrupo,
     required String horarioEntrada,
     required String horarioSalida,
   }) async {
-    await ref.read(repositorioSupervisoresProvider).crear(
+    final supervisor = await ref.read(repositorioSupervisoresProvider).crear(
           nombre: nombre,
           apellidoPaterno: apellidoPaterno,
           apellidoMaterno: apellidoMaterno,
-          nombreUsuario: nombreUsuario,
           nombreDeGrupo: nombreDeGrupo,
           horarioEntrada: horarioEntrada,
           horarioSalida: horarioSalida,
         );
     await recargar();
+    return supervisor;
   }
 
   Future<void> cambiarEstado(String supervisorId, bool activo) async {

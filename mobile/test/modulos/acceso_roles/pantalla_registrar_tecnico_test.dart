@@ -21,12 +21,13 @@ void main() {
 
     await tester.enterText(find.widgetWithText(TextField, 'Ej. Carlos'), 'Carlos');
     await tester.enterText(find.widgetWithText(TextField, 'Ej. Mendoza'), 'Mendoza');
-    await tester.enterText(find.widgetWithText(TextField, 'cmendoza_tec'), 'cmendoza');
     await tocar(tester, find.text('Mecánico'));
     await tocar(tester, find.text('Guardar Técnico'));
 
-    expect(repositorio.usuarioCreado, 'cmendoza');
+    expect(repositorio.nombreCreado, 'Carlos');
     expect(repositorio.profesionCreada, 'mecanico');
-    expect(find.text('Pantalla base'), findsOneWidget); // vuelve a la pantalla anterior
+    expect(find.text('¡Técnico registrado!'), findsOneWidget); // aparece el diálogo
+    await tocar(tester, find.text('Entendido'));
+    expect(find.text('Pantalla base'), findsOneWidget); // vuelve a la pantalla anterior// vuelve a la pantalla anterior
   });
 }

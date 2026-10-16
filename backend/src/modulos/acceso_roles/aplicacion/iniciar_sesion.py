@@ -11,6 +11,8 @@ class CuentaDeshabilitada(Exception):
 class ResultadoInicioSesion(NamedTuple):
     token: str
     rol: str
+    # recién creado: el token solo sirve para cambiar usuario y contraseña
+    debe_cambiar_credenciales: bool = False
 
 def iniciar_sesion(nombre_usuario: str, password: str, repositorio: RepositorioUsuarios,) -> ResultadoInicioSesion:
     usuario = repositorio.obtener_por_nombre_usuario(nombre_usuario)
@@ -23,4 +25,4 @@ def iniciar_sesion(nombre_usuario: str, password: str, repositorio: RepositorioU
     rol = repositorio.obtener_rol(usuario.id)
     token = crear_token(usuario.id, rol)
     
-    return ResultadoInicioSesion(token=token, rol=rol)
+    return ResultadoInicioSesion(token=token, rol=rol, debe_cambiar_credenciales=usuario.debe_cambiar_password)

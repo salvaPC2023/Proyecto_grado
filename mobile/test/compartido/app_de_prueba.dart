@@ -25,6 +25,7 @@ ProviderContainer crearContenedor({
       repositorioTecnicosProvider.overrideWithValue(tecnicos ?? RepositorioTecnicosFalso()),
       repositorioOrdenesTrabajoProvider.overrideWithValue(ordenes ?? RepositorioOrdenesTrabajoFalso()),
       repositorioSupervisoresProvider.overrideWithValue(supervisores ?? RepositorioSupervisoresFalso()),
+      repositorioEstandarizacionProvider.overrideWithValue(RepositorioEstandarizacionFalso()),
     ],
   );
   addTearDown(contenedor.dispose);

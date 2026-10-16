@@ -51,7 +51,7 @@ class RepositorioSupervisoresFalso implements RepositorioSupervisores {
   final List<Supervisor> supervisores;
   final ErrorDeAplicacion? error;
 
-  String? usuarioCreado;
+  String? nombreCreado;
   String? horarioEntradaCreado;
   String? idCambiado;
 
@@ -66,12 +66,11 @@ class RepositorioSupervisoresFalso implements RepositorioSupervisores {
     required String nombre,
     required String apellidoPaterno,
     String? apellidoMaterno,
-    required String nombreUsuario,
     required String nombreDeGrupo,
     required String horarioEntrada,
     required String horarioSalida,
   }) async {
-    usuarioCreado = nombreUsuario;
+    nombreCreado = nombre;
     horarioEntradaCreado = horarioEntrada;
     return supervisorAna;
   }
@@ -142,16 +141,35 @@ const tecnicoPedro = Tecnico(
 );
 
 class RepositorioAutenticacionFalso implements RepositorioAutenticacion {
-  RepositorioAutenticacionFalso({this.error});
+  RepositorioAutenticacionFalso({this.error, this.recienCreado = false, this.errorPrimerAcceso});
 
   final ErrorDeAplicacion? error;
+  // simula a un usuario que aún no cambió su usuario y contraseña
+  final bool recienCreado;
+  final ErrorDeAplicacion? errorPrimerAcceso;
   int llamadas = 0;
+
+  String? tokenPrimerAcceso;
+  String? usuarioNuevo;
+  String? passwordNueva;
 
   @override
   Future<ResultadoLogin> iniciarSesion(String nombreUsuario, String password) async {
     llamadas++;
     if (error != null) throw error!;
-    return const ResultadoLogin(token: 'token-falso', rol: 'supervisor');
+    return ResultadoLogin(token: 'token-falso', rol: 'supervisor', debeCambiarCredenciales: recienCreado);
+  }
+
+  @override
+  Future<void> completarPrimerAcceso({
+    required String token,
+    required String nombreUsuario,
+    required String passwordNueva,
+  }) async {
+    if (errorPrimerAcceso != null) throw errorPrimerAcceso!;
+    tokenPrimerAcceso = token;
+    usuarioNuevo = nombreUsuario;
+    this.passwordNueva = passwordNueva;
   }
 }
 
@@ -199,7 +217,7 @@ class RepositorioTecnicosFalso implements RepositorioTecnicos {
   final List<Tecnico> tecnicos;
   final ErrorDeAplicacion? error;
 
-  String? usuarioCreado;
+  String? nombreCreado;
   String? profesionCreada;
   String? idCambiado;
 
@@ -214,10 +232,9 @@ class RepositorioTecnicosFalso implements RepositorioTecnicos {
     required String nombre,
     required String apellidoPaterno,
     String? apellidoMaterno,
-    required String nombreUsuario,
     required String profesion,
   }) async {
-    usuarioCreado = nombreUsuario;
+    nombreCreado = nombre;
     profesionCreada = profesion;
     return tecnicoLuis;
   }

@@ -77,15 +77,15 @@ void main() {
 
       await tester.enterText(find.widgetWithText(TextField, 'Ej. Ana'), 'Luis');
       await tester.enterText(find.widgetWithText(TextField, 'Ej. Rojas'), 'Perez');
-      await tester.enterText(find.widgetWithText(TextField, 'arojas_sup'), 'lperez');
       await tester.enterText(find.widgetWithText(TextField, 'Ej. Grupo Suministros'), 'Grupo Taller');
       await tocar(tester, find.text('Turno 2 (07:00 - 15:00)'));
       await tocar(tester, find.text('Turno 1 (23:00 - 07:00)').last);
       await tocar(tester, find.text('Guardar Supervisor'));
 
-      expect(repositorio.usuarioCreado, 'lperez');
+      expect(repositorio.nombreCreado, 'Luis');
       expect(repositorio.horarioEntradaCreado, '23:00');
-      expect(find.text('Supervisor registrado'), findsOneWidget);
+      expect(find.text('¡Supervisor registrado!'), findsOneWidget);
+      await tocar(tester, find.text('Entendido'));
     });
   });
 }

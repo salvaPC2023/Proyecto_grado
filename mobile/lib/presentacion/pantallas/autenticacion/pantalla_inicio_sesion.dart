@@ -6,6 +6,7 @@ import '../../../nucleo/sesion.dart';
 import '../../viewmodels/auth_vm.dart';
 import '../inicio/pantalla_inicio.dart';
 import '../supervisores/pantalla_lista_supervisores.dart';
+import 'dialogo_primer_acceso.dart';
 
 class PantallaInicioSesion extends ConsumerStatefulWidget {
   const PantallaInicioSesion({super.key});
@@ -33,19 +34,48 @@ class _PantallaInicioSesionState extends ConsumerState<PantallaInicioSesion> {
     if (usuario.isEmpty || contrasena.isEmpty) return;
     FocusScope.of(context).unfocus();
 
-    final exito = await ref
+    final resultado = await ref
         .read(authViewModelProvider.notifier)
         .iniciarSesion(usuario, contrasena);
+    if (!mounted) return;
 
-    if (exito && mounted) {
-      // el administrador no tiene pantalla de inicio
-      final esAdministrador = ref.read(sesionProvider)?.esAdministrador ?? false;
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(
-          builder: (_) => esAdministrador ? const PantallaListaSupervisores() : const PantallaInicio(),
-        ),
-      );
+    switch (resultado) {
+      case ResultadoInicioSesion.ingreso:
+        // el administrador no tiene pantalla de inicio
+        final esAdministrador = ref.read(sesionProvider)?.esAdministrador ?? false;
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (_) => esAdministrador ? const PantallaListaSupervisores() : const PantallaInicio(),
+          ),
+        );
+      case ResultadoInicioSesion.primerAcceso:
+        await _primerAcceso(usuario, contrasena);
+      case ResultadoInicioSesion.fallo:
+        break; // el error ya se muestra con el ref.listen de build
     }
+  }
+
+  /// Usuario recién creado: sin cambiar sus datos no entra; si los cambia, inicia sesión con los nuevos
+  Future<void> _primerAcceso(String usuario, String contrasena) async {
+    final usuarioNuevo = await mostrarDialogoPrimerAcceso(
+      context,
+      nombreUsuarioActual: usuario,
+      passwordInicial: contrasena,
+    );
+    if (!mounted) return;
+
+    _controladorContrasena.clear();
+    final mensajero = ScaffoldMessenger.of(context);
+    if (usuarioNuevo == null) {
+      mensajero.showSnackBar(
+        const SnackBar(content: Text('Debes cambiar tu usuario y contraseña para ingresar al sistema')),
+      );
+      return;
+    }
+    _controladorUsuario.text = usuarioNuevo;
+    mensajero.showSnackBar(
+      const SnackBar(content: Text('Datos actualizados. Inicia sesión con tu nuevo usuario y contraseña')),
+    );
   }
 
   @override

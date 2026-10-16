@@ -5,7 +5,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 from src.compartido.bd import get_db
 from ..dominio.modelos import Profesion
-from .dependencias import UsuarioAutenticado, obtener_usuario_actual, requerir_administrador, requerir_supervisor
+from .dependencias import UsuarioAutenticado, obtener_usuario_actual, obtener_usuario_en_primer_acceso, requerir_administrador, requerir_supervisor
 from .repositorio_grupos import RepositorioGruposSQL
 from .repositorio_supervisores import RepositorioSupervisoresSQL
 from .repositorio_tecnicos import RepositorioTecnicosSQL
@@ -14,6 +14,7 @@ from .repositorio_usuarios import RepositorioUsuariosSQL
 from ..aplicacion.cambiar_estado_cuenta import TecnicoNoEncontrado, cambiar_estado_cuenta
 from ..aplicacion.cambiar_estado_supervisor import SupervisorNoEncontrado, cambiar_estado_supervisor
 from ..aplicacion.cambiar_password import ContrasenaActualIncorrecta, cambiar_password, PasswordDebil
+from ..aplicacion.completar_primer_acceso import NombreUsuarioEnUso, NombreUsuarioInvalido, PrimerAccesoYaCompletado, completar_primer_acceso
 from ..aplicacion.crear_supervisor import HorarioInvalido, crear_supervisor
 from ..aplicacion.crear_tecnico import crear_tecnico
 from ..aplicacion.editar_perfil import editar_perfil
@@ -39,6 +40,7 @@ class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
     role: str
+    debe_cambiar_credenciales: bool = False
 
 @router_auth.post("/login", response_model=TokenResponse)
 def login(credenciales: CredencialesLogin, db: Session = Depends(get_db)):
@@ -52,7 +54,11 @@ def login(credenciales: CredencialesLogin, db: Session = Depends(get_db)):
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Usuario o contraseña incorrectos",
         )
-    return TokenResponse(access_token=resultado.token, role=resultado.rol)
+    return TokenResponse(
+        access_token=resultado.token,
+        role=resultado.rol,
+        debe_cambiar_credenciales=resultado.debe_cambiar_credenciales,
+    )
 
 class CrearTecnicoRequest(BaseModel):
     nombre: str
@@ -272,6 +278,30 @@ def cambiar_password_endpoint(
             detail=" ".join(error.errores),
         )
     return {"detail": "Contraseña actualizada"}
+
+
+class PrimerAccesoRequest(BaseModel):
+    nombre_usuario: str
+    password_nueva: str
+
+
+@router_perfil.patch("/primer-acceso", status_code=status.HTTP_200_OK)
+def completar_primer_acceso_endpoint(
+    datos: PrimerAccesoRequest,
+    db: Session = Depends(get_db),
+    actual: UsuarioAutenticado = Depends(obtener_usuario_en_primer_acceso),
+):
+    try:
+        completar_primer_acceso(actual.id, datos.nombre_usuario, datos.password_nueva, RepositorioUsuariosSQL(db))
+    except PrimerAccesoYaCompletado:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Ya cambiaste tus datos de acceso")
+    except NombreUsuarioInvalido as error:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=error.mensaje)
+    except NombreUsuarioEnUso:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Ese usuario ya está en uso, elige otro")
+    except PasswordDebil as error:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=" ".join(error.errores))
+    return {"detail": "Datos de acceso actualizados"}
 
 
 class CrearSupervisorRequest(BaseModel):

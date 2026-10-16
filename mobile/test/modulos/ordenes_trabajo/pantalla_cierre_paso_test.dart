@@ -10,6 +10,8 @@ import 'repositorios_falsos.dart';
 final pasoPm01 = crearOt().pasos[1]; // "Cambiar filtro", PM01
 final campoHoras = find.byType(TextField).at(0);
 final campoDescripcion = find.byType(TextField).at(1);
+// el cierre tiene dos pasos: primero se estandariza la descripción y luego se registra
+final botonEstandarizar = find.widgetWithText(FilledButton, 'Estandarizar y revisar');
 final botonRegistrar = find.widgetWithText(FilledButton, 'Registrar cierre');
 
 void main() {
@@ -17,7 +19,7 @@ void main() {
     await montarPantalla(tester, PantallaCierrePaso(otId: 'ot1', paso: pasoPm01), sesion: perfilTecnico);
 
     await tester.enterText(campoDescripcion, 'Se cambió el filtro');
-    await tocar(tester, botonRegistrar);
+    await tocar(tester, botonEstandarizar);
 
     expect(find.text('Ingresa las horas trabajadas (mayores a 0)'), findsOneWidget);
   });
@@ -26,9 +28,20 @@ void main() {
     await montarPantalla(tester, PantallaCierrePaso(otId: 'ot1', paso: pasoPm01), sesion: perfilTecnico);
 
     await tester.enterText(campoHoras, '1.5');
-    await tocar(tester, botonRegistrar);
+    await tocar(tester, botonEstandarizar);
 
     expect(find.text('Describe el trabajo realizado'), findsOneWidget);
+  });
+
+  testWidgets('muestra la descripción estandarizada para revisarla', (tester) async {
+    await montarPantalla(tester, PantallaCierrePaso(otId: 'ot1', paso: pasoPm01), sesion: perfilTecnico);
+
+    await tester.enterText(campoHoras, '1');
+    await tester.enterText(campoDescripcion, 'Se cambió el filtro');
+    await tocar(tester, botonEstandarizar);
+
+    expect(find.text('SE CAMBIÓ EL FILTRO'), findsOneWidget);
+    expect(botonRegistrar, findsOneWidget);
   });
 
   testWidgets('registra el cierre y vuelve a la pantalla anterior', (tester) async {
@@ -38,6 +51,7 @@ void main() {
 
     await tester.enterText(campoHoras, '1,5'); // también acepta coma decimal
     await tester.enterText(campoDescripcion, 'Se cambió el filtro');
+    await tocar(tester, botonEstandarizar);
     await tocar(tester, botonRegistrar);
 
     expect(repositorio.pasoCerrado, 'p2');
@@ -52,6 +66,7 @@ void main() {
 
     await tocar(tester, find.text('No ejecutado'));
     await tester.enterText(campoDescripcion, 'No había repuesto');
+    await tocar(tester, botonEstandarizar);
     await tocar(tester, botonRegistrar);
 
     expect(repositorio.cierreEjecutado, isFalse);
@@ -65,6 +80,7 @@ void main() {
 
     await tester.enterText(campoHoras, '1');
     await tester.enterText(campoDescripcion, 'Se cambió el filtro');
+    await tocar(tester, botonEstandarizar);
     await tocar(tester, botonRegistrar);
 
     expect(find.text('El paso ya tiene un cierre registrado'), findsOneWidget);

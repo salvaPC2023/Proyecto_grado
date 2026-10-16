@@ -42,10 +42,9 @@ void main() {
     await contenedor.read(tecnicosViewModelProvider.notifier).crear(
           nombre: 'Carlos',
           apellidoPaterno: 'Mendoza',
-          nombreUsuario: 'cmendoza',
           profesion: 'electrico',
         );
 
-    expect(repositorio.usuarioCreado, 'cmendoza');
+    expect(repositorio.nombreCreado, 'Carlos');
   });
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:maintenance_app/nucleo/sesion.dart';
 import 'package:maintenance_app/presentacion/pantallas/inicio/pantalla_inicio.dart';
+import 'package:maintenance_app/presentacion/pantallas/supervisores/pantalla_lista_supervisores.dart';
 
 import '../modulos/acceso_roles/repositorios_falsos.dart';
 import 'app_de_prueba.dart';
@@ -62,23 +63,16 @@ void main() {
       expect(find.text('Asignadas'), findsOneWidget);
     });
 
-    testWidgets('el administrador solo ve inicio y supervisores', (tester) async {
-      await montarPantalla(tester, const PantallaInicio(), sesion: perfilAdministrador);
+    testWidgets('el administrador no tiene inicio: ve sus secciones de gestión', (tester) async {
+      // el administrador entra directo a Supervisores, no a la pantalla de inicio
+      await montarPantalla(tester, const PantallaListaSupervisores(), sesion: perfilAdministrador);
 
+      expect(find.byIcon(Icons.home_rounded), findsNothing);
       expect(find.byIcon(Icons.calendar_today_outlined), findsNothing);
-      expect(find.byIcon(Icons.add), findsNothing);
-
-      await tocar(tester, find.byIcon(Icons.groups_outlined));
-      expect(find.text('Supervisores'), findsOneWidget);
+      expect(find.byIcon(Icons.manage_accounts_outlined), findsOneWidget);
+      expect(find.byIcon(Icons.groups_outlined), findsOneWidget);
+      expect(find.byIcon(Icons.place_outlined), findsOneWidget);
+      expect(find.text('Ana Rojas'), findsOneWidget);
     });
-  });
-
-  testWidgets('el administrador va a gestionar supervisores', (tester) async {
-    await montarPantalla(tester, const PantallaInicio(), sesion: perfilAdministrador);
-
-    expect(find.text('Administrador Carla Vargas'), findsOneWidget);
-    await tocar(tester, find.text('Gestionar Supervisores'));
-
-    expect(find.text('Ana Rojas'), findsOneWidget);
   });
 }

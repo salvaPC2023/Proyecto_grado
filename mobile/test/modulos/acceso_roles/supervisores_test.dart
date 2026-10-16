@@ -40,7 +40,6 @@ void main() {
       await repositorio.crear(
         nombre: 'Ana',
         apellidoPaterno: 'Rojas',
-        nombreUsuario: 'ana',
         nombreDeGrupo: 'Grupo Suministros',
         horarioEntrada: '07:00',
         horarioSalida: '15:00',

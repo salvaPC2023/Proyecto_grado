@@ -7,7 +7,6 @@ abstract interface class RepositorioSupervisores {
     required String nombre,
     required String apellidoPaterno,
     String? apellidoMaterno,
-    required String nombreUsuario,
     required String nombreDeGrupo,
     required String horarioEntrada,
     required String horarioSalida,

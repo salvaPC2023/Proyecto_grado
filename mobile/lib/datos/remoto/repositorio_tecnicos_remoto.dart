@@ -22,7 +22,6 @@ class RepositorioTecnicosRemoto implements RepositorioTecnicos {
     required String nombre,
     required String apellidoPaterno,
     String? apellidoMaterno,
-    required String nombreUsuario,
     required String profesion,
   }) {
     return traducirErrores(() async {
@@ -30,7 +29,6 @@ class RepositorioTecnicosRemoto implements RepositorioTecnicos {
         'nombre': nombre,
         'apellido_paterno': apellidoPaterno,
         'apellido_materno': apellidoMaterno,
-        'nombre_usuario': nombreUsuario,
         'profesion': profesion,
       });
       return tecnicoDesdeJson(respuesta.data as Json);

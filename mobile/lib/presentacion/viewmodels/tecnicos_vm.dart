@@ -16,21 +16,20 @@ class TecnicosViewModel extends AsyncNotifier<List<Tecnico>> {
     state = await AsyncValue.guard(() => ref.read(repositorioTecnicosProvider).listar());
   }
 
-  Future<void> crear({
+  Future<Tecnico> crear({
     required String nombre,
     required String apellidoPaterno,
     String? apellidoMaterno,
-    required String nombreUsuario,
     required String profesion,
   }) async {
-    await ref.read(repositorioTecnicosProvider).crear(
+    final tecnico = await ref.read(repositorioTecnicosProvider).crear(
           nombre: nombre,
           apellidoPaterno: apellidoPaterno,
           apellidoMaterno: apellidoMaterno,
-          nombreUsuario: nombreUsuario,
           profesion: profesion,
         );
     await recargar();
+    return tecnico;
   }
 
   Future<void> cambiarEstado(String tecnicoId, bool activo) async {
