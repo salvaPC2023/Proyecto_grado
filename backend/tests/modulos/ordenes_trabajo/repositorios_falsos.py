@@ -1,7 +1,7 @@
 from src.modulos.acceso_roles.dominio.modelos import Tecnico
 from src.modulos.acceso_roles.dominio.puertos import RepositorioSupervisores, RepositorioTecnicos
 from src.modulos.ordenes_trabajo.dominio.puertos import CierreDuplicado, RepositorioOrdenesTrabajo
-from src.modulos.ubicaciones_tecnicas.dominio.puertos import RepositorioUbicacionesTecnicas
+from src.modulos.ubicaciones_tecnicas.dominio.puertos import RepositorioUbicacionesTecnicas, UbicacionDuplicada
 
 # Implementaciones en memoria, no se llama a la base de datos real
 
@@ -48,6 +48,10 @@ class RepositorioUbicacionesFalso(RepositorioUbicacionesTecnicas):
         return next((u for u in self._ubicaciones if u.id == id), None)
 
     def crear(self, ubicacion):
+        # imita la restricción uq_ubicacion_niveles de la base
+        niveles = lambda u: (u.sector, u.subsector, u.sistema, u.subsistema)
+        if any(niveles(u) == niveles(ubicacion) for u in self._ubicaciones):
+            raise UbicacionDuplicada()
         self._ubicaciones.append(ubicacion)
         return ubicacion
 

@@ -4,6 +4,10 @@ from typing import Literal
 from uuid import UUID
 
 
+# tipo de cuenta; supervisor y técnico se distinguen por su propia tabla, no por este valor
+RolUsuario = Literal["comun", "admin"]
+
+
 @dataclass
 class Usuario:
     id: UUID
@@ -14,6 +18,7 @@ class Usuario:
     activo: bool
     debe_cambiar_password: bool
     apellido_materno: str | None = None
+    rol: RolUsuario = "comun"
 
 
 Profesion = Literal["electrico", "mecanico", "electromecanico"]

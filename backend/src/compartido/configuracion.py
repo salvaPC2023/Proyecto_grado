@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     # estandarización de descripciones; sin clave el backend arranca igual, pero no podrá estandarizar
     openai_api_key: str = ""
     openai_model: str = "gpt-4o-mini"
-    openai_timeout_segundos: float = 8
+    openai_timeout_segundos: float = 12
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 

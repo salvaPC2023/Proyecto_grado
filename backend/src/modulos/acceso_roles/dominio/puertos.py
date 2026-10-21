@@ -28,14 +28,8 @@ class RepositorioUsuarios(ABC):
     def actualizar(self, usuario: Usuario) -> Usuario:
         ...
 
-
-class RepositorioAdministradores(ABC):
     @abstractmethod
-    def existe_alguno(self) -> bool:
-        ...
-
-    @abstractmethod
-    def crear(self, usuario_id: UUID) -> None:
+    def existe_administrador(self) -> bool:
         ...
 
 

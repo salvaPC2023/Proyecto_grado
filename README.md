@@ -24,8 +24,9 @@ Requisitos: Git, Python 3.12, PostgreSQL 17, Flutter y Android Studio (para el A
 
 ### Base de datos
 
-1. En pgAdmin, crear la base `mantenimiento_db`.
-2. Crear sus tablas con el script de la base de datos.
+En pgAdmin, crear la base vacía `mantenimiento_db`. Las tablas las crea Alembic en el paso siguiente.
+
+Para ver el esquema completo en SQL legible, se genera desde la migración con `alembic upgrade head --sql` (no se guarda en el repositorio).
 
 ### Backend
 
@@ -35,32 +36,27 @@ Desde la carpeta `backend`:
 py -3.12 -m venv .venv
 .\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
-alembic stamp head
+alembic upgrade head
 ```
 
-Antes de `alembic stamp head` hay que crear en `backend` un archivo `.env` con estas dos variables:
+Antes de `alembic upgrade head` hay que crear en `backend` un archivo `.env` con estas variables:
 
 ```env
 DATABASE_URL=postgresql://postgres:<contraseña>@localhost:5432/mantenimiento_db
 JWT_SECRET_KEY=<una cadena larga y aleatoria>
+ADMIN_USUARIO_INICIAL=admin
+ADMIN_PASSWORD_INICIAL=<contraseña inicial del administrador>
 ```
 
-`alembic stamp head` registra que la base ya está en la última versión, sin ejecutar migraciones.
+`alembic upgrade head` crea todas las tablas en la base vacía.
 
-Para empezar hace falta un administrador, que se crea directamente en la base; después, el administrador registra a los supervisores desde la app, y cada supervisor registra a sus técnicos. La contraseña se guarda cifrada; el valor para `password_hash` se obtiene con:
+Al arrancar, si no hay ningún administrador, el backend crea uno con `ADMIN_USUARIO_INICIAL` y `ADMIN_PASSWORD_INICIAL`; en su primer ingreso debe cambiar usuario y contraseña. Después, el administrador registra a los supervisores (o los importa desde Excel) y cada supervisor registra a sus técnicos.
+
+Para volver a empezar con la base vacía:
 
 ```terminal
-python -c "from src.compartido.seguridad import hashear_password; print(hashear_password('LaContrasena'))"
-```
-
-Con ese valor, en pgAdmin:
-
-```sql
-INSERT INTO usuarios (id, nombre, apellido_paterno, nombre_usuario, password_hash, activo, debe_cambiar_password)
-VALUES (gen_random_uuid(), 'Nombre', 'Apellido', 'admin', '<password_hash>', true, false);
-
-INSERT INTO administradores (id, usuario_id)
-SELECT gen_random_uuid(), id FROM usuarios WHERE nombre_usuario = 'admin';
+alembic downgrade base
+alembic upgrade head
 ```
 
 ### App móvil

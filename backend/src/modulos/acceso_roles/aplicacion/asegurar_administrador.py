@@ -3,22 +3,21 @@ from uuid import uuid4
 from src.compartido.seguridad import hashear_password
 
 from ..dominio.modelos import Usuario
-from ..dominio.puertos import RepositorioAdministradores, RepositorioUsuarios
+from ..dominio.puertos import RepositorioUsuarios
 
 
 def asegurar_administrador(
     nombre_usuario: str,
     password: str,
     repositorio_usuarios: RepositorioUsuarios,
-    repositorio_administradores: RepositorioAdministradores,
 ) -> bool:
     """Crea el administrador inicial si el sistema no tiene ninguno; True si lo creó"""
-    if repositorio_administradores.existe_alguno():
+    if repositorio_usuarios.existe_administrador():
         return False
     if repositorio_usuarios.obtener_por_nombre_usuario(nombre_usuario) is not None:
         return False
 
-    usuario = repositorio_usuarios.crear(Usuario(
+    repositorio_usuarios.crear(Usuario(
         id=uuid4(),
         nombre="Administrador",
         apellido_paterno="ESPODI",
@@ -27,6 +26,6 @@ def asegurar_administrador(
         activo=True,
         # la empresa entra con la contraseña inicial y debe cambiarla
         debe_cambiar_password=True,
+        rol="admin",
     ))
-    repositorio_administradores.crear(usuario.id)
     return True

@@ -12,6 +12,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from src.compartido.bd import Base
 from src.compartido.configuracion import settings
 
+# los modelos se registran en Base.metadata al importarlos; sin esto, "alembic check" y
+# "alembic revision --autogenerate" no ven ninguna tabla
+from src.modulos.acceso_roles.infraestructura import orm as _orm_acceso_roles  # noqa: F401
+from src.modulos.ubicaciones_tecnicas.infraestructura import orm as _orm_ubicaciones  # noqa: F401
+from src.modulos.ordenes_trabajo.infraestructura import orm as _orm_ordenes  # noqa: F401
+
 config = context.config
 
 config.set_main_option("sqlalchemy.url", settings.database_url)

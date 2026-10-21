@@ -38,6 +38,9 @@ class RepositorioUsuariosFalso(RepositorioUsuarios):
     def obtener_rol(self, usuario_id):
         return self._rol
 
+    def existe_administrador(self):
+        return any(u.rol == "admin" for u in self.usuarios.values())
+
     def crear(self, usuario):
         self.usuarios[usuario.nombre_usuario] = usuario
         return usuario

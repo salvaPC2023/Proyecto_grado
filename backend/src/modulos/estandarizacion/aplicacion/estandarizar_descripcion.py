@@ -1,5 +1,7 @@
 import re
 
+from ..dominio.estructura import cumple_estructura
+from ..dominio.mediciones import conserva_mediciones
 from ..dominio.puertos import ServicioEstandarizacion, ServicioNoDisponible
 
 
@@ -18,7 +20,13 @@ def estandarizar_descripcion(texto: str, servicio: ServicioEstandarizacion) -> s
         raise DescripcionVacia()
 
     resultado = servicio.estandarizar(texto).strip()
-    # no se acepta un resultado vacío ni uno que pierda o cambie algún valor numérico
-    if not resultado or set(numeros_de(resultado)) != set(numeros_de(texto)):
+    # no se acepta un resultado vacío, fuera de la plantilla, que pierda o cambie algún valor numérico,
+    # ni que quite o agregue una unidad; la app ofrece entonces continuar con el texto original
+    if (
+        not resultado
+        or not cumple_estructura(resultado)
+        or set(numeros_de(resultado)) != set(numeros_de(texto))
+        or not conserva_mediciones(texto, resultado)
+    ):
         raise ServicioNoDisponible()
     return resultado

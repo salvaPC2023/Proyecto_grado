@@ -1,6 +1,6 @@
 import uuid
 from datetime import time
-from sqlalchemy import Boolean, Enum as SQLEnum, ForeignKey, String, Time
+from sqlalchemy import Boolean, Enum as SQLEnum, ForeignKey, String, Time, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column
 from src.compartido.bd import Base
@@ -17,13 +17,12 @@ class UsuarioORM(Base):
     password_hash: Mapped[str] = mapped_column(String(255))
     activo: Mapped[bool] = mapped_column(Boolean, default=True)
     debe_cambiar_password: Mapped[bool] = mapped_column(Boolean, default=True)
-
-class AdministradorORM(Base):
-    __tablename__ = "administradores"
-
-    id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True)
-    usuario_id: Mapped[uuid.UUID] = mapped_column(
-        PGUUID(as_uuid=True), ForeignKey("usuarios.id"), unique=True
+    # el administrador no tiene datos ni relaciones propias: se distingue con este atributo.
+    # supervisor y técnico no van aquí, porque ya los define su propia tabla
+    rol: Mapped[str] = mapped_column(
+        SQLEnum("comun", "admin", name="rol_usuario_enum", create_type=False),
+        default="comun",
+        server_default="comun",
     )
 
 class SupervisorORM(Base):
@@ -39,6 +38,8 @@ class SupervisorORM(Base):
 
 class GrupoORM(Base):
     __tablename__ = "grupo"
+    # un supervisor tiene un solo grupo
+    __table_args__ = (UniqueConstraint("supervisor_id", name="uq_grupo_supervisor"),)
 
     id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True)
     nombre_de_grupo: Mapped[str] = mapped_column(String(100))

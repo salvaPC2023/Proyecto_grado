@@ -7,7 +7,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from src.compartido.bd import SessionLocal
 from src.compartido.configuracion import settings
 from src.modulos.acceso_roles.aplicacion.asegurar_administrador import asegurar_administrador
-from src.modulos.acceso_roles.infraestructura.repositorio_administradores import RepositorioAdministradoresSQL
 from src.modulos.acceso_roles.infraestructura.repositorio_usuarios import RepositorioUsuariosSQL
 
 from src.modulos.acceso_roles.infraestructura.router import router_auth as acceso_roles_router_auth, router_perfil as acceso_roles_router_perfil, router_tecnicos as acceso_roles_router_tecnicos, router_supervisores as acceso_roles_router_supervisores, router_grupos as acceso_roles_router_grupos
@@ -27,8 +26,7 @@ async def ciclo_de_vida(_: FastAPI):
     else:
         with SessionLocal() as sesion:
             creado = asegurar_administrador(
-                settings.admin_usuario_inicial, settings.admin_password_inicial,
-                RepositorioUsuariosSQL(sesion), RepositorioAdministradoresSQL(sesion),
+                settings.admin_usuario_inicial, settings.admin_password_inicial, RepositorioUsuariosSQL(sesion),
             )
         if creado:
             registro.info("Administrador inicial creado: %s", settings.admin_usuario_inicial)

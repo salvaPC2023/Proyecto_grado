@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from decimal import Decimal
 
-from sqlalchemy import Boolean, DateTime, Enum as SQLEnum, ForeignKey, Numeric, SmallInteger, String, Text
+from sqlalchemy import Boolean, DateTime, Enum as SQLEnum, ForeignKey, Numeric, SmallInteger, String, Text, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -34,6 +34,7 @@ class OrdenDeTrabajoORM(Base):
 
 class PasoOTORM(Base):
     __tablename__ = "pasos_de_ots"
+    __table_args__ = (UniqueConstraint("ot_id", "numero_paso", name="uq_paso_numero"),)
 
     id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True)
     ot_id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), ForeignKey("ordenes_de_trabajo.id"))
@@ -47,9 +48,11 @@ class PasoOTORM(Base):
 
 class CierrePasoORM(Base):
     __tablename__ = "cierres_paso_ot"
+    # un solo cierre por paso: si un cierre se reenvía, la base rechaza el segundo (CierreDuplicado)
+    __table_args__ = (UniqueConstraint("paso_ot_id", name="uq_cierre_paso"),)
 
     id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True)
-    paso_ot_id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), ForeignKey("pasos_de_ots.id"), unique=True)
+    paso_ot_id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), ForeignKey("pasos_de_ots.id"))
     fecha_hora_notificacion: Mapped[datetime] = mapped_column(DateTime)
     tiempo_real_trabajado: Mapped[Decimal] = mapped_column(Numeric(5, 2))
     trabajo_finalizado: Mapped[bool] = mapped_column(Boolean)

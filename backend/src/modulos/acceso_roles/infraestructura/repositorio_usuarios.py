@@ -3,7 +3,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 from ..dominio.modelos import Usuario
 from ..dominio.puertos import Rol, RepositorioUsuarios
-from .orm import AdministradorORM, SupervisorORM, TecnicoORM, UsuarioORM
+from .orm import SupervisorORM, TecnicoORM, UsuarioORM
 
 def usuario_a_dominio(orm: UsuarioORM) -> Usuario:
     return Usuario(
@@ -15,6 +15,7 @@ def usuario_a_dominio(orm: UsuarioORM) -> Usuario:
         password_hash=orm.password_hash,
         activo=orm.activo,
         debe_cambiar_password=orm.debe_cambiar_password,
+        rol=orm.rol,
     )
 
 class RepositorioUsuariosSQL(RepositorioUsuarios):
@@ -32,10 +33,8 @@ class RepositorioUsuariosSQL(RepositorioUsuarios):
         return usuario_a_dominio(orm) if orm else None
 
     def obtener_rol(self, usuario_id: UUID) -> Rol:
-        es_administrador = self._sesion.scalars(
-            select(AdministradorORM).where(AdministradorORM.usuario_id == usuario_id)
-        ).first()
-        if es_administrador is not None:
+        usuario = self._sesion.get(UsuarioORM, usuario_id)
+        if usuario is not None and usuario.rol == "admin":
             return "administrador"
 
         es_supervisor = self._sesion.scalars(
@@ -51,8 +50,13 @@ class RepositorioUsuariosSQL(RepositorioUsuarios):
             return "tecnico"
 
         raise ValueError(
-            f"El usuario {usuario_id} no está en Administradores, Supervisores ni Tecnicos"
+            f"El usuario {usuario_id} no es administrador, supervisor ni técnico"
         )
+
+    def existe_administrador(self) -> bool:
+        return self._sesion.scalars(
+            select(UsuarioORM.id).where(UsuarioORM.rol == "admin").limit(1)
+        ).first() is not None
 
     def crear(self, usuario: Usuario) -> Usuario:
         orm = UsuarioORM(
@@ -64,6 +68,7 @@ class RepositorioUsuariosSQL(RepositorioUsuarios):
             password_hash=usuario.password_hash,
             activo=usuario.activo,
             debe_cambiar_password=usuario.debe_cambiar_password,
+            rol=usuario.rol,
         )
         self._sesion.add(orm)
         self._sesion.commit()
@@ -79,6 +84,7 @@ class RepositorioUsuariosSQL(RepositorioUsuarios):
         orm.password_hash = usuario.password_hash
         orm.activo = usuario.activo
         orm.debe_cambiar_password = usuario.debe_cambiar_password
+        # el rol no se cambia desde aquí: ningún caso de uso convierte a alguien en administrador
         self._sesion.commit()
         self._sesion.refresh(orm)
         return usuario_a_dominio(orm)
