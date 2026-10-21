@@ -1,3 +1,4 @@
+import '../../dominio/modelos/comunicado.dart';
 import '../../dominio/modelos/grupo.dart';
 import '../../dominio/modelos/orden_trabajo.dart';
 import '../../dominio/modelos/perfil.dart';
@@ -7,6 +8,21 @@ import '../../dominio/modelos/tecnico.dart';
 
 
 typedef Json = Map<String, dynamic>;
+
+Comunicado comunicadoDesdeJson(Json json) {
+  return Comunicado(
+    id: json['id'] as String,
+    titulo: json['titulo'] as String,
+    texto: json['texto'] as String?,
+    categoria: CategoriaComunicado.values.byName(json['categoria'] as String),
+    tieneImagen: json['tiene_imagen'] as bool,
+    personal: json['personal'] as bool,
+    fechaEnvio: DateTime.parse(json['fecha_envio'] as String),
+    fechaExpiracion: DateTime.parse(json['fecha_expiracion'] as String),
+    autorNombre: json['autor_nombre'] as String,
+    destinatarioNombre: json['destinatario_nombre'] as String?,
+  );
+}
 
 AvisoImportacion _avisoDesdeJson(Json json) =>
     AvisoImportacion(fila: json['fila'] as int, dato: json['dato'] as String, motivo: json['motivo'] as String);

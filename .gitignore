@@ -39,3 +39,4 @@ coverage/
 # Esquema generado y evaluaciones del prompt (datos de prueba de ESPODI)
 backend/bd/
 backend/evaluacion/
+backend/datos/

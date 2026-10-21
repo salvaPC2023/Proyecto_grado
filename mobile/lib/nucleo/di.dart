@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../datos/remoto/repositorio_autenticacion_remoto.dart';
+import '../datos/remoto/repositorio_comunicados_remoto.dart';
 import '../datos/remoto/repositorio_estandarizacion_remoto.dart';
 import '../datos/remoto/repositorio_excel_remoto.dart';
 import '../datos/remoto/repositorio_grupos_remoto.dart';
@@ -10,6 +11,7 @@ import '../datos/remoto/repositorio_supervisores_remoto.dart';
 import '../datos/remoto/repositorio_tecnicos_remoto.dart';
 import '../datos/remoto/repositorio_ubicaciones_remoto.dart';
 import '../dominio/repositorios/repositorio_autenticacion.dart';
+import '../dominio/repositorios/repositorio_comunicados.dart';
 import '../dominio/repositorios/repositorio_estandarizacion.dart';
 import '../dominio/repositorios/repositorio_excel.dart';
 import '../dominio/repositorios/repositorio_grupos.dart';
@@ -55,4 +57,8 @@ final repositorioUbicacionesProvider = Provider<RepositorioUbicaciones>(
 
 final repositorioExcelProvider = Provider<RepositorioExcel>(
   (ref) => RepositorioExcelRemoto(ref.watch(dioProvider)),
+);
+
+final repositorioComunicadosProvider = Provider<RepositorioComunicados>(
+  (ref) => RepositorioComunicadosRemoto(ref.watch(dioProvider)),
 );

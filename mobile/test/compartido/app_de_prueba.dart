@@ -6,6 +6,7 @@ import 'package:maintenance_app/nucleo/di.dart';
 import 'package:maintenance_app/nucleo/sesion.dart';
 
 import '../modulos/acceso_roles/repositorios_falsos.dart';
+import '../modulos/comunicados/repositorios_falsos.dart';
 import '../modulos/ordenes_trabajo/repositorios_falsos.dart';
 
 /// Crea un contenedor de Riverpod que usa los repositorios falsos en vez de la API
@@ -16,6 +17,7 @@ ProviderContainer crearContenedor({
   RepositorioTecnicosFalso? tecnicos,
   RepositorioOrdenesTrabajoFalso? ordenes,
   RepositorioSupervisoresFalso? supervisores,
+  RepositorioComunicadosFalso? comunicados,
 }) {
   final contenedor = ProviderContainer(
     retry: (_, _) => null, // el error se ve de inmediato
@@ -26,6 +28,7 @@ ProviderContainer crearContenedor({
       repositorioOrdenesTrabajoProvider.overrideWithValue(ordenes ?? RepositorioOrdenesTrabajoFalso()),
       repositorioSupervisoresProvider.overrideWithValue(supervisores ?? RepositorioSupervisoresFalso()),
       repositorioEstandarizacionProvider.overrideWithValue(RepositorioEstandarizacionFalso()),
+      repositorioComunicadosProvider.overrideWithValue(comunicados ?? RepositorioComunicadosFalso()),
     ],
   );
   addTearDown(contenedor.dispose);
@@ -48,6 +51,7 @@ Future<ProviderContainer> montarPantalla(
   RepositorioTecnicosFalso? tecnicos,
   RepositorioOrdenesTrabajoFalso? ordenes,
   RepositorioSupervisoresFalso? supervisores,
+  RepositorioComunicadosFalso? comunicados,
 }) async {
   // Pantalla grande de los tests es mas ancha que la real
   tester.view.physicalSize = const Size(800, 1600);
@@ -61,6 +65,7 @@ Future<ProviderContainer> montarPantalla(
     tecnicos: tecnicos,
     ordenes: ordenes,
     supervisores: supervisores,
+    comunicados: comunicados,
   );
 
   await tester.pumpWidget(UncontrolledProviderScope(

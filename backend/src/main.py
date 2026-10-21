@@ -14,6 +14,7 @@ from src.modulos.ubicaciones_tecnicas.infraestructura.router import router_ubica
 from src.modulos.ordenes_trabajo.infraestructura.router import router_ots as ordenes_trabajo_router
 from src.modulos.estandarizacion.infraestructura.router import router_descripciones as estandarizacion_router
 from src.modulos.importacion.infraestructura.router import router_importacion as importacion_router
+from src.modulos.comunicados.infraestructura.router import router_comunicados as comunicados_router
 
 registro = logging.getLogger("uvicorn.error")
 
@@ -52,6 +53,7 @@ app.include_router(ubicaciones_tecnicas_router, prefix="/api/v1")
 app.include_router(ordenes_trabajo_router, prefix="/api/v1")
 app.include_router(estandarizacion_router, prefix="/api/v1")
 app.include_router(importacion_router, prefix="/api/v1")
+app.include_router(comunicados_router, prefix="/api/v1")
 
 
 @app.get("/health")

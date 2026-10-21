@@ -17,6 +17,7 @@ from src.compartido.configuracion import settings
 from src.modulos.acceso_roles.infraestructura import orm as _orm_acceso_roles  # noqa: F401
 from src.modulos.ubicaciones_tecnicas.infraestructura import orm as _orm_ubicaciones  # noqa: F401
 from src.modulos.ordenes_trabajo.infraestructura import orm as _orm_ordenes  # noqa: F401
+from src.modulos.comunicados.infraestructura import orm as _orm_comunicados  # noqa: F401
 
 config = context.config
 

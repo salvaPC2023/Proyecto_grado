@@ -14,6 +14,8 @@ class Settings(BaseSettings):
     openai_api_key: str = ""
     openai_model: str = "gpt-4o-mini"
     openai_timeout_segundos: float = 12
+    # carpeta donde se guardan las imágenes de los comunicados (relativa a la carpeta backend)
+    comunicados_imagenes_dir: str = "datos/imagenes_comunicados"
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 
