@@ -1,6 +1,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Sin este permiso el APK de release no puede conectarse al backend
+         (en modo desarrollo Flutter lo agrega solo, por eso antes funcionaba en el emulador) -->
+    <uses-permission android:name="android.permission.INTERNET"/>
     <application
-        android:label="maintenance_app"
+        android:label="ESPODI Mantenimiento"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
