@@ -3,7 +3,7 @@ from uuid import uuid4
 
 from src.compartido.seguridad import hashear_password
 from src.modulos.acceso_roles.dominio.modelos import Supervisor, Tecnico, Usuario
-from src.modulos.acceso_roles.dominio.puertos import RepositorioSupervisores, RepositorioTecnicos, RepositorioUsuarios
+from src.modulos.acceso_roles.dominio.puertos import GrupoEnUso, RepositorioGrupos, RepositorioSupervisores, RepositorioTecnicos, RepositorioUsuarios
 
 # Implementaciones en memoria, no se llama a la base de datos real
 
@@ -82,9 +82,10 @@ class RepositorioTecnicosFalso(RepositorioTecnicos):
 
 
 class RepositorioSupervisoresFalso(RepositorioSupervisores):
-    def __init__(self, supervisores=None):
+    def __init__(self, supervisores=None, repositorio_grupos=None):
         self.supervisores = list(supervisores or [])
-        self.grupos = {}
+        self.grupos = {}  # supervisor_id -> grupo, si no se comparte un RepositorioGruposFalso
+        self._repositorio_grupos = repositorio_grupos
 
     def obtener_por_usuario_id(self, usuario_id):
         return next((s for s in self.supervisores if s.usuario_id == usuario_id), None)
@@ -101,7 +102,61 @@ class RepositorioSupervisoresFalso(RepositorioSupervisores):
         return list(self.supervisores)
 
     def obtener_grupo(self, supervisor_id):
+        if self._repositorio_grupos is not None:
+            return next((g for g in self._repositorio_grupos.listar() if g.supervisor_id == supervisor_id), None)
         return self.grupos.get(supervisor_id)
+
+    def actualizar(self, supervisor):
+        grupo = self.obtener_grupo(supervisor.id)
+        if grupo is not None:
+            grupo.horario_entrada = supervisor.horario_entrada
+            grupo.horario_salida = supervisor.horario_salida
+        return supervisor
+
+
+class RepositorioGruposFalso(RepositorioGrupos):
+    """Los grupos en memoria; usa el repositorio de supervisores para copiar su horario al asignarlos"""
+
+    def __init__(self, grupos=None, tecnicos_por_grupo=None, con_comunicados=()):
+        self.grupos = {g.id: g for g in grupos or []}
+        self._tecnicos_por_grupo = tecnicos_por_grupo or {}
+        self._con_comunicados = set(con_comunicados)
+        self.repositorio_supervisores = None
+
+    def listar(self):
+        return list(self.grupos.values())
+
+    def obtener_por_id(self, id):
+        return self.grupos.get(id)
+
+    def crear(self, grupo):
+        self.grupos[grupo.id] = grupo
+        return grupo
+
+    def asignar_supervisores(self, asignaciones):
+        for grupo_id, supervisor_id in asignaciones.items():
+            grupo = self.grupos[grupo_id]
+            grupo.supervisor_id = supervisor_id
+            if supervisor_id is not None and self.repositorio_supervisores is not None:
+                supervisor = self.repositorio_supervisores.obtener_por_id(supervisor_id)
+                grupo.horario_entrada = supervisor.horario_entrada
+                grupo.horario_salida = supervisor.horario_salida
+
+    def contar_tecnicos(self, grupo_id):
+        return self._tecnicos_por_grupo.get(grupo_id, 0)
+
+    def eliminar(self, id):
+        if id in self._con_comunicados:
+            raise GrupoEnUso()
+        del self.grupos[id]
+
+
+def repositorios_de_grupos(supervisores, grupos, **opciones):
+    """Supervisores y grupos que comparten los mismos datos, como en la base real"""
+    repositorio_grupos = RepositorioGruposFalso(grupos, **opciones)
+    repositorio_supervisores = RepositorioSupervisoresFalso(supervisores, repositorio_grupos=repositorio_grupos)
+    repositorio_grupos.repositorio_supervisores = repositorio_supervisores
+    return repositorio_supervisores, repositorio_grupos
 
 
 def crear_tecnico_de(usuario, profesion="mecanico", grupo_id=None):

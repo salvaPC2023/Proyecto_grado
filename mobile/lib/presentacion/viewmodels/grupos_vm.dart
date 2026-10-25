@@ -32,6 +32,11 @@ class GruposViewModel extends AsyncNotifier<List<Grupo>> {
     await ref.read(repositorioGruposProvider).asignarSupervisor(grupoId, supervisorId);
     await _despuesDeCambiar();
   }
+
+  Future<void> eliminar(String grupoId) async {
+    await ref.read(repositorioGruposProvider).eliminar(grupoId);
+    await _despuesDeCambiar();
+  }
 }
 
 final gruposViewModelProvider = AsyncNotifierProvider<GruposViewModel, List<Grupo>>(GruposViewModel.new);

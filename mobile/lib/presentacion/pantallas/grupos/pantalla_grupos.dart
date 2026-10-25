@@ -54,6 +54,26 @@ class PantallaGrupos extends ConsumerWidget {
     );
   }
 
+  Future<void> _borrar(BuildContext context, WidgetRef ref, Grupo grupo) async {
+    final confirmado = await showDialog<bool>(
+      context: context,
+      builder: (dialogo) => AlertDialog(
+        title: Text('Borrar ${grupo.nombreDeGrupo}'),
+        content: Text(
+          grupo.supervisorNombre == null
+              ? '¿Borrar este grupo? No tiene técnicos.'
+              : '¿Borrar este grupo? No tiene técnicos. ${grupo.supervisorNombre} quedará sin grupo hasta que le asignes otro.',
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialogo, false), child: const Text('Cancelar')),
+          FilledButton(onPressed: () => Navigator.pop(dialogo, true), child: const Text('Borrar')),
+        ],
+      ),
+    );
+    if (confirmado != true || !context.mounted) return;
+    await _ejecutar(context, () => ref.read(gruposViewModelProvider.notifier).eliminar(grupo.id), 'Grupo borrado');
+  }
+
   Future<void> _nuevoGrupo(BuildContext context, WidgetRef ref) async {
     final supervisores = await ref.read(supervisoresViewModelProvider.future);
     if (!context.mounted) return;
@@ -109,6 +129,12 @@ class PantallaGrupos extends ConsumerWidget {
                                 onPressed: () => _cambiarSupervisor(context, ref, grupo),
                                 child: const Text('Cambiar supervisor'),
                               ),
+                              // solo se borra un grupo vacío (el backend también lo exige)
+                              if (grupo.cantidadTecnicos == 0)
+                                TextButton(
+                                  onPressed: () => _borrar(context, ref, grupo),
+                                  child: const Text('Borrar'),
+                                ),
                             ],
                           );
                         },

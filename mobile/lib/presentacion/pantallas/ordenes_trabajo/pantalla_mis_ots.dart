@@ -5,6 +5,7 @@ import '../../../dominio/modelos/orden_trabajo.dart';
 import '../../../nucleo/errores.dart';
 import '../../../nucleo/tema.dart';
 import '../../viewmodels/ordenes_trabajo_vm.dart';
+import '../../widgets/avisos_conexion.dart';
 import '../../widgets/barra_navegacion_inferior.dart';
 import 'componentes_ot.dart';
 import 'pantalla_detalle_ot.dart';
@@ -57,6 +58,10 @@ class _PantallaMisOtsState extends ConsumerState<PantallaMisOts> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             const EncabezadoOts(titulo: 'Órdenes de Trabajo'),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 20),
+              child: Column(children: [AvisoDatosSinConexion(), AvisoCierresPendientes()]),
+            ),
             TiraDeDias(
               seleccionada: viewModel.fecha,
               onSeleccionar: viewModel.filtrarPorFecha,

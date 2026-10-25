@@ -5,7 +5,9 @@ import '../../../dominio/modelos/orden_trabajo.dart';
 import '../../../nucleo/errores.dart';
 import '../../../nucleo/sesion.dart';
 import '../../../nucleo/tema.dart';
+import '../../viewmodels/cola_cierres_vm.dart';
 import '../../viewmodels/ordenes_trabajo_vm.dart';
+import '../../widgets/avisos_conexion.dart';
 import '../../widgets/barra_navegacion_inferior.dart';
 import 'componentes_ot.dart';
 import 'formato_ot.dart';
@@ -19,6 +21,10 @@ class PantallaDetalleOt extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final estado = ref.watch(detalleOtProvider(otId));
     final esTecnico = !(ref.watch(sesionProvider)?.esSupervisor ?? false);
+    // pasos cerrados en el celular que todavía no llegaron al servidor
+    final pendientesDeEnvio = {
+      for (final c in ref.watch(misCierresEnColaProvider)) if (c.otId == otId && !c.rechazado) c.pasoId,
+    };
 
     return Scaffold(
       backgroundColor: ColoresApp.fondo,
@@ -41,6 +47,7 @@ class PantallaDetalleOt extends ConsumerWidget {
                   child: ListView(
                     padding: const EdgeInsets.fromLTRB(20, 4, 20, 110),
                     children: [
+                      const AvisoDatosSinConexion(),
                       _Resumen(ot: ot),
                       const SizedBox(height: 14),
                       if (ot.pm01Total > 0) ...[
@@ -59,10 +66,13 @@ class PantallaDetalleOt extends ConsumerWidget {
                       for (final paso in ot.pasos)
                         _TarjetaPaso(
                           otId: ot.id,
+                          tituloOt: ot.titulo,
                           paso: paso,
+                          pendienteDeEnvio: pendientesDeEnvio.contains(paso.id),
                           puedeCerrar: esTecnico &&
                               paso.esPm01 &&
                               !paso.cerrado &&
+                              !pendientesDeEnvio.contains(paso.id) &&
                               ot.estatus != 'cerrada',
                         ),
                     ],
@@ -274,19 +284,30 @@ class _AvancePm01 extends StatelessWidget {
 }
 
 class _TarjetaPaso extends StatelessWidget {
-  const _TarjetaPaso({required this.otId, required this.paso, required this.puedeCerrar});
+  const _TarjetaPaso({
+    required this.otId,
+    required this.paso,
+    required this.puedeCerrar,
+    this.tituloOt = '',
+    this.pendienteDeEnvio = false,
+  });
   final String otId;
+  final String tituloOt;
   final PasoOt paso;
   final bool puedeCerrar;
+  final bool pendienteDeEnvio;
 
   Future<void> _abrirCierre(BuildContext context) async {
     final mensajero = ScaffoldMessenger.of(context);
-    final registrado = await Navigator.of(context).push<bool>(
-      MaterialPageRoute(builder: (_) => PantallaCierrePaso(otId: otId, paso: paso)),
+    final resultado = await Navigator.of(context).push<ResultadoCierre>(
+      MaterialPageRoute(builder: (_) => PantallaCierrePaso(otId: otId, paso: paso, tituloOt: tituloOt)),
     );
-    if (registrado == true) {
-      mensajero.showSnackBar(const SnackBar(content: Text('Cierre registrado')));
-    }
+    final mensaje = switch (resultado) {
+      ResultadoCierre.registrado => 'Cierre registrado',
+      ResultadoCierre.pendienteDeEnvio => 'Cierre guardado en el celular. Se enviará cuando vuelva la señal.',
+      _ => null,
+    };
+    if (mensaje != null) mensajero.showSnackBar(SnackBar(content: Text(mensaje)));
   }
 
   @override
@@ -327,7 +348,7 @@ class _TarjetaPaso extends StatelessWidget {
                 conBorde: !paso.esPm01,
               ),
               const Spacer(),
-              _EstadoPaso(paso: paso),
+              pendienteDeEnvio ? const InsigniaPendienteDeEnvio() : _EstadoPaso(paso: paso),
             ],
           ),
           const SizedBox(height: 10),

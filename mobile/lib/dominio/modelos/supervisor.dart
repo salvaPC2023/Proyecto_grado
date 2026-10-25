@@ -9,6 +9,8 @@ class Supervisor {
     required this.horarioEntrada,
     required this.horarioSalida,
     this.grupoNombre,
+    this.grupoId,
+    this.areaDesignada,
     this.passwordInicial,
   });
 
@@ -21,6 +23,8 @@ class Supervisor {
   final String horarioEntrada;
   final String horarioSalida;
   final String? grupoNombre;
+  final String? grupoId;
+  final String? areaDesignada;
   // solo viene en la respuesta al registrarlo, para mostrarla en el diálogo de datos de acceso
   final String? passwordInicial;
 

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../dominio/modelos/orden_trabajo.dart';
 import '../../../nucleo/sesion.dart';
 import '../../../nucleo/tema.dart';
+import '../../widgets/avisos_conexion.dart';
 import '../../widgets/barra_navegacion_inferior.dart';
 import '../../viewmodels/ordenes_trabajo_vm.dart';
 import '../../widgets/encabezado_usuario.dart';
@@ -31,6 +32,8 @@ class PantallaInicio extends ConsumerWidget {
             children: [
               const EncabezadoUsuario(),
               const SizedBox(height: 20),
+              // los cierres se registran solo como técnico; el supervisor no tiene cola
+              if (!esSupervisor) const AvisoCierresPendientes(),
               _TarjetaProgreso(
                 textoBoton: 'Ver Órdenes de Trabajo',
                 esSupervisor: esSupervisor,

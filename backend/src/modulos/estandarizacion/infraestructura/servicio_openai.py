@@ -1,3 +1,5 @@
+import logging
+
 import openai
 
 from src.compartido.configuracion import settings
@@ -5,10 +7,13 @@ from src.compartido.configuracion import settings
 from ..dominio.puertos import ServicioEstandarizacion, ServicioNoDisponible, TiempoAgotado
 from .prompt_sistema import PROMPT_SISTEMA
 
+registro = logging.getLogger("uvicorn.error")
+
 
 class ServicioEstandarizacionOpenAI(ServicioEstandarizacion):
     def estandarizar(self, texto: str) -> str:
         if not settings.openai_api_key:
+            registro.warning("Estandarización no disponible: OPENAI_API_KEY está vacía en .env")
             raise ServicioNoDisponible()
 
         # sin reintentos, para que la espera nunca pase del tiempo límite
@@ -24,7 +29,9 @@ class ServicioEstandarizacionOpenAI(ServicioEstandarizacion):
                 ],
             )
         except openai.APITimeoutError:  # va antes porque también es un error de conexión
+            registro.warning("Estandarización: OpenAI no respondió en %s s", settings.openai_timeout_segundos)
             raise TiempoAgotado()
-        except openai.OpenAIError:  # clave inválida, sin saldo, límite de uso, sin conexión
+        except openai.OpenAIError as error:  # clave inválida, sin saldo, límite de uso, sin conexión
+            registro.warning("Estandarización: OpenAI rechazó la llamada (%s: %s)", type(error).__name__, error)
             raise ServicioNoDisponible()
         return respuesta.choices[0].message.content or ""

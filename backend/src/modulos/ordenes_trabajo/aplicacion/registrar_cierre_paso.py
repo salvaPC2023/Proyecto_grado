@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from decimal import Decimal
 from uuid import UUID, uuid4
 
@@ -37,6 +37,14 @@ class CierreAnticipado(Exception):
     pass
 
 
+class FechaCierreFutura(Exception):
+    pass
+
+
+# margen para que un reloj del celular un poco adelantado no rechace el cierre
+TOLERANCIA_RELOJ = timedelta(minutes=5)
+
+
 def registrar_cierre_paso(
     ot_id: UUID,
     paso_id: UUID,
@@ -47,8 +55,13 @@ def registrar_cierre_paso(
     repositorio_ots: RepositorioOrdenesTrabajo,
     repositorio_tecnicos: RepositorioTecnicos,
     ahora: datetime | None = None,
+    cierre_id: UUID | None = None,
+    fecha_hora_cierre: datetime | None = None,
 ) -> OrdenDeTrabajo:
+    """cierre_id y fecha_hora_cierre los envía el celular: así un cierre hecho sin conexión conserva
+    su hora real, y si se reenvía con el mismo id no se duplica (se devuelve la OT tal como quedó)"""
     ahora = ahora or datetime.now()
+    momento = fecha_hora_cierre or ahora
 
     ot = repositorio_ots.obtener_por_id(ot_id)
     if ot is None:
@@ -56,12 +69,16 @@ def registrar_cierre_paso(
     tecnico = repositorio_tecnicos.obtener_por_usuario_id(tecnico_usuario_id)
     if tecnico is None or tecnico.id != ot.tecnico_asignado_id:
         raise SinAccesoAOT()
-    if ot.estatus == "cerrada":
-        raise OTYaCerrada()
 
     paso = next((p for p in ot.pasos if p.id == paso_id), None)
     if paso is None:
         raise PasoNoEncontrado()
+    # reenvío de un cierre que ya llegó (la cola del celular no recibió la respuesta): no es un error.
+    # Va antes de revisar si la OT está cerrada, porque el cierre reenviado pudo ser el que la cerró
+    if _ya_registrado(paso, cierre_id):
+        return ot
+    if ot.estatus == "cerrada":
+        raise OTYaCerrada()
     if paso.clave_control != "PM01":
         raise PasoNoRegistrable()
     if paso.cierre is not None:
@@ -72,7 +89,9 @@ def registrar_cierre_paso(
         raise TiempoInvalido()
     if not descripcion_trabajo_realizado.strip():
         raise DescripcionVacia()
-    if ahora.date() < ot.fecha_inic_planif.date():
+    if momento > ahora + TOLERANCIA_RELOJ:
+        raise FechaCierreFutura()
+    if momento.date() < ot.fecha_inic_planif.date():
         raise CierreAnticipado()
 
     # un PM01 no ejecutado también cuenta como cerrado
@@ -80,9 +99,9 @@ def registrar_cierre_paso(
     es_el_ultimo = not quedan_pendientes
 
     cierre = CierrePaso(
-        id=uuid4(),
+        id=cierre_id or uuid4(),
         paso_ot_id=paso.id,
-        fecha_hora_notificacion=ahora,
+        fecha_hora_notificacion=momento,
         tiempo_real_trabajado=tiempo_real_trabajado,
         trabajo_finalizado=es_el_ultimo,
         sin_trabajo_realizado=not ejecutado,
@@ -94,7 +113,16 @@ def registrar_cierre_paso(
             ot.id,
             cierre,
             estatus="cerrada" if es_el_ultimo else "en_progreso",
-            fecha_cierre=ahora if es_el_ultimo else None,
+            fecha_cierre=momento if es_el_ultimo else None,
         )
     except CierreDuplicado:
+        # dos envíos del mismo cierre llegaron a la vez: el segundo devuelve lo que guardó el primero
+        ot = repositorio_ots.obtener_por_id(ot_id)
+        paso = next((p for p in ot.pasos if p.id == paso_id), None)
+        if paso is not None and _ya_registrado(paso, cierre_id):
+            return ot
         raise PasoYaCerrado()
+
+
+def _ya_registrado(paso, cierre_id: UUID | None) -> bool:
+    return cierre_id is not None and paso.cierre is not None and paso.cierre.id == cierre_id

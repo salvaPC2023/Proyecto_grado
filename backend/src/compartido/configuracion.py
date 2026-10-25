@@ -5,7 +5,8 @@ class Settings(BaseSettings):
     database_url: str
     jwt_secret_key: str
     jwt_algorithm: str = "HS256"
-    jwt_expire_minutes: int = 60
+    # un técnico puede pasar horas sin señal: la cola de cierres se envía con este token (tarjeta 27)
+    jwt_expire_minutes: int = 240
     default_technician_password: str = "ESPODI2026"
     # administrador que se crea al arrancar si no hay ninguno; sin contraseña no se crea
     admin_usuario_inicial: str = "admin"

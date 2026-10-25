@@ -13,4 +13,14 @@ abstract interface class RepositorioSupervisores {
   });
 
   Future<void> cambiarEstado(String supervisorId, bool activo);
+
+  /// Turno, área y, opcionalmente, grupo: si el grupo ya tiene supervisor, se intercambian.
+  /// El nombre y los apellidos no se editan aquí: los cambia la propia persona en Mi Perfil
+  Future<Supervisor> editar({
+    required String supervisorId,
+    required String horarioEntrada,
+    required String horarioSalida,
+    String? areaDesignada,
+    String? grupoId,
+  });
 }

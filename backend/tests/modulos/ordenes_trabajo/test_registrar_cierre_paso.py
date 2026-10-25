@@ -8,6 +8,7 @@ from src.modulos.acceso_roles.dominio.modelos import Tecnico
 from src.modulos.ordenes_trabajo.aplicacion.registrar_cierre_paso import (
     CierreAnticipado,
     DescripcionVacia,
+    FechaCierreFutura,
     OTYaCerrada,
     PasoNoEncontrado,
     PasoNoRegistrable,
@@ -131,3 +132,82 @@ def test_paso_de_otra_ot_lanza_error(ot):
 
     with pytest.raises(PasoNoEncontrado):
         _cerrar(ot, paso_ajeno)
+
+
+# --- cola de cierres sin conexión (tarjeta 27) ---
+
+def _cerrar_con_id(repositorio_ots, ot, paso, cierre_id, fecha=None, ahora=DIA_DE_INICIO):
+    return registrar_cierre_paso(
+        ot.id, paso.id, TECNICO.usuario_id, "ejecutado", Decimal("1"), "Se cambió el rodamiento",
+        repositorio_ots, RepositorioTecnicosFalso(tecnicos=[TECNICO]), ahora=ahora, cierre_id=cierre_id, fecha_hora_cierre=fecha,
+    )
+
+
+def test_el_cierre_conserva_el_id_y_la_hora_del_celular(ot):
+    repositorio_ots = RepositorioOrdenesTrabajoFalso()
+    repositorio_ots.crear(ot)
+    cierre_id, hecho_sin_senal = uuid4(), datetime(2026, 10, 5, 10, 0)
+
+    resultado = _cerrar_con_id(repositorio_ots, ot, ot.pasos[1], cierre_id, fecha=hecho_sin_senal, ahora=datetime(2026, 10, 5, 15, 0))
+
+    assert resultado.pasos[1].cierre.id == cierre_id
+    assert resultado.pasos[1].cierre.fecha_hora_notificacion == hecho_sin_senal  # la hora del cierre, no la de llegada
+
+
+def test_reenviar_el_mismo_cierre_no_lo_duplica_ni_da_error(ot):
+    repositorio_ots = RepositorioOrdenesTrabajoFalso()
+    repositorio_ots.crear(ot)
+    cierre_id = uuid4()
+    _cerrar_con_id(repositorio_ots, ot, ot.pasos[1], cierre_id)
+
+    reenviado = _cerrar_con_id(repositorio_ots, ot, ot.pasos[1], cierre_id)
+
+    assert reenviado.pasos[1].cierre.id == cierre_id
+    assert reenviado.estatus == "en_progreso"
+
+
+def test_reenviar_el_cierre_que_cerro_la_ot_tampoco_da_error(ot):
+    repositorio_ots = RepositorioOrdenesTrabajoFalso()
+    repositorio_ots.crear(ot)
+    _cerrar_con_id(repositorio_ots, ot, ot.pasos[1], uuid4())
+    ultimo = uuid4()
+    _cerrar_con_id(repositorio_ots, ot, ot.pasos[2], ultimo)  # cierra la OT
+
+    reenviado = _cerrar_con_id(repositorio_ots, ot, ot.pasos[2], ultimo)
+
+    assert reenviado.estatus == "cerrada"
+
+
+def test_otro_cierre_para_un_paso_ya_cerrado_si_es_error(ot):
+    repositorio_ots = RepositorioOrdenesTrabajoFalso()
+    repositorio_ots.crear(ot)
+    _cerrar_con_id(repositorio_ots, ot, ot.pasos[1], uuid4())
+
+    with pytest.raises(PasoYaCerrado):
+        _cerrar_con_id(repositorio_ots, ot, ot.pasos[1], uuid4())
+
+
+def test_una_hora_de_cierre_en_el_futuro_lanza_error(ot):
+    repositorio_ots = RepositorioOrdenesTrabajoFalso()
+    repositorio_ots.crear(ot)
+
+    with pytest.raises(FechaCierreFutura):
+        _cerrar_con_id(repositorio_ots, ot, ot.pasos[1], uuid4(), fecha=datetime(2026, 10, 5, 11, 0), ahora=datetime(2026, 10, 5, 10, 0))
+
+
+def test_se_tolera_un_reloj_un_poco_adelantado(ot):
+    repositorio_ots = RepositorioOrdenesTrabajoFalso()
+    repositorio_ots.crear(ot)
+
+    resultado = _cerrar_con_id(repositorio_ots, ot, ot.pasos[1], uuid4(), fecha=datetime(2026, 10, 5, 10, 3), ahora=datetime(2026, 10, 5, 10, 0))
+
+    assert resultado.pasos[1].cierre is not None
+
+
+def test_la_regla_del_dia_de_inicio_usa_la_hora_del_cierre(ot):
+    repositorio_ots = RepositorioOrdenesTrabajoFalso()
+    repositorio_ots.crear(ot)
+
+    with pytest.raises(CierreAnticipado):
+        # llega el día de inicio, pero se hizo el día anterior
+        _cerrar_con_id(repositorio_ots, ot, ot.pasos[1], uuid4(), fecha=datetime(2026, 10, 4, 18, 0))

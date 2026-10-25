@@ -22,12 +22,15 @@ abstract interface class RepositorioOrdenesTrabajo {
 
   Future<List<OrdenTrabajo>> listarOtsGrupo({DateTime? fecha});
 
-  /// Registra el cierre de un paso PM01 y devuelve la OT actualizada
+  /// Registra el cierre de un paso PM01 y devuelve la OT actualizada.
+  /// [cierreId] y [fechaHora] se generan en el celular: un reenvío con el mismo id no se duplica
   Future<OrdenTrabajo> registrarCierre({
+    required String cierreId,
     required String otId,
     required String pasoId,
     required bool ejecutado,
     required double tiempoRealTrabajado,
     required String descripcion,
+    required DateTime fechaHora,
   });
 }

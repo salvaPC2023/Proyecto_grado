@@ -65,6 +65,21 @@ def test_coma_y_punto_decimal_cuentan_como_el_mismo_numero():
     assert estandarizar_descripcion(ORIGINAL, ServicioFalso(RESPUESTA_CORRECTA)) == RESPUESTA_CORRECTA
 
 
+def test_si_el_modelo_agrega_una_unidad_que_el_tecnico_no_escribio_se_le_quita_y_se_acepta():
+    original = "revision de la torre, agua entrada 35 y salida 29, estator 45 grados"
+    respuesta = """Equipo intervenido: Torre
+
+Mediciones termográficas:
+- Estator: 45 °C
+- Agua entrada: 35 °C
+- Agua salida: 29 °C"""
+
+    resultado = estandarizar_descripcion(original, ServicioFalso(respuesta))
+
+    assert "- Agua entrada: 35\n- Agua salida: 29" in resultado
+    assert "- Estator: 45 °C" in resultado  # la unidad que sí escribió se conserva
+
+
 def test_respuesta_vacia_se_rechaza():
     with pytest.raises(ServicioNoDisponible):
         estandarizar_descripcion(ORIGINAL, ServicioFalso("   "))

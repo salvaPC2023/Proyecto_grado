@@ -1,9 +1,10 @@
 from uuid import UUID
 from sqlalchemy import func, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from ..dominio.modelos import Grupo
-from ..dominio.puertos import RepositorioGrupos
-from .orm import GrupoORM, TecnicoORM
+from ..dominio.puertos import GrupoEnUso, RepositorioGrupos
+from .orm import GrupoORM, SupervisorORM, TecnicoORM
 from .repositorio_supervisores import grupo_a_dominio
 
 
@@ -40,7 +41,20 @@ class RepositorioGruposSQL(RepositorioGrupos):
         self._sesion.flush()
         for grupo in grupos:
             grupo.supervisor_id = asignaciones[grupo.id]
+            # el grupo pasa a trabajar en el turno de su nuevo supervisor
+            if grupo.supervisor_id is not None:
+                supervisor = self._sesion.get(SupervisorORM, grupo.supervisor_id)
+                grupo.horario_entrada = supervisor.horario_entrada
+                grupo.horario_salida = supervisor.horario_salida
         self._sesion.commit()
 
     def contar_tecnicos(self, grupo_id: UUID) -> int:
         return self._sesion.scalar(select(func.count()).select_from(TecnicoORM).where(TecnicoORM.grupo_id == grupo_id))
+
+    def eliminar(self, id: UUID) -> None:
+        self._sesion.delete(self._sesion.get(GrupoORM, id))
+        try:
+            self._sesion.commit()
+        except IntegrityError:  # lo usa otra tabla, por ejemplo un comunicado (llave foránea a grupo)
+            self._sesion.rollback()
+            raise GrupoEnUso()

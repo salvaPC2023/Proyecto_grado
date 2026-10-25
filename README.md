@@ -143,6 +143,7 @@ Desde backend con el entorno virtual activo:
 
 ```terminal
 cd backend
+.\.venv\Scripts\Activate.ps1
 pytest --cov --cov-report=term-missing
 ```
 

@@ -9,6 +9,12 @@ class GrupoNoEncontrado(Exception):
     pass
 
 
+class GrupoConTecnicos(Exception):
+    def __init__(self, cantidad: int):
+        super().__init__(f"El grupo tiene {cantidad} técnicos")
+        self.cantidad = cantidad
+
+
 def listar_grupos(repositorio_grupos: RepositorioGrupos) -> list[Grupo]:
     return repositorio_grupos.listar()
 
@@ -56,3 +62,14 @@ def crear_grupo(
     asignar_supervisor(grupo.id, supervisor_id, repositorio_grupos, repositorio_supervisores)
     grupo.supervisor_id = supervisor_id
     return grupo
+
+
+def eliminar_grupo(grupo_id: UUID, repositorio_grupos: RepositorioGrupos) -> None:
+    """Para corregir un grupo creado por error: solo se borra si no tiene técnicos.
+    Si tenía supervisor, este queda sin grupo hasta que se le asigne otro"""
+    if repositorio_grupos.obtener_por_id(grupo_id) is None:
+        raise GrupoNoEncontrado()
+    cantidad = repositorio_grupos.contar_tecnicos(grupo_id)
+    if cantidad > 0:
+        raise GrupoConTecnicos(cantidad)
+    repositorio_grupos.eliminar(grupo_id)

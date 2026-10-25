@@ -96,3 +96,4 @@ class RepositorioSupervisoresFalso(RepositorioSupervisores):
     def crear(self, supervisor, grupo): raise NotImplementedError
     def listar(self): raise NotImplementedError
     def obtener_grupo(self, supervisor_id): raise NotImplementedError
+    def actualizar(self, supervisor): raise NotImplementedError

@@ -7,6 +7,10 @@ from .modelos import Grupo, Supervisor, Tecnico, Usuario
 Rol = Literal["administrador", "supervisor", "tecnico"]
 
 
+class GrupoEnUso(Exception):
+    """El grupo tiene datos que dependen de él (por ejemplo, comunicados) y no se puede borrar"""
+
+
 class RepositorioUsuarios(ABC):
     @abstractmethod
     def obtener_por_nombre_usuario(self, nombre_usuario: str) -> Usuario | None:
@@ -85,6 +89,11 @@ class RepositorioSupervisores(ABC):
     def obtener_grupo(self, supervisor_id: UUID) -> Grupo | None:
         ...
 
+    @abstractmethod
+    def actualizar(self, supervisor: Supervisor) -> Supervisor:
+        """Guarda horario y área; el grupo del supervisor toma el mismo horario"""
+        ...
+
 
 class RepositorioGrupos(ABC):
     @abstractmethod
@@ -101,7 +110,13 @@ class RepositorioGrupos(ABC):
 
     @abstractmethod
     def asignar_supervisores(self, asignaciones: dict[UUID, UUID | None]) -> None:
-        """Cambia el supervisor de varios grupos en una sola transacción (grupo_id -> supervisor_id)"""
+        """Cambia el supervisor de varios grupos en una sola transacción (grupo_id -> supervisor_id);
+        cada grupo toma el horario de su nuevo supervisor"""
+        ...
+
+    @abstractmethod
+    def eliminar(self, id: UUID) -> None:
+        """Lanza GrupoEnUso si otros datos dependen del grupo"""
         ...
 
     @abstractmethod

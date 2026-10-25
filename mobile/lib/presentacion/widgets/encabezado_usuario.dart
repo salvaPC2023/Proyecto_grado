@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../nucleo/sesion.dart';
+import '../viewmodels/cola_cierres_vm.dart';
 import '../../nucleo/tema.dart';
 import '../pantallas/autenticacion/pantalla_inicio_sesion.dart';
 import '../pantallas/perfil/pantalla_mi_perfil.dart';
@@ -98,7 +99,27 @@ class EncabezadoUsuario extends ConsumerWidget {
     );
   }
 
-  void _cerrarSesion(BuildContext context, WidgetRef ref) {
+  Future<void> _cerrarSesion(BuildContext context, WidgetRef ref) async {
+    // los cierres guardados sin conexión no se pierden: se envían cuando la misma persona vuelve a entrar
+    final pendientes = ref.read(misCierresEnColaProvider).where((c) => !c.rechazado).length;
+    if (pendientes > 0) {
+      final confirmado = await showDialog<bool>(
+        context: context,
+        builder: (dialogo) => AlertDialog(
+          title: const Text('Cierres sin enviar'),
+          content: Text(
+            pendientes == 1
+                ? 'Tienes 1 cierre que aún no llegó al servidor. Se enviará cuando vuelvas a iniciar sesión con tu usuario.'
+                : 'Tienes $pendientes cierres que aún no llegaron al servidor. Se enviarán cuando vuelvas a iniciar sesión con tu usuario.',
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(dialogo, false), child: const Text('Cancelar')),
+            FilledButton(onPressed: () => Navigator.pop(dialogo, true), child: const Text('Cerrar sesión')),
+          ],
+        ),
+      );
+      if (confirmado != true || !context.mounted) return;
+    }
     ref.read(sesionProvider.notifier).cerrarSesion();
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(builder: (_) => const PantallaInicioSesion()),

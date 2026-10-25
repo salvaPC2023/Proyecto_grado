@@ -1,8 +1,13 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:uuid/uuid.dart';
 
+import '../../dominio/errores.dart';
+import '../../dominio/modelos/cierre_pendiente.dart';
 import '../../dominio/modelos/orden_trabajo.dart';
 import '../../nucleo/di.dart';
 import '../../nucleo/fechas.dart';
+import '../../nucleo/sesion.dart';
+import 'cola_cierres_vm.dart';
 
 class NuevaOtViewModel extends AsyncNotifier<List<UbicacionTecnica>> {
   @override
@@ -105,32 +110,48 @@ final otsGrupoViewModelProvider =
   OtsGrupoViewModel.new,
 );
 
+enum ResultadoCierre { registrado, pendienteDeEnvio, fallo }
+
 class CierrePasoViewModel extends Notifier<AsyncValue<void>> {
   @override
   AsyncValue<void> build() => const AsyncValue.data(null);
 
-  Future<bool> registrar({
+  /// Intenta enviarlo; sin conexión lo guarda en la cola del celular para enviarlo cuando vuelva la señal
+  Future<ResultadoCierre> registrar({
     required String otId,
     required String pasoId,
     required bool ejecutado,
     required double tiempoRealTrabajado,
     required String descripcion,
+    String tituloOt = '',
+    String descripcionPaso = '',
   }) async {
     state = const AsyncValue.loading();
+    // id y hora se fijan aquí, al cerrar el paso: son los mismos en cada reintento
+    final cierre = CierrePendiente(
+      id: const Uuid().v4(),
+      usuarioId: ref.read(sesionProvider)?.id ?? '',
+      otId: otId,
+      pasoId: pasoId,
+      ejecutado: ejecutado,
+      tiempoRealTrabajado: tiempoRealTrabajado,
+      descripcion: descripcion,
+      fechaHora: DateTime.now(),
+      tituloOt: tituloOt,
+      descripcionPaso: descripcionPaso,
+    );
     try {
-      await ref.read(repositorioOrdenesTrabajoProvider).registrarCierre(
-            otId: otId,
-            pasoId: pasoId,
-            ejecutado: ejecutado,
-            tiempoRealTrabajado: tiempoRealTrabajado,
-            descripcion: descripcion,
-          );
+      await enviarCierre(ref.read(repositorioOrdenesTrabajoProvider), cierre);
       ref.invalidate(detalleOtProvider(otId)); // el detalle se vuelve a pedir con el cierre nuevo
       state = const AsyncValue.data(null);
-      return true;
+      return ResultadoCierre.registrado;
+    } on ErrorSinConexion {
+      await ref.read(colaCierresViewModelProvider.notifier).agregar(cierre);
+      state = const AsyncValue.data(null);
+      return ResultadoCierre.pendienteDeEnvio;
     } catch (e, st) {
       state = AsyncValue.error(e, st);
-      return false;
+      return ResultadoCierre.fallo;
     }
   }
 }

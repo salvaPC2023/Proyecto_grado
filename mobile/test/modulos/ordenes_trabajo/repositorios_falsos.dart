@@ -7,8 +7,14 @@ import 'package:maintenance_app/dominio/repositorios/repositorio_ordenes_trabajo
 
 /// Devuelve el texto en mayúsculas, para distinguirlo del original sin llamar a OpenAI
 class RepositorioEstandarizacionFalso implements RepositorioEstandarizacion {
+  RepositorioEstandarizacionFalso({this.error});
+  final ErrorDeAplicacion? error;
+
   @override
-  Future<String> estandarizar(String texto) async => texto.toUpperCase();
+  Future<String> estandarizar(String texto) async {
+    if (error != null) throw error!;
+    return texto.toUpperCase();
+  }
 }
 
 const ubicacionTransformador = UbicacionTecnica(
@@ -80,6 +86,11 @@ class RepositorioOrdenesTrabajoFalso implements RepositorioOrdenesTrabajo {
   String? pasoCerrado;
   bool? cierreEjecutado;
   double? horasDelCierre;
+  // ids de cierre recibidos, en orden: sirve para comprobar reenvíos de la cola
+  final cierresRecibidos = <String>[];
+  DateTime? horaDelCierre;
+  // se puede cambiar durante el test para simular que vuelve la señal
+  ErrorDeAplicacion? errorAlCerrarActual;
 
   @override
   Future<List<UbicacionTecnica>> listarUbicaciones() async {
@@ -126,13 +137,18 @@ class RepositorioOrdenesTrabajoFalso implements RepositorioOrdenesTrabajo {
 
   @override
   Future<OrdenTrabajo> registrarCierre({
+    required String cierreId,
     required String otId,
     required String pasoId,
     required bool ejecutado,
     required double tiempoRealTrabajado,
     required String descripcion,
+    required DateTime fechaHora,
   }) async {
-    if (errorAlCerrar != null) throw errorAlCerrar!;
+    final fallo = errorAlCerrarActual ?? errorAlCerrar;
+    if (fallo != null) throw fallo;
+    cierresRecibidos.add(cierreId);
+    horaDelCierre = fechaHora;
     pasoCerrado = pasoId;
     cierreEjecutado = ejecutado;
     horasDelCierre = tiempoRealTrabajado;

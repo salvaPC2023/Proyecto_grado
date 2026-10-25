@@ -65,6 +65,8 @@ Supervisor supervisorDesdeJson(Json json) {
     horarioEntrada: json['horario_entrada'] as String,
     horarioSalida: json['horario_salida'] as String,
     grupoNombre: json['grupo_nombre'] as String?,
+    grupoId: json['grupo_id'] as String?,
+    areaDesignada: json['area_designada'] as String?,
     passwordInicial: json['password_inicial'] as String?,
   );
 }

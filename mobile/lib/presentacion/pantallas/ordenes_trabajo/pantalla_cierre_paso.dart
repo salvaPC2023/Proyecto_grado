@@ -1,19 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../dominio/errores.dart';
 import '../../../dominio/modelos/orden_trabajo.dart';
 import '../../../nucleo/errores.dart';
 import '../../../nucleo/tema.dart';
 import '../../viewmodels/estandarizacion_vm.dart';
 import '../../viewmodels/ordenes_trabajo_vm.dart';
+import '../../widgets/avisos_conexion.dart';
 import 'componentes_ot.dart';
 import 'formato_ot.dart';
 
-/// Formulario de cierre de un paso PM01; al volver devuelve true si se registró
+/// Formulario de cierre de un paso PM01; al volver devuelve el ResultadoCierre
+/// (registrado, o pendiente de envío si no había conexión)
 class PantallaCierrePaso extends ConsumerStatefulWidget {
-  const PantallaCierrePaso({super.key, required this.otId, required this.paso});
+  const PantallaCierrePaso({super.key, required this.otId, required this.paso, this.tituloOt = ''});
   final String otId;
   final PasoOt paso;
+  // para identificar el cierre en el aviso de pendientes
+  final String tituloOt;
 
   @override
   ConsumerState<PantallaCierrePaso> createState() => _PantallaCierrePasoState();
@@ -27,6 +32,7 @@ class _PantallaCierrePasoState extends ConsumerState<PantallaCierrePaso> {
   bool _revisando = false;
   bool _estandarizado = false;
   String? _errorEstandarizacion;
+  bool _sinConexion = false;
 
   @override
   void dispose() {
@@ -55,7 +61,10 @@ class _PantallaCierrePasoState extends ConsumerState<PantallaCierrePaso> {
     if (_horasValidas() == null) return;
     if (descripcion.isEmpty) return _avisar('Describe el trabajo realizado');
 
-    setState(() => _errorEstandarizacion = null);
+    setState(() {
+      _errorEstandarizacion = null;
+      _sinConexion = false;
+    });
     final resultado = await ref.read(estandarizacionViewModelProvider.notifier).estandarizar(descripcion);
     if (!mounted) return;
     if (resultado != null) {
@@ -65,7 +74,15 @@ class _PantallaCierrePasoState extends ConsumerState<PantallaCierrePaso> {
         _revisando = true;
       });
     } else {
-      setState(() => _errorEstandarizacion = mensajeDeError(ref.read(estandarizacionViewModelProvider).error!));
+      final error = ref.read(estandarizacionViewModelProvider).error!;
+      setState(() {
+        _sinConexion = error is ErrorSinConexion;
+        // sin señal no se puede estandarizar: se sigue con el texto del técnico, igual que si fallara el modelo
+        _errorEstandarizacion = _sinConexion
+            ? 'Sin conexión: no se puede estandarizar ahora. Continúa con tu texto; el cierre se guardará '
+                'en el celular y se enviará solo cuando vuelva la señal.'
+            : mensajeDeError(error);
+      });
     }
   }
 
@@ -89,18 +106,20 @@ class _PantallaCierrePasoState extends ConsumerState<PantallaCierrePaso> {
     if (horas == null) return;
     if (descripcion.isEmpty) return _avisar('La descripción no puede quedar vacía');
 
-    final exito = await ref.read(cierrePasoViewModelProvider.notifier).registrar(
+    final resultado = await ref.read(cierrePasoViewModelProvider.notifier).registrar(
           otId: widget.otId,
           pasoId: widget.paso.id,
           ejecutado: _ejecutado,
           tiempoRealTrabajado: horas,
           descripcion: descripcion,
+          tituloOt: widget.tituloOt,
+          descripcionPaso: widget.paso.descripcion,
         );
     if (!mounted) return;
-    if (exito) {
-      Navigator.of(context).pop(true);
-    } else {
+    if (resultado == ResultadoCierre.fallo) {
       _avisar(mensajeDeError(ref.read(cierrePasoViewModelProvider).error!));
+    } else {
+      Navigator.of(context).pop(resultado);
     }
   }
 
@@ -243,6 +262,7 @@ class _PantallaCierrePasoState extends ConsumerState<PantallaCierrePaso> {
                             ),
                     ),
                   ),
+                  if (_sinConexion && _revisando) const NotaSinConexion(),
                 ],
               ),
             ),

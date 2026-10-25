@@ -1,6 +1,6 @@
 import pytest
 
-from src.modulos.estandarizacion.dominio.mediciones import conserva_mediciones, mediciones_de
+from src.modulos.estandarizacion.dominio.mediciones import conserva_mediciones, mediciones_de, quitar_unidades_agregadas
 
 # Casos tomados de las evaluaciones del prompt del 21/10/2026
 
@@ -36,6 +36,29 @@ def test_cambiar_la_unidad_se_rechaza():
 def test_una_palabra_que_empieza_con_la_letra_de_una_unidad_no_es_unidad():
     # "C" de Celsius no se confunde con la C de "Condensador"
     assert mediciones_de("equipo 01 Condensador") == {("01", None)}
+
+
+def test_quita_la_unidad_que_el_modelo_agrego_a_un_numero_que_no_la_tenia():
+    # prueba con usuarios del 23/10/2026: el técnico escribió "agua entrada 35 y salida 29" sin unidad
+    original = "temperatura del estator 45 grados agua entrada 35 y salida 29"
+    resultado = "Mediciones termográficas:\n- Estator: 45 °C\n- Agua entrada: 35 °C\n- Agua salida: 29 °C"
+
+    corregido = quitar_unidades_agregadas(original, resultado)
+
+    assert corregido == "Mediciones termográficas:\n- Estator: 45 °C\n- Agua entrada: 35\n- Agua salida: 29"
+    assert conserva_mediciones(original, corregido)
+
+
+def test_no_quita_ni_corrige_una_unidad_que_el_tecnico_si_escribio():
+    # si el modelo cambió la unidad, se deja así para que la validación lo rechace
+    assert quitar_unidades_agregadas("vibración 28 dB", "Vibración: 28 mm/s") == "Vibración: 28 mm/s"
+    assert quitar_unidades_agregadas("estator 45 °C", "Estator: 45 °C") == "Estator: 45 °C"
+
+
+def test_no_confunde_un_codigo_de_equipo_con_una_medicion():
+    assert quitar_unidades_agregadas("torre TE01 agua 35", "Equipo intervenido: Torre TE01\n- Agua: 35 °C") == (
+        "Equipo intervenido: Torre TE01\n- Agua: 35"
+    )
 
 
 def test_lee_cada_numero_con_su_unidad():

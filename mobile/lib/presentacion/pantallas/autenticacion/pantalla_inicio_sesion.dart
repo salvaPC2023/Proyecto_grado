@@ -4,9 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../nucleo/errores.dart';
 import '../../../nucleo/sesion.dart';
 import '../../viewmodels/auth_vm.dart';
-import '../inicio/pantalla_inicio.dart';
-import '../supervisores/pantalla_lista_supervisores.dart';
 import 'dialogo_primer_acceso.dart';
+import 'pantalla_arranque.dart';
 
 class PantallaInicioSesion extends ConsumerStatefulWidget {
   const PantallaInicioSesion({super.key});
@@ -41,12 +40,8 @@ class _PantallaInicioSesionState extends ConsumerState<PantallaInicioSesion> {
 
     switch (resultado) {
       case ResultadoInicioSesion.ingreso:
-        // el administrador no tiene pantalla de inicio
-        final esAdministrador = ref.read(sesionProvider)?.esAdministrador ?? false;
         Navigator.of(context).pushReplacement(
-          MaterialPageRoute(
-            builder: (_) => esAdministrador ? const PantallaListaSupervisores() : const PantallaInicio(),
-          ),
+          MaterialPageRoute(builder: (_) => pantallaPrincipal(ref.read(sesionProvider))),
         );
       case ResultadoInicioSesion.primerAcceso:
         await _primerAcceso(usuario, contrasena);

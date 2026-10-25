@@ -36,3 +36,22 @@ def conserva_mediciones(original: str, resultado: str) -> bool:
     """True si el resultado tiene los mismos números que el original y cada uno con su misma unidad:
     no se pierde una unidad que el técnico escribió ni se agrega una que no escribió"""
     return mediciones_de(original) == mediciones_de(resultado)
+
+
+def quitar_unidades_agregadas(original: str, resultado: str) -> str:
+    """El modelo suele agregar una unidad que el técnico no escribió ("agua entrada 35" → "35 °C"),
+    aunque el prompt se lo prohíbe. Se la quita aquí, para que el resultado diga solo lo que escribió el
+    técnico. Solo se toca un número que en el original nunca lleva unidad; si el modelo pierde o cambia
+    una unidad que el técnico sí escribió, no se corrige y la validación lo sigue rechazando"""
+    originales = mediciones_de(original)
+    con_unidad = {numero for numero, unidad in originales if unidad}
+    sin_unidad = {numero for numero, unidad in originales if unidad is None}
+
+    def corregir(medicion: re.Match[str]) -> str:
+        numero, unidad = medicion.group(1), medicion.group(2)
+        clave = numero.replace(",", ".")
+        if unidad and clave in sin_unidad and clave not in con_unidad:
+            return numero
+        return medicion.group(0)
+
+    return _PATRON.sub(corregir, resultado)

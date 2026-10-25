@@ -33,5 +33,16 @@ class AdaptadorHttpFalso implements HttpClientAdapter {
   void close({bool force = false}) {}
 }
 
-Dio crearDioFalso(AdaptadorHttpFalso adaptador) =>
+/// Simula que no hay señal: ninguna petición llega al servidor
+class AdaptadorSinConexion implements HttpClientAdapter {
+  @override
+  Future<ResponseBody> fetch(RequestOptions options, Stream<Uint8List>? requestStream, Future<void>? cancelFuture) async {
+    throw DioException.connectionError(requestOptions: options, reason: 'sin señal');
+  }
+
+  @override
+  void close({bool force = false}) {}
+}
+
+Dio crearDioFalso(HttpClientAdapter adaptador) =>
     Dio(BaseOptions(baseUrl: 'http://api.test'))..httpClientAdapter = adaptador;

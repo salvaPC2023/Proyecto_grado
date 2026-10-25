@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from src.compartido.bd import get_db
 from src.compartido.configuracion import settings
 from ..dominio.modelos import Profesion
+from ..dominio.puertos import GrupoEnUso
 from .dependencias import UsuarioAutenticado, obtener_usuario_actual, obtener_usuario_en_primer_acceso, requerir_administrador, requerir_supervisor
 from .repositorio_grupos import RepositorioGruposSQL
 from .repositorio_supervisores import RepositorioSupervisoresSQL
@@ -19,7 +20,8 @@ from ..aplicacion.completar_primer_acceso import NombreUsuarioEnUso, NombreUsuar
 from ..aplicacion.crear_supervisor import HorarioInvalido, crear_supervisor
 from ..aplicacion.crear_tecnico import crear_tecnico
 from ..aplicacion.editar_perfil import editar_perfil
-from ..aplicacion.gestionar_grupos import GrupoNoEncontrado, asignar_supervisor, crear_grupo, listar_grupos
+from ..aplicacion.editar_supervisor import editar_supervisor
+from ..aplicacion.gestionar_grupos import GrupoConTecnicos, GrupoNoEncontrado, asignar_supervisor, crear_grupo, eliminar_grupo, listar_grupos
 from ..aplicacion.iniciar_sesion import CredencialesInvalidas, CuentaDeshabilitada, iniciar_sesion
 from ..aplicacion.listar_supervisores import listar_supervisores
 from ..aplicacion.listar_tecnicos import listar_tecnicos
@@ -336,6 +338,7 @@ class SupervisorOut(BaseModel):
     horario_salida: time
     area_designada: str | None
     grupo_nombre: str | None
+    grupo_id: UUID | None = None
 
 
 class SupervisorCreadoOut(SupervisorOut):
@@ -358,6 +361,7 @@ def a_supervisor_out(supervisor, repositorio_usuarios: RepositorioUsuariosSQL, r
         horario_salida=supervisor.horario_salida,
         area_designada=supervisor.area_designada,
         grupo_nombre=grupo.nombre_de_grupo if grupo else None,
+        grupo_id=grupo.id if grupo else None,
     )
 
 
@@ -421,6 +425,44 @@ def cambiar_estado_supervisor_endpoint(
             detail="Supervisor no encontrado",
         )
     return {"activo": datos.activo}
+
+
+class EditarSupervisorRequest(BaseModel):
+    horario_entrada: time
+    horario_salida: time
+    area_designada: str | None = Field(default=None, max_length=100)
+    # opcional: si el grupo ya tiene supervisor, los dos intercambian sus grupos
+    grupo_id: UUID | None = None
+
+
+@router_supervisores.patch("/{supervisor_id}", response_model=SupervisorOut)
+def editar_supervisor_endpoint(
+    supervisor_id: UUID,
+    datos: EditarSupervisorRequest,
+    db: Session = Depends(get_db),
+    actual: UsuarioAutenticado = Depends(requerir_administrador),
+):
+    repositorio_supervisores = RepositorioSupervisoresSQL(db)
+    try:
+        supervisor = editar_supervisor(
+            supervisor_id=supervisor_id,
+            horario_entrada=datos.horario_entrada,
+            horario_salida=datos.horario_salida,
+            area_designada=datos.area_designada,
+            grupo_id=datos.grupo_id,
+            repositorio_supervisores=repositorio_supervisores,
+            repositorio_grupos=RepositorioGruposSQL(db),
+        )
+    except SupervisorNoEncontrado:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Supervisor no encontrado")
+    except GrupoNoEncontrado:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Grupo no encontrado")
+    except HorarioInvalido:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail="La hora de entrada y la de salida no pueden ser iguales",
+        )
+    return a_supervisor_out(supervisor, RepositorioUsuariosSQL(db), repositorio_supervisores)
 
 
 class GrupoOut(BaseModel):
@@ -499,3 +541,25 @@ def asignar_supervisor_endpoint(
     except SupervisorNoEncontrado:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Supervisor no encontrado")
     return {"detail": "Supervisor asignado"}
+
+
+@router_grupos.delete("/{grupo_id}", status_code=status.HTTP_204_NO_CONTENT)
+def eliminar_grupo_endpoint(
+    grupo_id: UUID,
+    db: Session = Depends(get_db),
+    actual: UsuarioAutenticado = Depends(requerir_administrador),
+):
+    try:
+        eliminar_grupo(grupo_id, RepositorioGruposSQL(db))
+    except GrupoNoEncontrado:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Grupo no encontrado")
+    except GrupoConTecnicos as error:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"No se puede borrar: el grupo tiene {error.cantidad} técnicos",
+        )
+    except GrupoEnUso:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="No se puede borrar: el grupo tiene comunicados registrados",
+        )

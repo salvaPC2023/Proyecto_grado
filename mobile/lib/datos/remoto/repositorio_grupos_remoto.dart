@@ -30,4 +30,11 @@ class RepositorioGruposRemoto implements RepositorioGrupos {
       await _dio.patch('/grupos/$grupoId/supervisor', data: {'supervisor_id': supervisorId});
     });
   }
+
+  @override
+  Future<void> eliminar(String grupoId) {
+    return traducirErrores(() async {
+      await _dio.delete('/grupos/$grupoId');
+    });
+  }
 }

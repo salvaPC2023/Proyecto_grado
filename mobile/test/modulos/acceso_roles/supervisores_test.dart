@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:maintenance_app/datos/remoto/repositorio_grupos_remoto.dart';
 import 'package:maintenance_app/datos/remoto/repositorio_supervisores_remoto.dart';
 import 'package:maintenance_app/presentacion/viewmodels/supervisores_vm.dart';
 
@@ -58,6 +59,43 @@ void main() {
       expect(adaptador.ultima.path, '/supervisores/s1/estado');
       expect(adaptador.ultima.data, {'activo': false});
     });
+
+    test('edita turno y área sin enviar el grupo si no cambia', () async {
+      final adaptador = AdaptadorHttpFalso((_) => {...supervisorJson, 'grupo_id': 'g1', 'area_designada': 'Procesos'});
+      final repositorio = RepositorioSupervisoresRemoto(crearDioFalso(adaptador));
+
+      final editado = await repositorio.editar(
+        supervisorId: 's1',
+        horarioEntrada: '23:00',
+        horarioSalida: '07:00',
+        areaDesignada: 'Procesos',
+      );
+
+      expect(adaptador.ultima.method, 'PATCH');
+      expect(adaptador.ultima.path, '/supervisores/s1');
+      expect(adaptador.ultima.data, {'horario_entrada': '23:00', 'horario_salida': '07:00', 'area_designada': 'Procesos'});
+      expect(editado.grupoId, 'g1');
+      expect(editado.areaDesignada, 'Procesos');
+    });
+
+    test('al cambiar de grupo envía el grupo nuevo', () async {
+      final adaptador = AdaptadorHttpFalso((_) => supervisorJson);
+      final repositorio = RepositorioSupervisoresRemoto(crearDioFalso(adaptador));
+
+      await repositorio.editar(supervisorId: 's1', horarioEntrada: '07:00', horarioSalida: '15:00', grupoId: 'g2');
+
+      expect(adaptador.ultima.data['grupo_id'], 'g2');
+    });
+  });
+
+  test('borrar un grupo llama a DELETE /grupos/{id}', () async {
+    final adaptador = AdaptadorHttpFalso((_) => null);
+    final repositorio = RepositorioGruposRemoto(crearDioFalso(adaptador));
+
+    await repositorio.eliminar('g3');
+
+    expect(adaptador.ultima.method, 'DELETE');
+    expect(adaptador.ultima.path, '/grupos/g3');
   });
 
   group('viewmodel', () {

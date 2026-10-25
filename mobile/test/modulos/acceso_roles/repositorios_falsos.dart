@@ -1,8 +1,10 @@
 import 'package:maintenance_app/dominio/errores.dart';
+import 'package:maintenance_app/dominio/modelos/grupo.dart';
 import 'package:maintenance_app/dominio/modelos/perfil.dart';
 import 'package:maintenance_app/dominio/modelos/supervisor.dart';
 import 'package:maintenance_app/dominio/modelos/tecnico.dart';
 import 'package:maintenance_app/dominio/repositorios/repositorio_autenticacion.dart';
+import 'package:maintenance_app/dominio/repositorios/repositorio_grupos.dart';
 import 'package:maintenance_app/dominio/repositorios/repositorio_perfil.dart';
 import 'package:maintenance_app/dominio/repositorios/repositorio_supervisores.dart';
 import 'package:maintenance_app/dominio/repositorios/repositorio_tecnicos.dart';
@@ -28,6 +30,8 @@ const supervisorAna = Supervisor(
   horarioEntrada: '07:00:00',
   horarioSalida: '15:00:00',
   grupoNombre: 'Grupo Suministros',
+  grupoId: 'g1',
+  areaDesignada: 'Embotellado',
 );
 
 const supervisorJorge = Supervisor(
@@ -40,6 +44,7 @@ const supervisorJorge = Supervisor(
   horarioEntrada: '23:00:00',
   horarioSalida: '07:00:00',
   grupoNombre: 'Grupo Taller',
+  grupoId: 'g2',
 );
 
 class RepositorioSupervisoresFalso implements RepositorioSupervisores {
@@ -78,6 +83,64 @@ class RepositorioSupervisoresFalso implements RepositorioSupervisores {
   @override
   Future<void> cambiarEstado(String supervisorId, bool activo) async {
     idCambiado = supervisorId;
+  }
+
+  // lo último que se envió al editar: (supervisorId, entrada, salida, área, grupoId)
+  (String, String, String, String?, String?)? edicion;
+
+  @override
+  Future<Supervisor> editar({
+    required String supervisorId,
+    required String horarioEntrada,
+    required String horarioSalida,
+    String? areaDesignada,
+    String? grupoId,
+  }) async {
+    if (error != null) throw error!;
+    edicion = (supervisorId, horarioEntrada, horarioSalida, areaDesignada, grupoId);
+    return supervisores.firstWhere((s) => s.id == supervisorId);
+  }
+}
+
+const grupoSuministros = Grupo(
+  id: 'g1',
+  nombreDeGrupo: 'Grupo Suministros',
+  cantidadTecnicos: 3,
+  supervisorId: 's1',
+  supervisorNombre: 'Ana Rojas',
+);
+
+const grupoTaller = Grupo(
+  id: 'g2',
+  nombreDeGrupo: 'Grupo Taller',
+  cantidadTecnicos: 2,
+  supervisorId: 's2',
+  supervisorNombre: 'Jorge Mamani',
+);
+
+const grupoVacio = Grupo(id: 'g3', nombreDeGrupo: 'Grupo por error', cantidadTecnicos: 0);
+
+class RepositorioGruposFalso implements RepositorioGrupos {
+  RepositorioGruposFalso({this.grupos = const [grupoSuministros, grupoTaller, grupoVacio], this.error});
+
+  final List<Grupo> grupos;
+  final ErrorDeAplicacion? error;
+
+  String? idEliminado;
+
+  @override
+  Future<List<Grupo>> listar() async => grupos;
+
+  @override
+  Future<void> crear({required String nombreDeGrupo, required String supervisorId}) async {}
+
+  @override
+  Future<void> asignarSupervisor(String grupoId, String supervisorId) async {}
+
+  @override
+  Future<void> eliminar(String grupoId) async {
+    if (error != null) throw error!;
+    idEliminado = grupoId;
   }
 }
 

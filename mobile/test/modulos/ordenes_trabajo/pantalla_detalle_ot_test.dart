@@ -4,6 +4,7 @@ import 'package:maintenance_app/dominio/errores.dart';
 import 'package:maintenance_app/dominio/modelos/orden_trabajo.dart';
 import 'package:maintenance_app/presentacion/pantallas/ordenes_trabajo/pantalla_detalle_ot.dart';
 
+import '../../compartido/almacen_falso.dart';
 import '../../compartido/app_de_prueba.dart';
 import '../acceso_roles/repositorios_falsos.dart';
 import 'repositorios_falsos.dart';
@@ -75,5 +76,34 @@ void main() {
         ordenes: RepositorioOrdenesTrabajoFalso(error: const ErrorDeAplicacion('Sin conexión')));
 
     expect(find.text('Sin conexión'), findsOneWidget);
+  });
+
+  group('sin conexión', () {
+    testWidgets('el cierre se guarda con el texto original y el paso queda pendiente de envío', (tester) async {
+      final cola = RepositorioColaCierresEnMemoria();
+      await montarPantalla(
+        tester,
+        const PantallaDetalleOt(otId: 'ot1'),
+        sesion: perfilTecnico,
+        cola: cola,
+        ordenes: RepositorioOrdenesTrabajoFalso(errorAlCerrar: const ErrorSinConexion()),
+        estandarizacion: RepositorioEstandarizacionFalso(error: const ErrorSinConexion()),
+      );
+
+      await tocar(tester, find.text('Registrar cierre'));
+      await tester.enterText(find.byType(TextField).at(0), '2');
+      await tester.enterText(find.byType(TextField).at(1), 'Se cambió el filtro');
+      await tocar(tester, find.widgetWithText(FilledButton, 'Estandarizar y revisar'));
+
+      expect(find.textContaining('Sin conexión: no se puede estandarizar ahora'), findsOneWidget);
+      await tocar(tester, find.text('Continuar con el texto original'));
+      expect(find.text('Sin conexión: el cierre se guardará en el celular y se enviará solo cuando vuelva la señal.'), findsOneWidget);
+      await tocar(tester, find.widgetWithText(FilledButton, 'Registrar cierre'));
+
+      expect(find.text('Cierre guardado en el celular. Se enviará cuando vuelva la señal.'), findsOneWidget);
+      expect(find.text('Pendiente de envío'), findsOneWidget);
+      expect(find.widgetWithText(FilledButton, 'Registrar cierre'), findsNothing); // no se puede cerrar dos veces
+      expect(cola.cierres.single.descripcion, 'Se cambió el filtro'); // el texto tal como lo escribió
+    });
   });
 }

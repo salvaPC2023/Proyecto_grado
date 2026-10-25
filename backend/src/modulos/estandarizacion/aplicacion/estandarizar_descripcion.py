@@ -1,8 +1,11 @@
+import logging
 import re
 
 from ..dominio.estructura import cumple_estructura
-from ..dominio.mediciones import conserva_mediciones
+from ..dominio.mediciones import conserva_mediciones, quitar_unidades_agregadas
 from ..dominio.puertos import ServicioEstandarizacion, ServicioNoDisponible
+
+registro = logging.getLogger("uvicorn.error")
 
 
 class DescripcionVacia(Exception):
@@ -19,14 +22,27 @@ def estandarizar_descripcion(texto: str, servicio: ServicioEstandarizacion) -> s
     if not texto:
         raise DescripcionVacia()
 
-    resultado = servicio.estandarizar(texto).strip()
+    # si el modelo agregó una unidad que el técnico no escribió, se le quita antes de validar
+    resultado = quitar_unidades_agregadas(texto, servicio.estandarizar(texto).strip())
     # no se acepta un resultado vacío, fuera de la plantilla, que pierda o cambie algún valor numérico,
     # ni que quite o agregue una unidad; la app ofrece entonces continuar con el texto original
-    if (
-        not resultado
-        or not cumple_estructura(resultado)
-        or set(numeros_de(resultado)) != set(numeros_de(texto))
-        or not conserva_mediciones(texto, resultado)
-    ):
+    motivo = motivo_de_rechazo(texto, resultado)
+    if motivo:
+        # queda en la terminal del backend para saber por qué falló (las pruebas con usuarios lo necesitan)
+        registro.warning("Estandarización rechazada: %s", motivo)
         raise ServicioNoDisponible()
     return resultado
+
+
+def motivo_de_rechazo(texto: str, resultado: str) -> str | None:
+    """Por qué no se acepta la respuesta del modelo, o None si se acepta"""
+    if not resultado:
+        return "respuesta vacía"
+    if not cumple_estructura(resultado):
+        return "la respuesta no sigue la plantilla (Equipo intervenido, Actividades realizadas, Observaciones)"
+    originales, nuevos = set(numeros_de(texto)), set(numeros_de(resultado))
+    if originales != nuevos:
+        return f"cambiaron los números: faltan {sorted(originales - nuevos)}, sobran {sorted(nuevos - originales)}"
+    if not conserva_mediciones(texto, resultado):
+        return "se quitó o agregó una unidad de medida"
+    return None

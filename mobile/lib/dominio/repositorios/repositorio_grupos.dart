@@ -8,4 +8,7 @@ abstract interface class RepositorioGrupos {
 
   /// Si el supervisor ya tenía grupo, se intercambian
   Future<void> asignarSupervisor(String grupoId, String supervisorId);
+
+  /// Solo un grupo sin técnicos; si tenía supervisor, este queda sin grupo
+  Future<void> eliminar(String grupoId);
 }

@@ -6,6 +6,7 @@ import 'package:maintenance_app/nucleo/di.dart';
 import 'package:maintenance_app/nucleo/sesion.dart';
 
 import '../modulos/acceso_roles/repositorios_falsos.dart';
+import 'almacen_falso.dart';
 import '../modulos/comunicados/repositorios_falsos.dart';
 import '../modulos/ordenes_trabajo/repositorios_falsos.dart';
 
@@ -18,6 +19,10 @@ ProviderContainer crearContenedor({
   RepositorioOrdenesTrabajoFalso? ordenes,
   RepositorioSupervisoresFalso? supervisores,
   RepositorioComunicadosFalso? comunicados,
+  RepositorioGruposFalso? grupos,
+  RepositorioColaCierresEnMemoria? cola,
+  RepositorioSesionGuardadaEnMemoria? sesionGuardada,
+  RepositorioEstandarizacionFalso? estandarizacion,
 }) {
   final contenedor = ProviderContainer(
     retry: (_, _) => null, // el error se ve de inmediato
@@ -27,8 +32,13 @@ ProviderContainer crearContenedor({
       repositorioTecnicosProvider.overrideWithValue(tecnicos ?? RepositorioTecnicosFalso()),
       repositorioOrdenesTrabajoProvider.overrideWithValue(ordenes ?? RepositorioOrdenesTrabajoFalso()),
       repositorioSupervisoresProvider.overrideWithValue(supervisores ?? RepositorioSupervisoresFalso()),
-      repositorioEstandarizacionProvider.overrideWithValue(RepositorioEstandarizacionFalso()),
+      repositorioEstandarizacionProvider.overrideWithValue(estandarizacion ?? RepositorioEstandarizacionFalso()),
       repositorioComunicadosProvider.overrideWithValue(comunicados ?? RepositorioComunicadosFalso()),
+      repositorioGruposProvider.overrideWithValue(grupos ?? RepositorioGruposFalso()),
+      // lo que en el celular va a disco, en los tests vive en memoria
+      repositorioColaCierresProvider.overrideWithValue(cola ?? RepositorioColaCierresEnMemoria()),
+      repositorioSesionGuardadaProvider.overrideWithValue(sesionGuardada ?? RepositorioSesionGuardadaEnMemoria()),
+      repositorioRespaldoProvider.overrideWithValue(RepositorioRespaldoEnMemoria()),
     ],
   );
   addTearDown(contenedor.dispose);
@@ -52,6 +62,9 @@ Future<ProviderContainer> montarPantalla(
   RepositorioOrdenesTrabajoFalso? ordenes,
   RepositorioSupervisoresFalso? supervisores,
   RepositorioComunicadosFalso? comunicados,
+  RepositorioGruposFalso? grupos,
+  RepositorioColaCierresEnMemoria? cola,
+  RepositorioEstandarizacionFalso? estandarizacion,
 }) async {
   // Pantalla grande de los tests es mas ancha que la real
   tester.view.physicalSize = const Size(800, 1600);
@@ -66,6 +79,9 @@ Future<ProviderContainer> montarPantalla(
     ordenes: ordenes,
     supervisores: supervisores,
     comunicados: comunicados,
+    grupos: grupos,
+    cola: cola,
+    estandarizacion: estandarizacion,
   );
 
   await tester.pumpWidget(UncontrolledProviderScope(

@@ -71,3 +71,17 @@ class RepositorioSupervisoresSQL(RepositorioSupervisores):
             select(GrupoORM).where(GrupoORM.supervisor_id == supervisor_id)
         ).first()
         return grupo_a_dominio(orm) if orm else None
+
+    def actualizar(self, supervisor: Supervisor) -> Supervisor:
+        orm = self._sesion.get(SupervisorORM, supervisor.id)
+        orm.horario_entrada = supervisor.horario_entrada
+        orm.horario_salida = supervisor.horario_salida
+        orm.area_designada = supervisor.area_designada
+        # el grupo trabaja en el mismo turno que su supervisor; se guarda en la misma transacción
+        grupo = self._sesion.scalars(select(GrupoORM).where(GrupoORM.supervisor_id == supervisor.id)).first()
+        if grupo is not None:
+            grupo.horario_entrada = supervisor.horario_entrada
+            grupo.horario_salida = supervisor.horario_salida
+        self._sesion.commit()
+        self._sesion.refresh(orm)
+        return supervisor_a_dominio(orm)

@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../datos/local/almacen_local.dart';
 import '../datos/remoto/repositorio_autenticacion_remoto.dart';
 import '../datos/remoto/repositorio_comunicados_remoto.dart';
 import '../datos/remoto/repositorio_estandarizacion_remoto.dart';
@@ -10,6 +11,7 @@ import '../datos/remoto/repositorio_perfil_remoto.dart';
 import '../datos/remoto/repositorio_supervisores_remoto.dart';
 import '../datos/remoto/repositorio_tecnicos_remoto.dart';
 import '../datos/remoto/repositorio_ubicaciones_remoto.dart';
+import '../dominio/repositorios/repositorio_almacen_local.dart';
 import '../dominio/repositorios/repositorio_autenticacion.dart';
 import '../dominio/repositorios/repositorio_comunicados.dart';
 import '../dominio/repositorios/repositorio_estandarizacion.dart';
@@ -21,6 +23,7 @@ import '../dominio/repositorios/repositorio_supervisores.dart';
 import '../dominio/repositorios/repositorio_tecnicos.dart';
 import '../dominio/repositorios/repositorio_ubicaciones.dart';
 import 'api_client.dart';
+import 'estado_conexion.dart';
 
 
 final repositorioAutenticacionProvider = Provider<RepositorioAutenticacion>(
@@ -36,8 +39,20 @@ final repositorioTecnicosProvider = Provider<RepositorioTecnicos>(
 );
 
 final repositorioOrdenesTrabajoProvider = Provider<RepositorioOrdenesTrabajo>(
-  (ref) => RepositorioOrdenesTrabajoRemoto(ref.watch(dioProvider)),
+  (ref) => RepositorioOrdenesTrabajoRemoto(
+    ref.watch(dioProvider),
+    respaldo: ref.watch(repositorioRespaldoProvider),
+    alCambiarConexion: (datosDe) => ref.read(datosSinConexionProvider.notifier).mostrandoDatosDe(datosDe),
+  ),
 );
+
+// --- guardado en el celular (tarjeta 27: cola de cierres sin conexión) ---
+
+final repositorioColaCierresProvider = Provider<RepositorioColaCierres>((ref) => RepositorioColaCierresLocal());
+
+final repositorioSesionGuardadaProvider = Provider<RepositorioSesionGuardada>((ref) => RepositorioSesionSegura());
+
+final repositorioRespaldoProvider = Provider<RepositorioRespaldoLocal>((ref) => RepositorioRespaldoPreferencias());
 
 final repositorioSupervisoresProvider = Provider<RepositorioSupervisores>(
   (ref) => RepositorioSupervisoresRemoto(ref.watch(dioProvider)),

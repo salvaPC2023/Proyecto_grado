@@ -44,7 +44,7 @@ void main() {
     final contenedor = crearContenedor(ordenes: repositorio);
     contenedor.listen(cierrePasoViewModelProvider, (_, _) {});
 
-    final exito = await contenedor.read(cierrePasoViewModelProvider.notifier).registrar(
+    final resultado = await contenedor.read(cierrePasoViewModelProvider.notifier).registrar(
           otId: 'ot1',
           pasoId: 'p2',
           ejecutado: true,
@@ -52,7 +52,8 @@ void main() {
           descripcion: 'Se cambió el filtro',
         );
 
-    expect(exito, isTrue);
+    expect(resultado, ResultadoCierre.registrado);
     expect(repositorio.pasoCerrado, 'p2');
+    expect(repositorio.cierresRecibidos.single, isNotEmpty); // con un id generado en el celular
   });
 }

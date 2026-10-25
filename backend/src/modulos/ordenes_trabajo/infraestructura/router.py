@@ -18,10 +18,10 @@ from ..aplicacion.crear_ot import FechasInvalidas, HorasInvalidas, PasoSolicitad
 from ..aplicacion.exportar_ots import RangoInvalido, exportar_ots
 from ..aplicacion.listar_ots_supervisor import listar_ots_supervisor
 from ..aplicacion.listar_ots_tecnico import listar_ots_tecnico
-from ..aplicacion.registrar_cierre_paso import CierreAnticipado, DescripcionVacia, OTYaCerrada, PasoNoEncontrado, PasoNoRegistrable, PasoYaCerrado, TiempoInvalido, registrar_cierre_paso
+from ..aplicacion.registrar_cierre_paso import CierreAnticipado, DescripcionVacia, FechaCierreFutura, OTYaCerrada, PasoNoEncontrado, PasoNoRegistrable, PasoYaCerrado, TiempoInvalido, registrar_cierre_paso
 from ..aplicacion.ver_detalle_ot import OTNoEncontrada, SinAccesoAOT, ver_detalle_ot
 from ..dominio.modelos import CierrePaso, ClaveControl, EstatusOT, OrdenDeTrabajo, ResultadoTrabajo, TipoOrden
-from .excel_ots import generar_excel
+from .excel_ots import EncabezadoReporte, generar_excel
 from .repositorio_ordenes_trabajo import RepositorioOrdenesTrabajoSQL
 
 router_ots = APIRouter(prefix="/ordenes-trabajo", tags=["ordenes de trabajo"])
@@ -57,6 +57,17 @@ class CierreIn(BaseModel):
     resultado_trabajo: ResultadoTrabajo
     tiempo_real_trabajado: Decimal = Field(ge=0, max_digits=5, decimal_places=2, examples=["1.50"])
     descripcion_trabajo_realizado: str = Field(min_length=1)
+    # los genera el celular: con el id, un reenvío de la cola de cierres sin conexión no se duplica;
+    # con la fecha, el cierre conserva la hora en que se hizo y no la hora en que llegó
+    id: UUID | None = None
+    fecha_hora_notificacion: datetime | None = None
+
+    @field_validator("fecha_hora_notificacion")
+    @classmethod
+    def sin_zona_horaria(cls, valor: datetime | None) -> datetime | None:
+        if valor is not None and valor.tzinfo is not None:
+            return valor.astimezone().replace(tzinfo=None)
+        return valor
 
 
 class CierreOut(BaseModel):
@@ -207,9 +218,21 @@ def exportar_ots_endpoint(
         tecnicos[tecnico.id] = " ".join(p for p in (usuario.nombre, usuario.apellido_paterno, usuario.apellido_materno) if p)
     ubicaciones = {u.id: u for u in RepositorioUbicacionesTecnicasSQL(db).listar_ubicaciones()}
 
+    # datos del bloque de título del reporte
+    supervisor = repositorio_usuarios.obtener_por_id(actual.id)
+    grupo_id = repositorio_tecnicos.obtener_grupo_del_supervisor(actual.id)
+    filtro = ubicaciones.get(ubicacion_tecnica_id) if ubicacion_tecnica_id else None
+    encabezado = EncabezadoReporte(
+        grupo=repositorio_tecnicos.obtener_nombre_grupo(grupo_id) if grupo_id else None,
+        supervisor=" ".join(p for p in (supervisor.nombre, supervisor.apellido_paterno, supervisor.apellido_materno) if p) if supervisor else None,
+        desde=desde,
+        hasta=hasta,
+        ubicacion=" / ".join(n for n in (filtro.sector, filtro.subsector, filtro.sistema, filtro.subsistema) if n) if filtro else None,
+    )
+
     nombre = f"ordenes_de_trabajo_{desde or 'inicio'}_{hasta or 'hoy'}.xlsx"
     return Response(
-        content=generar_excel(ots, ubicaciones, tecnicos),
+        content=generar_excel(ots, ubicaciones, tecnicos, encabezado),
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers={"Content-Disposition": f'attachment; filename="{nombre}"'},
     )
@@ -238,6 +261,8 @@ def registrar_cierre_endpoint(ot_id: UUID, paso_id: UUID, datos: CierreIn, db: S
             descripcion_trabajo_realizado=datos.descripcion_trabajo_realizado,
             repositorio_ots=RepositorioOrdenesTrabajoSQL(db),
             repositorio_tecnicos=RepositorioTecnicosSQL(db),
+            cierre_id=datos.id,
+            fecha_hora_cierre=datos.fecha_hora_notificacion,
         )
     except OTNoEncontrada:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Orden de trabajo no encontrada")
@@ -257,4 +282,6 @@ def registrar_cierre_endpoint(ot_id: UUID, paso_id: UUID, datos: CierreIn, db: S
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail="Describe el trabajo realizado")
     except CierreAnticipado:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail="No se puede cerrar un paso antes del día de inicio planificado")
+    except FechaCierreFutura:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail="La fecha del cierre no puede estar en el futuro; revisa la hora del celular")
     return a_ot_out(ot, RepositorioUbicacionesTecnicasSQL(db).obtener_por_id(ot.ubicacion_tecnica_id))

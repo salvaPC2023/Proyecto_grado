@@ -4,9 +4,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../dominio/modelos/supervisor.dart';
 import '../../../nucleo/errores.dart';
 import '../../../nucleo/tema.dart';
+import '../../viewmodels/grupos_vm.dart';
 import '../../viewmodels/supervisores_vm.dart';
 import '../../widgets/barra_navegacion_inferior.dart';
 import '../../widgets/encabezado_seccion.dart';
+import 'dialogo_editar_supervisor.dart';
 import 'pantalla_registrar_supervisor.dart';
 
 class PantallaListaSupervisores extends ConsumerWidget {
@@ -35,6 +37,18 @@ class PantallaListaSupervisores extends ConsumerWidget {
       mensajero.showSnackBar(SnackBar(
         content: Text(supervisor.activo ? 'Cuenta deshabilitada' : 'Cuenta habilitada'),
       ));
+    } catch (e) {
+      mensajero.showSnackBar(SnackBar(content: Text(mensajeDeError(e))));
+    }
+  }
+
+  Future<void> _editar(BuildContext context, WidgetRef ref, Supervisor supervisor) async {
+    final mensajero = ScaffoldMessenger.of(context);
+    try {
+      final grupos = await ref.read(gruposViewModelProvider.future);
+      if (!context.mounted) return;
+      final guardado = await mostrarDialogoEditarSupervisor(context, supervisor: supervisor, grupos: grupos);
+      if (guardado == true) mensajero.showSnackBar(const SnackBar(content: Text('Supervisor actualizado')));
     } catch (e) {
       mensajero.showSnackBar(SnackBar(content: Text(mensajeDeError(e))));
     }
@@ -77,6 +91,7 @@ class PantallaListaSupervisores extends ConsumerWidget {
                           itemBuilder: (_, i) => _TarjetaSupervisor(
                             supervisor: supervisores[i],
                             onAlternarEstado: () => _alternarEstado(context, ref, supervisores[i]),
+                            onEditar: () => _editar(context, ref, supervisores[i]),
                           ),
                         ),
                       ),
@@ -91,9 +106,10 @@ class PantallaListaSupervisores extends ConsumerWidget {
 }
 
 class _TarjetaSupervisor extends StatelessWidget {
-  const _TarjetaSupervisor({required this.supervisor, required this.onAlternarEstado});
+  const _TarjetaSupervisor({required this.supervisor, required this.onAlternarEstado, required this.onEditar});
   final Supervisor supervisor;
   final VoidCallback onAlternarEstado;
+  final VoidCallback onEditar;
 
   @override
   Widget build(BuildContext context) {
@@ -120,6 +136,11 @@ class _TarjetaSupervisor extends StatelessWidget {
                   '${supervisor.grupoNombre ?? 'Sin grupo'} · ${supervisor.horario}',
                   style: const TextStyle(color: ColoresApp.textoSuave, fontSize: 12),
                 ),
+                if (supervisor.areaDesignada != null)
+                  Text(
+                    'Área: ${supervisor.areaDesignada}',
+                    style: const TextStyle(color: ColoresApp.textoSuave, fontSize: 12),
+                  ),
                 const SizedBox(height: 6),
                 Text(
                   activo ? 'Activo' : 'Inactivo',
@@ -132,9 +153,15 @@ class _TarjetaSupervisor extends StatelessWidget {
               ],
             ),
           ),
-          TextButton(
-            onPressed: onAlternarEstado,
-            child: Text(activo ? 'Deshabilitar' : 'Habilitar'),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              TextButton(onPressed: onEditar, child: const Text('Editar')),
+              TextButton(
+                onPressed: onAlternarEstado,
+                child: Text(activo ? 'Deshabilitar' : 'Habilitar'),
+              ),
+            ],
           ),
         ],
       ),

@@ -1,7 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:maintenance_app/datos/remoto/repositorio_ordenes_trabajo_remoto.dart';
+import 'package:maintenance_app/dominio/errores.dart';
 import 'package:maintenance_app/dominio/modelos/orden_trabajo.dart';
 
+import '../../compartido/almacen_falso.dart';
 import '../../compartido/dio_falso.dart';
 
 // Respuesta del back cuando pide una OT
@@ -105,13 +107,47 @@ void main() {
     final adaptador = AdaptadorHttpFalso((_) => otJson);
     final repositorio = RepositorioOrdenesTrabajoRemoto(crearDioFalso(adaptador));
 
-    await repositorio.registrarCierre(otId: 'ot1', pasoId: 'p1', ejecutado: false, tiempoRealTrabajado: 0, descripcion: 'Sin repuesto');
+    await repositorio.registrarCierre(
+      cierreId: 'c1',
+      otId: 'ot1',
+      pasoId: 'p1',
+      ejecutado: false,
+      tiempoRealTrabajado: 0,
+      descripcion: 'Sin repuesto',
+      fechaHora: DateTime(2026, 10, 5, 10, 30),
+    );
 
     expect(adaptador.ultima.path, '/ordenes-trabajo/ot1/pasos/p1/cierre');
     expect(adaptador.ultima.data, {
+      'id': 'c1', // generado en el celular: un reenvío no se duplica
       'resultado_trabajo': 'no_ejecutado',
       'tiempo_real_trabajado': 0.0,
       'descripcion_trabajo_realizado': 'Sin repuesto',
+      'fecha_hora_notificacion': '2026-10-05T10:30:00.000', // la hora del cierre, no la de llegada
+    });
+  });
+
+  group('sin conexión', () {
+    test('muestra la última lista guardada y avisa de qué hora son los datos', () async {
+      final respaldo = RepositorioRespaldoEnMemoria();
+      DateTime? datosDe;
+      final conSenal = RepositorioOrdenesTrabajoRemoto(crearDioFalso(AdaptadorHttpFalso((_) => [otJson])),
+          respaldo: respaldo, alCambiarConexion: (f) => datosDe = f);
+      await conSenal.listarMisOts(fecha: DateTime(2026, 10, 5));
+      expect(datosDe, isNull);
+
+      final sinSenal = RepositorioOrdenesTrabajoRemoto(crearDioFalso(AdaptadorSinConexion()),
+          respaldo: respaldo, alCambiarConexion: (f) => datosDe = f);
+      final ots = await sinSenal.listarMisOts(fecha: DateTime(2026, 10, 5));
+
+      expect(ots.single.id, 'ot1');
+      expect(datosDe, isNotNull);
+    });
+
+    test('sin nada guardado avisa que no hay conexión', () async {
+      final sinSenal = RepositorioOrdenesTrabajoRemoto(crearDioFalso(AdaptadorSinConexion()), respaldo: RepositorioRespaldoEnMemoria());
+
+      expect(() => sinSenal.obtenerDetalle('ot1'), throwsA(isA<ErrorSinConexion>()));
     });
   });
 }
