@@ -1,3 +1,4 @@
+import '../modelos/datos_de_acceso.dart';
 import '../modelos/supervisor.dart';
 
 abstract interface class RepositorioSupervisores {
@@ -23,4 +24,7 @@ abstract interface class RepositorioSupervisores {
     String? areaDesignada,
     String? grupoId,
   });
+
+  /// Vuelve la cuenta a la contraseña inicial; al entrar, el supervisor debe elegir una nueva
+  Future<DatosDeAcceso> restablecerPassword(String supervisorId);
 }

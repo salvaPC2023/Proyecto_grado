@@ -9,19 +9,53 @@ Future<void> mostrarDatosDeAcceso(
   required String titulo,
   required String nombreUsuario,
   required String passwordInicial,
+  String mensaje = 'Entrega estas credenciales para que pueda acceder por primera vez al sistema:',
 }) {
   return showDialog<void>(
     context: context,
     barrierDismissible: false, // obliga a tocar "Entendido": el usuario no se puede adivinar
-    builder: (_) => _DialogoDatosAcceso(titulo: titulo, nombreUsuario: nombreUsuario, passwordInicial: passwordInicial),
+    builder: (_) => _DialogoDatosAcceso(
+      titulo: titulo,
+      nombreUsuario: nombreUsuario,
+      passwordInicial: passwordInicial,
+      mensaje: mensaje,
+    ),
   );
 }
 
+const mensajeRestablecida =
+    'Entrega estos datos. Al entrar, tendrá que elegir una contraseña nueva, como la primera vez:';
+
+/// Confirma antes de restablecer: la contraseña actual de la persona deja de funcionar
+Future<bool> confirmarRestablecerPassword(BuildContext context, String nombre) async {
+  final confirmado = await showDialog<bool>(
+    context: context,
+    builder: (dialogo) => AlertDialog(
+      title: const Text('Restablecer contraseña'),
+      content: Text(
+        '¿Restablecer la contraseña de $nombre? Su contraseña actual dejará de funcionar '
+        'y tendrá que elegir una nueva al entrar.',
+      ),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(dialogo, false), child: const Text('Cancelar')),
+        FilledButton(onPressed: () => Navigator.pop(dialogo, true), child: const Text('Restablecer')),
+      ],
+    ),
+  );
+  return confirmado == true;
+}
+
 class _DialogoDatosAcceso extends StatelessWidget {
-  const _DialogoDatosAcceso({required this.titulo, required this.nombreUsuario, required this.passwordInicial});
+  const _DialogoDatosAcceso({
+    required this.titulo,
+    required this.nombreUsuario,
+    required this.passwordInicial,
+    required this.mensaje,
+  });
   final String titulo;
   final String nombreUsuario;
   final String passwordInicial;
+  final String mensaje;
 
   @override
   Widget build(BuildContext context) {
@@ -51,10 +85,10 @@ class _DialogoDatosAcceso extends StatelessWidget {
               style: const TextStyle(color: Color(0xFF0F172A), fontSize: 20, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 6),
-            const Text(
-              'Entrega estas credenciales para que pueda acceder por primera vez al sistema:',
+            Text(
+              mensaje,
               textAlign: TextAlign.center,
-              style: TextStyle(color: ColoresApp.textoSuave, fontSize: 12, height: 1.5),
+              style: const TextStyle(color: ColoresApp.textoSuave, fontSize: 12, height: 1.5),
             ),
             const SizedBox(height: 16),
             Container(

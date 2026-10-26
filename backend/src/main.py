@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from contextlib import asynccontextmanager
 
@@ -15,6 +16,8 @@ from src.modulos.ordenes_trabajo.infraestructura.router import router_ots as ord
 from src.modulos.estandarizacion.infraestructura.router import router_descripciones as estandarizacion_router
 from src.modulos.importacion.infraestructura.router import router_importacion as importacion_router
 from src.modulos.comunicados.infraestructura.router import router_comunicados as comunicados_router
+from src.modulos.notificaciones.infraestructura.planificador import revisar_turnos_periodicamente
+from src.modulos.notificaciones.infraestructura.router import router_notificaciones as notificaciones_router
 
 registro = logging.getLogger("uvicorn.error")
 
@@ -31,7 +34,10 @@ async def ciclo_de_vida(_: FastAPI):
             )
         if creado:
             registro.info("Administrador inicial creado: %s", settings.admin_usuario_inicial)
+    # avisos de pasos sin cerrar una hora antes del fin de cada turno
+    revisiones = asyncio.create_task(revisar_turnos_periodicamente())
     yield
+    revisiones.cancel()
 
 
 app = FastAPI(title="Maintenance App API", version="0.1.0", lifespan=ciclo_de_vida)
@@ -54,6 +60,7 @@ app.include_router(ordenes_trabajo_router, prefix="/api/v1")
 app.include_router(estandarizacion_router, prefix="/api/v1")
 app.include_router(importacion_router, prefix="/api/v1")
 app.include_router(comunicados_router, prefix="/api/v1")
+app.include_router(notificaciones_router, prefix="/api/v1")
 
 
 @app.get("/health")

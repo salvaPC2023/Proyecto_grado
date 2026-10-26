@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../dominio/modelos/datos_de_acceso.dart';
 import '../../dominio/modelos/supervisor.dart';
 import '../../nucleo/di.dart';
 import '../../nucleo/sesion.dart';
@@ -59,6 +60,10 @@ class SupervisoresViewModel extends AsyncNotifier<List<Supervisor>> {
     // la lista de grupos muestra el supervisor y el horario de cada grupo, por eso también se recarga
     ref.invalidate(gruposViewModelProvider);
     await recargar();
+  }
+
+  Future<DatosDeAcceso> restablecerPassword(String supervisorId) {
+    return ref.read(repositorioSupervisoresProvider).restablecerPassword(supervisorId);
   }
 }
 

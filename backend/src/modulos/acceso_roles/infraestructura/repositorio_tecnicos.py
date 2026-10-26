@@ -49,6 +49,10 @@ class RepositorioTecnicosSQL(RepositorioTecnicos):
         filas = self._sesion.scalars(self.consulta_de_mi_grupo(supervisor_usuario_id)).all()
         return [tecnico_a_dominio(f) for f in filas]
 
+    def listar_por_grupo(self, grupo_id: UUID) -> list[Tecnico]:
+        filas = self._sesion.scalars(select(TecnicoORM).where(TecnicoORM.grupo_id == grupo_id)).all()
+        return [tecnico_a_dominio(f) for f in filas]
+
     def pertenece_a_supervisor(self, tecnico_id: UUID, supervisor_usuario_id: UUID) -> bool:
         consulta = self.consulta_de_mi_grupo(supervisor_usuario_id).where(
             TecnicoORM.id == tecnico_id

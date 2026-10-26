@@ -1,11 +1,13 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../datos/local/almacen_local.dart';
+import '../datos/notificaciones/servicio_push_firebase.dart';
 import '../datos/remoto/repositorio_autenticacion_remoto.dart';
 import '../datos/remoto/repositorio_comunicados_remoto.dart';
 import '../datos/remoto/repositorio_estandarizacion_remoto.dart';
 import '../datos/remoto/repositorio_excel_remoto.dart';
 import '../datos/remoto/repositorio_grupos_remoto.dart';
+import '../datos/remoto/repositorio_notificaciones_remoto.dart';
 import '../datos/remoto/repositorio_ordenes_trabajo_remoto.dart';
 import '../datos/remoto/repositorio_perfil_remoto.dart';
 import '../datos/remoto/repositorio_supervisores_remoto.dart';
@@ -17,6 +19,7 @@ import '../dominio/repositorios/repositorio_comunicados.dart';
 import '../dominio/repositorios/repositorio_estandarizacion.dart';
 import '../dominio/repositorios/repositorio_excel.dart';
 import '../dominio/repositorios/repositorio_grupos.dart';
+import '../dominio/repositorios/repositorio_notificaciones.dart';
 import '../dominio/repositorios/repositorio_ordenes_trabajo.dart';
 import '../dominio/repositorios/repositorio_perfil.dart';
 import '../dominio/repositorios/repositorio_supervisores.dart';
@@ -77,3 +80,9 @@ final repositorioExcelProvider = Provider<RepositorioExcel>(
 final repositorioComunicadosProvider = Provider<RepositorioComunicados>(
   (ref) => RepositorioComunicadosRemoto(ref.watch(dioProvider)),
 );
+
+final repositorioNotificacionesProvider = Provider<RepositorioNotificaciones>(
+  (ref) => RepositorioNotificacionesRemoto(ref.watch(dioProvider)),
+);
+
+final servicioPushProvider = Provider<ServicioPush>((ref) => ServicioPushFirebase());

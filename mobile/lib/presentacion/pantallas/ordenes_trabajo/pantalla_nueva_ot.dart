@@ -18,15 +18,9 @@ class PantallaNuevaOt extends ConsumerStatefulWidget {
 }
 
 const _tiposDeOrden = ['OE01', 'OE02', 'OE03', 'OE04'];
-const _profesiones = {
-  'electrico': 'Eléctrico',
-  'mecanico': 'Mecánico',
-  'electromecanico': 'Electromecánico',
-};
 
 class _PantallaNuevaOtState extends ConsumerState<PantallaNuevaOt> {
   final _controladorTitulo = TextEditingController();
-  final _controladorDescripcion = TextEditingController();
 
   String _tipoDeOrden = _tiposDeOrden.first;
   UbicacionTecnica? _ubicacion;
@@ -50,7 +44,6 @@ class _PantallaNuevaOtState extends ConsumerState<PantallaNuevaOt> {
   @override
   void dispose() {
     _controladorTitulo.dispose();
-    _controladorDescripcion.dispose();
     super.dispose();
   }
 
@@ -103,10 +96,7 @@ class _PantallaNuevaOtState extends ConsumerState<PantallaNuevaOt> {
 
   Future<void> _crear() async {
     final titulo = _controladorTitulo.text.trim();
-    final descripcion = _controladorDescripcion.text.trim();
-    if (titulo.isEmpty || descripcion.isEmpty) {
-      return _avisar('Completa el título y la descripción');
-    }
+    if (titulo.isEmpty) return _avisar('Escribe el título de la orden');
     if (_ubicacion == null) return _avisar('Selecciona una ubicación técnica');
     if (_tecnicoId == null) return _avisar('Selecciona el técnico asignado');
     if (_fin.isBefore(_inicio)) {
@@ -123,7 +113,6 @@ class _PantallaNuevaOtState extends ConsumerState<PantallaNuevaOt> {
             tipoDeOrden: _tipoDeOrden,
             ubicacionTecnicaId: _ubicacion!.id,
             tecnicoAsignadoId: _tecnicoId!,
-            descripcion: descripcion,
             prioridad: _prioridad,
             estatusEquipo: _equipoEnFuncionamiento,
             fechaInicPlanif: _inicio,
@@ -182,16 +171,11 @@ class _PantallaNuevaOtState extends ConsumerState<PantallaNuevaOt> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
+                          // el trabajo se detalla en los pasos, no en una descripción general
                           _CampoTexto(
                             controlador: _controladorTitulo,
                             indicativo: 'Título (ej. Sobrecalentamiento de transformador)',
                             maxLength: 150,
-                          ),
-                          const SizedBox(height: 10),
-                          _CampoTexto(
-                            controlador: _controladorDescripcion,
-                            indicativo: 'Descripción del trabajo',
-                            lineas: 3,
                           ),
                         ],
                       ),
@@ -231,7 +215,7 @@ class _PantallaNuevaOtState extends ConsumerState<PantallaNuevaOt> {
                           _Desplegable<String?>(
                             icono: Icons.settings_outlined,
                             valor: _profesionFiltro,
-                            opciones: {null: 'Todas las profesiones', ..._profesiones},
+                            opciones: {null: 'Todas las profesiones', ...nombresProfesion},
                             onCambiar: (p) => setState(() {
                               _profesionFiltro = p;
                               _tecnicoId = null;
@@ -397,7 +381,7 @@ class _PantallaNuevaOtState extends ConsumerState<PantallaNuevaOt> {
       indicativo: 'Selecciona un técnico',
       opciones: {
         for (final t in disponibles)
-          t.id: '${t.nombreCompleto} (${_profesiones[t.profesion] ?? t.profesion})',
+          t.id: '${t.nombreCompleto} (${nombresProfesion[t.profesion] ?? t.profesion})',
       },
       onCambiar: (id) => setState(() => _tecnicoId = id),
     );
@@ -543,20 +527,16 @@ class _CampoTexto extends StatelessWidget {
   const _CampoTexto({
     required this.controlador,
     required this.indicativo,
-    this.lineas = 1,
     this.maxLength,
   });
   final TextEditingController controlador;
   final String indicativo;
-  final int lineas;
   final int? maxLength;
 
   @override
   Widget build(BuildContext context) {
     return TextField(
       controller: controlador,
-      minLines: lineas,
-      maxLines: lineas,
       maxLength: maxLength,
       decoration: InputDecoration(
         hintText: indicativo,

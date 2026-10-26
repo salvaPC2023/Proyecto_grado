@@ -63,7 +63,6 @@ def crear_ot(
     tipo_de_orden: TipoOrden,
     ubicacion_tecnica_id: UUID,
     tecnico_asignado_id: UUID,
-    descripcion: str,
     prioridad: int,
     estatus_equipo: bool,
     fecha_inic_planif: datetime,
@@ -96,11 +95,11 @@ def crear_ot(
         PasoOT(
             id=uuid4(),
             ot_id=ot_id,
-            numero_paso=numero,
+            numero_paso=None,
             descripcion=texto,
             clave_control="PMNN",
         )
-        for numero, texto in enumerate(PASOS_SEGURIDAD, start=1)
+        for texto in PASOS_SEGURIDAD
     ]
     pasos_supervisor = [
         PasoOT(
@@ -111,7 +110,7 @@ def crear_ot(
             clave_control=paso.clave_control,
             horas_planificadas=paso.horas_planificadas,
         )
-        for numero, paso in enumerate(pasos, start=len(PASOS_SEGURIDAD) + 1)
+        for numero, paso in enumerate(pasos, start=1)
     ]
 
     ot = OrdenDeTrabajo(
@@ -121,7 +120,6 @@ def crear_ot(
         creado_por_id=supervisor.id,
         titulo=titulo,
         tipo_de_orden=tipo_de_orden,
-        descripcion=descripcion,
         prioridad=prioridad,
         estatus_equipo=estatus_equipo,
         estatus="asignada",

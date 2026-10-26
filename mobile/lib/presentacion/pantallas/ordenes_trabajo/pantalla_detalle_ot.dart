@@ -50,6 +50,8 @@ class PantallaDetalleOt extends ConsumerWidget {
                       const AvisoDatosSinConexion(),
                       _Resumen(ot: ot),
                       const SizedBox(height: 14),
+                      _Coordinacion(ot: ot),
+                      const SizedBox(height: 14),
                       if (ot.pm01Total > 0) ...[
                         _AvancePm01(cerrados: ot.pm01Cerrados, total: ot.pm01Total),
                         const SizedBox(height: 14),
@@ -148,11 +150,6 @@ class _Resumen extends StatelessWidget {
               ],
             ),
           ],
-          const SizedBox(height: 12),
-          Text(
-            ot.descripcion,
-            style: const TextStyle(color: ColoresApp.textoLabel, fontSize: 14, height: 1.4),
-          ),
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 12),
             child: Divider(height: 1, color: Color(0xFFF1F5F9)),
@@ -167,22 +164,62 @@ class _Resumen extends StatelessWidget {
             etiqueta: 'Fin planificado',
             valor: '${formatoFecha(ot.fechaFinPlanif)} · ${formatoHora(ot.fechaFinPlanif)}',
           ),
-          _Dato(
-            icono: Icons.schedule,
-            etiqueta: 'Horas planificadas',
-            valor: formatoHoras(ot.horasPlanificadas),
-          ),
-          _Dato(
-            icono: Icons.power_settings_new,
-            etiqueta: 'Estado del equipo',
-            valor: ot.estatusEquipo ? 'En funcionamiento' : 'Detenido para intervención',
-          ),
           if (ot.fechaCierre != null)
             _Dato(
               icono: Icons.check_circle_outline,
               etiqueta: 'Cerrada el',
               valor: '${formatoFecha(ot.fechaCierre!)} · ${formatoHora(ot.fechaCierre!)}',
             ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Quién hace el trabajo y en qué condiciones: separado del encabezado de la OT
+class _Coordinacion extends StatelessWidget {
+  const _Coordinacion({required this.ot});
+  final OrdenTrabajo ot;
+
+  @override
+  Widget build(BuildContext context) {
+    final tecnico = ot.tecnico;
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Coordinación',
+            style: TextStyle(
+              color: ColoresApp.textoOscuro,
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 12),
+          if (tecnico != null) ...[
+            _Dato(icono: Icons.person_outline, etiqueta: 'Técnico', valor: tecnico.nombre),
+            _Dato(
+              icono: Icons.engineering_outlined,
+              etiqueta: 'Ocupación',
+              valor: nombresProfesion[tecnico.profesion] ?? tecnico.profesion,
+            ),
+          ],
+          _Dato(
+            icono: Icons.power_settings_new,
+            etiqueta: 'Estado del equipo',
+            valor: ot.estatusEquipo ? 'En funcionamiento' : 'Detenido para intervención',
+          ),
+          _Dato(
+            icono: Icons.schedule,
+            etiqueta: 'Horas planificadas',
+            valor: formatoHoras(ot.horasPlanificadas),
+          ),
         ],
       ),
     );
@@ -328,17 +365,20 @@ class _TarjetaPaso extends StatelessWidget {
         children: [
           Row(
             children: [
+              // los pasos de seguridad no llevan número; los del supervisor empiezan en 1
               CircleAvatar(
                 radius: 14,
                 backgroundColor: ColoresApp.badgeFondo,
-                child: Text(
-                  '${paso.numeroPaso}',
-                  style: const TextStyle(
-                    color: ColoresApp.principal,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
+                child: paso.numeroPaso == null
+                    ? const Icon(Icons.health_and_safety_outlined, size: 16, color: ColoresApp.principal)
+                    : Text(
+                        '${paso.numeroPaso}',
+                        style: const TextStyle(
+                          color: ColoresApp.principal,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
               ),
               const SizedBox(width: 10),
               ChipEtiqueta(

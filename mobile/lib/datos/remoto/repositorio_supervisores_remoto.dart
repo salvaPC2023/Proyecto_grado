@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 
+import '../../dominio/modelos/datos_de_acceso.dart';
 import '../../dominio/modelos/supervisor.dart';
 import '../../dominio/repositorios/repositorio_supervisores.dart';
 import 'mapeo_json.dart';
@@ -63,6 +64,14 @@ class RepositorioSupervisoresRemoto implements RepositorioSupervisores {
         'grupo_id': ?grupoId,
       });
       return supervisorDesdeJson(respuesta.data as Json);
+    });
+  }
+
+  @override
+  Future<DatosDeAcceso> restablecerPassword(String supervisorId) {
+    return traducirErrores(() async {
+      final respuesta = await _dio.post('/supervisores/$supervisorId/restablecer-password');
+      return datosDeAccesoDesdeJson(respuesta.data as Json);
     });
   }
 }

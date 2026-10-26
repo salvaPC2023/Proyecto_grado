@@ -3,7 +3,7 @@ from zipfile import BadZipFile
 
 from openpyxl import load_workbook
 
-from ..dominio.modelos import FilaGrupo, FilaPersonal, FilaUbicacion
+from ..dominio.modelos import FilaGrupo, FilaOT, FilaPersonal, FilaUbicacion
 from ..dominio.puertos import PlantillaInvalida
 from ..dominio.reglas import normalizar
 
@@ -12,6 +12,11 @@ ENCABEZADOS_PERSONAL = ["nombre completo", "grupo planificador", "supervisor"]
 ENCABEZADOS_UBICACIONES = ["sector", "subsector", "sistema", "subsistema"]
 # opcional: nombre y turno del grupo de cada supervisor; empieza en "grupo" para no confundirse con la columna Supervisor de Personal
 ENCABEZADOS_GRUPOS = ["grupo", "turno", "supervisor"]
+# opcional, solo para el supervisor: una fila por paso de cada OT
+ENCABEZADOS_OTS = [
+    "ot", "titulo", "tipo", "ubicacion tecnica", "tecnico", "prioridad", "inicio", "fin",
+    "equipo en funcionamiento", "clave", "descripcion del paso", "horas",
+]
 
 
 def _texto(valor) -> str:
@@ -43,12 +48,19 @@ def _leer_tabla(libro, encabezados: list[str]) -> list[tuple[int, list[str]]]:
     return []
 
 
-def leer_plantilla(contenido: bytes) -> tuple[list[FilaPersonal], list[FilaUbicacion], list[FilaGrupo]]:
+def _abrir(contenido: bytes):
     try:
-        libro = load_workbook(BytesIO(contenido), read_only=False, data_only=True)
+        return load_workbook(BytesIO(contenido), read_only=False, data_only=True)
     except (BadZipFile, KeyError, ValueError, OSError):
         raise PlantillaInvalida("El archivo no es un Excel válido (.xlsx)")
 
+
+def leer_ots(contenido: bytes) -> list[FilaOT]:
+    return [FilaOT(numero, *valores) for numero, valores in _leer_tabla(_abrir(contenido), ENCABEZADOS_OTS)]
+
+
+def leer_plantilla(contenido: bytes) -> tuple[list[FilaPersonal], list[FilaUbicacion], list[FilaGrupo]]:
+    libro = _abrir(contenido)
     personal = [FilaPersonal(numero, *valores) for numero, valores in _leer_tabla(libro, ENCABEZADOS_PERSONAL)]
     ubicaciones = [FilaUbicacion(numero, *valores) for numero, valores in _leer_tabla(libro, ENCABEZADOS_UBICACIONES)]
     grupos = [FilaGrupo(numero, *valores) for numero, valores in _leer_tabla(libro, ENCABEZADOS_GRUPOS)]

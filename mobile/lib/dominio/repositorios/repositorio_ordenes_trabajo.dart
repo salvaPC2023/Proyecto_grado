@@ -8,7 +8,6 @@ abstract interface class RepositorioOrdenesTrabajo {
     required String tipoDeOrden,
     required String ubicacionTecnicaId,
     required String tecnicoAsignadoId,
-    required String descripcion,
     required int prioridad,
     required bool estatusEquipo,
     required DateTime fechaInicPlanif,

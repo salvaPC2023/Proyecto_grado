@@ -7,13 +7,14 @@ from src.modulos.acceso_roles.infraestructura.dependencias import UsuarioAutenti
 from src.modulos.acceso_roles.infraestructura.repositorio_supervisores import RepositorioSupervisoresSQL
 from src.modulos.acceso_roles.infraestructura.repositorio_tecnicos import RepositorioTecnicosSQL
 from src.modulos.acceso_roles.infraestructura.repositorio_usuarios import RepositorioUsuariosSQL
+from src.modulos.ordenes_trabajo.infraestructura.repositorio_ordenes_trabajo import RepositorioOrdenesTrabajoSQL
 from src.modulos.ubicaciones_tecnicas.infraestructura.repositorio_ubicaciones_tecnicas import RepositorioUbicacionesTecnicasSQL
 
 from ..aplicacion.importar import SupervisorSinGrupo, importar_carga_inicial, importar_para_mi_grupo
 from ..dominio.modelos import ResultadoImportacion
 from ..dominio.puertos import PlantillaInvalida
 from .consulta_personal_sql import ConsultaPersonalSQL
-from .lector_excel import leer_plantilla
+from .lector_excel import leer_ots, leer_plantilla
 
 router_importacion = APIRouter(prefix="/importacion", tags=["importacion"])
 
@@ -36,6 +37,7 @@ class UsuarioCreadoOut(BaseModel):
 class ResultadoOut(BaseModel):
     usuarios_creados: list[UsuarioCreadoOut]
     ubicaciones_creadas: int
+    ots_creadas: int
     omitidos: list[AvisoOut]
     errores: list[AvisoOut]
 
@@ -44,6 +46,7 @@ def a_resultado_out(resultado: ResultadoImportacion) -> ResultadoOut:
     return ResultadoOut(
         usuarios_creados=[UsuarioCreadoOut(**vars(u)) for u in resultado.usuarios_creados],
         ubicaciones_creadas=resultado.ubicaciones_creadas,
+        ots_creadas=resultado.ots_creadas,
         omitidos=[AvisoOut(**vars(a)) for a in resultado.omitidos],
         errores=[AvisoOut(**vars(a)) for a in resultado.errores],
     )
@@ -54,14 +57,15 @@ async def _leer(archivo: UploadFile):
     if len(contenido) > TAMANO_MAXIMO:
         raise HTTPException(status_code=status.HTTP_413_CONTENT_TOO_LARGE, detail="El archivo no puede pasar de 5 MB")
     try:
-        return leer_plantilla(contenido)
+        return *leer_plantilla(contenido), leer_ots(contenido)
     except PlantillaInvalida as error:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=error.mensaje)
 
 
 @router_importacion.post("/carga-inicial", response_model=ResultadoOut)
 async def importar_carga_inicial_endpoint(archivo: UploadFile = File(...), db: Session = Depends(get_db), actual: UsuarioAutenticado = Depends(requerir_administrador)):
-    personal, ubicaciones, grupos = await _leer(archivo)
+    # la tabla de órdenes de trabajo es solo para el supervisor: el administrador no gestiona OT
+    personal, ubicaciones, grupos, _ = await _leer(archivo)
     try:
         resultado = importar_carga_inicial(
             personal, ubicaciones, actual.id, ConsultaPersonalSQL(db),
@@ -76,11 +80,12 @@ async def importar_carga_inicial_endpoint(archivo: UploadFile = File(...), db: S
 @router_importacion.post("/mi-grupo", response_model=ResultadoOut)
 async def importar_para_mi_grupo_endpoint(archivo: UploadFile = File(...), db: Session = Depends(get_db), actual: UsuarioAutenticado = Depends(requerir_supervisor)):
     # la tabla de Grupos es solo para la carga inicial del administrador
-    personal, ubicaciones, _ = await _leer(archivo)
+    personal, ubicaciones, _, ots = await _leer(archivo)
     try:
         resultado = importar_para_mi_grupo(
             personal, ubicaciones, actual.id, ConsultaPersonalSQL(db),
             RepositorioUsuariosSQL(db), RepositorioSupervisoresSQL(db), RepositorioTecnicosSQL(db), RepositorioUbicacionesTecnicasSQL(db),
+            ots=ots, repositorio_ots=RepositorioOrdenesTrabajoSQL(db),
         )
     except PlantillaInvalida as error:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=error.mensaje)

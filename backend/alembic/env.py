@@ -18,10 +18,12 @@ from src.modulos.acceso_roles.infraestructura import orm as _orm_acceso_roles  #
 from src.modulos.ubicaciones_tecnicas.infraestructura import orm as _orm_ubicaciones  # noqa: F401
 from src.modulos.ordenes_trabajo.infraestructura import orm as _orm_ordenes  # noqa: F401
 from src.modulos.comunicados.infraestructura import orm as _orm_comunicados  # noqa: F401
+from src.modulos.notificaciones.infraestructura import orm as _orm_notificaciones  # noqa: F401
 
 config = context.config
 
-config.set_main_option("sqlalchemy.url", settings.database_url)
+# las pruebas de integración pasan su propia base (espodi_test) en config.attributes
+config.set_main_option("sqlalchemy.url", config.attributes.get("url", settings.database_url))
 
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)

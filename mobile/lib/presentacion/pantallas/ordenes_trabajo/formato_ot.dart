@@ -15,6 +15,12 @@ EstiloEtiqueta estiloEstatus(String estatus) => switch (estatus) {
       _ => EstiloEtiqueta(estatus, const Color(0xFF475569), const Color(0xFFF1F5F9)),
     };
 
+const nombresProfesion = {
+  'electrico': 'Eléctrico',
+  'mecanico': 'Mecánico',
+  'electromecanico': 'Electromecánico',
+};
+
 const etiquetasPrioridad = {1: 'Urgente', 2: 'Alta', 3: 'Normal', 4: 'Baja'};
 
 EstiloEtiqueta estiloPrioridad(int prioridad) => switch (prioridad) {

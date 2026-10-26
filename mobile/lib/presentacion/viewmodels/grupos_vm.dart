@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../dominio/modelos/datos_de_acceso.dart';
 import '../../dominio/modelos/grupo.dart';
+import '../../dominio/modelos/tecnico.dart';
 import '../../nucleo/di.dart';
 import '../../nucleo/sesion.dart';
 import 'supervisores_vm.dart';
@@ -36,6 +38,14 @@ class GruposViewModel extends AsyncNotifier<List<Grupo>> {
   Future<void> eliminar(String grupoId) async {
     await ref.read(repositorioGruposProvider).eliminar(grupoId);
     await _despuesDeCambiar();
+  }
+
+  Future<List<Tecnico>> listarTecnicos(String grupoId) {
+    return ref.read(repositorioGruposProvider).listarTecnicos(grupoId);
+  }
+
+  Future<DatosDeAcceso> restablecerPasswordTecnico(String tecnicoId) {
+    return ref.read(repositorioGruposProvider).restablecerPasswordTecnico(tecnicoId);
   }
 }
 

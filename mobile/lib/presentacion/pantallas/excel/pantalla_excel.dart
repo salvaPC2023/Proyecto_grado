@@ -10,6 +10,7 @@ import '../../../nucleo/fechas.dart';
 import '../../../nucleo/sesion.dart';
 import '../../../nucleo/tema.dart';
 import '../../viewmodels/grupos_vm.dart';
+import '../../viewmodels/ordenes_trabajo_vm.dart';
 import '../../viewmodels/supervisores_vm.dart';
 import '../../viewmodels/tecnicos_vm.dart';
 import '../../viewmodels/ubicaciones_vm.dart';
@@ -96,6 +97,7 @@ class _PantallaExcelState extends ConsumerState<PantallaExcel> {
       } else {
         ref.invalidate(ubicacionesViewModelProvider);
         ref.invalidate(tecnicosViewModelProvider);
+        ref.invalidate(otsGrupoViewModelProvider);
       }
       if (mounted) {
         await showDialog<void>(context: context, builder: (_) => _DialogoResultado(resultado: resultado));
@@ -117,12 +119,13 @@ class _PantallaExcelState extends ConsumerState<PantallaExcel> {
         : ref.watch(ubicacionesViewModelProvider).value ?? [];
 
     final tarjetaImportar = _Tarjeta(
-      titulo: esAdministrador ? 'Carga inicial desde Excel' : 'Importar desde Excel',
+      // prueba con usuarios del 23/10/2026: "Importar desde Excel" hacía esperar que se importaran OTs
+      titulo: esAdministrador ? 'Carga inicial de personal y ubicaciones' : 'Importar técnicos, ubicaciones y OT',
       detalle: esAdministrador
           ? 'Registra las ubicaciones técnicas, los supervisores (con su grupo) y los técnicos de todos los grupos '
-                'de la plantilla de SAP. Lo ya registrado se omite.'
-          : 'Registra las ubicaciones técnicas y los técnicos de tu grupo de la plantilla de SAP. '
-                'Lo ya registrado y los técnicos de otros grupos se omiten.',
+                'de la plantilla de SAP. Lo ya registrado se omite. No importa órdenes de trabajo.'
+          : 'Registra las ubicaciones técnicas, los técnicos de tu grupo y las órdenes de trabajo de la '
+                'plantilla de SAP (una fila por paso). Lo ya registrado y lo de otros grupos se omite.',
       children: [
         OutlinedButton.icon(
           onPressed: _importando ? null : _importar,
@@ -300,6 +303,7 @@ class _DialogoResultado extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text('Usuarios creados: ${r.usuariosCreados.length} · Ubicaciones nuevas: ${r.ubicacionesCreadas}'),
+              if (r.otsCreadas > 0) Text('Órdenes de trabajo creadas: ${r.otsCreadas}'),
               Text('Omitidos: ${r.omitidos.length} · Con error: ${r.errores.length}'),
               if (r.usuariosCreados.isNotEmpty)
                 seccion('Usuarios creados (contraseña inicial del sistema)', [

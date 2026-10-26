@@ -51,6 +51,10 @@ class RepositorioTecnicos(ABC):
         ...
 
     @abstractmethod
+    def listar_por_grupo(self, grupo_id: UUID) -> list[Tecnico]:
+        ...
+
+    @abstractmethod
     def pertenece_a_supervisor(self, tecnico_id: UUID, supervisor_usuario_id: UUID) -> bool:
         ...
 

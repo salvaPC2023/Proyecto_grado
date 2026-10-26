@@ -1,4 +1,5 @@
 import '../../dominio/modelos/comunicado.dart';
+import '../../dominio/modelos/datos_de_acceso.dart';
 import '../../dominio/modelos/grupo.dart';
 import '../../dominio/modelos/orden_trabajo.dart';
 import '../../dominio/modelos/perfil.dart';
@@ -39,6 +40,7 @@ ResultadoImportacion resultadoImportacionDesdeJson(Json json) {
         ),
     ],
     ubicacionesCreadas: json['ubicaciones_creadas'] as int,
+    otsCreadas: json['ots_creadas'] as int? ?? 0,
     omitidos: [for (final a in json['omitidos'] as List) _avisoDesdeJson(a as Json)],
     errores: [for (final a in json['errores'] as List) _avisoDesdeJson(a as Json)],
   );
@@ -129,7 +131,7 @@ PasoOt pasoDesdeJson(Json json) {
   final cierre = json['cierre'];
   return PasoOt(
     id: json['id'] as String,
-    numeroPaso: json['numero_paso'] as int,
+    numeroPaso: json['numero_paso'] as int?,
     descripcion: json['descripcion'] as String,
     claveControl: json['clave_control'] as String,
     horasPlanificadas: _aDouble(json['horas_planificadas']),
@@ -139,13 +141,13 @@ PasoOt pasoDesdeJson(Json json) {
 
 OrdenTrabajo ordenTrabajoDesdeJson(Json json) {
   final ubicacion = json['ubicacion'];
+  final tecnico = json['tecnico'];
   final fechaCierre = json['fecha_cierre'];
   return OrdenTrabajo(
     id: json['id'] as String,
     titulo: json['titulo'] as String,
     tipoDeOrden: json['tipo_de_orden'] as String,
     tecnicoAsignadoId: json['tecnico_asignado_id'] as String,
-    descripcion: json['descripcion'] as String,
     prioridad: json['prioridad'] as int,
     estatus: json['estatus'] as String,
     estatusEquipo: json['estatus_equipo'] as bool,
@@ -153,6 +155,9 @@ OrdenTrabajo ordenTrabajoDesdeJson(Json json) {
     fechaFinPlanif: DateTime.parse(json['fecha_fin_planif'] as String),
     fechaCierre: fechaCierre == null ? null : DateTime.parse(fechaCierre as String),
     ubicacion: ubicacion == null ? null : ubicacionDesdeJson(ubicacion as Json),
+    tecnico: tecnico == null
+        ? null
+        : TecnicoDeOt(nombre: (tecnico as Json)['nombre'] as String, profesion: tecnico['profesion'] as String),
     pasos: (json['pasos'] as List).map((p) => pasoDesdeJson(p as Json)).toList(),
   );
 }
@@ -162,6 +167,11 @@ Json pasoNuevoAJson(PasoNuevo paso) => {
       'clave_control': paso.claveControl,
       if (paso.horasPlanificadas != null) 'horas_planificadas': paso.horasPlanificadas,
     };
+
+DatosDeAcceso datosDeAccesoDesdeJson(Json json) => (
+      nombreUsuario: json['nombre_usuario'] as String,
+      passwordInicial: json['password_inicial'] as String,
+    );
 
 double? _aDouble(Object? valor) => switch (valor) {
       null => null,

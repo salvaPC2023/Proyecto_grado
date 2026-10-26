@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field, field_validator
 from sqlalchemy.orm import Session
 
 from src.compartido.bd import get_db
+from src.modulos.acceso_roles.dominio.modelos import Profesion
 from src.modulos.acceso_roles.infraestructura.dependencias import UsuarioAutenticado, obtener_usuario_actual, requerir_supervisor, requerir_tecnico
 from src.modulos.acceso_roles.infraestructura.repositorio_supervisores import RepositorioSupervisoresSQL
 from src.modulos.acceso_roles.infraestructura.repositorio_tecnicos import RepositorioTecnicosSQL
@@ -38,7 +39,6 @@ class CrearOTRequest(BaseModel):
     tipo_de_orden: TipoOrden
     ubicacion_tecnica_id: UUID
     tecnico_asignado_id: UUID
-    descripcion: str = Field(min_length=1)
     prioridad: int
     estatus_equipo: bool
     fecha_inic_planif: datetime
@@ -96,11 +96,16 @@ def a_cierre_out(cierre: CierrePaso | None) -> CierreOut | None:
 
 class PasoOut(BaseModel):
     id: UUID
-    numero_paso: int
+    numero_paso: int | None  # los pasos de seguridad no llevan número
     descripcion: str
     clave_control: ClaveControl
     horas_planificadas: Decimal | None = Field(examples=["2.50"])
     cierre: CierreOut | None = None
+
+
+class TecnicoDeOtOut(BaseModel):
+    nombre: str
+    profesion: Profesion
 
 
 class OrdenDeTrabajoOut(BaseModel):
@@ -110,7 +115,6 @@ class OrdenDeTrabajoOut(BaseModel):
     ubicacion_tecnica_id: UUID
     tecnico_asignado_id: UUID
     creado_por_id: UUID
-    descripcion: str
     prioridad: int
     estatus: EstatusOT
     estatus_equipo: bool
@@ -118,10 +122,20 @@ class OrdenDeTrabajoOut(BaseModel):
     fecha_fin_planif: datetime
     fecha_cierre: datetime | None
     ubicacion: UbicacionOut | None
+    tecnico: TecnicoDeOtOut | None = None
     pasos: list[PasoOut]
 
 
-def a_ot_out(ot: OrdenDeTrabajo, ubicacion) -> OrdenDeTrabajoOut:
+def tecnico_de_ot(tecnico_id: UUID, db: Session) -> TecnicoDeOtOut | None:
+    tecnico = RepositorioTecnicosSQL(db).obtener_por_id(tecnico_id)
+    usuario = RepositorioUsuariosSQL(db).obtener_por_id(tecnico.usuario_id) if tecnico else None
+    if usuario is None:
+        return None
+    nombre = " ".join(p for p in (usuario.nombre, usuario.apellido_paterno, usuario.apellido_materno) if p)
+    return TecnicoDeOtOut(nombre=nombre, profesion=tecnico.profesion)
+
+
+def a_ot_out(ot: OrdenDeTrabajo, ubicacion, db: Session) -> OrdenDeTrabajoOut:
     return OrdenDeTrabajoOut(
         id=ot.id,
         titulo=ot.titulo,
@@ -129,7 +143,6 @@ def a_ot_out(ot: OrdenDeTrabajo, ubicacion) -> OrdenDeTrabajoOut:
         ubicacion_tecnica_id=ot.ubicacion_tecnica_id,
         tecnico_asignado_id=ot.tecnico_asignado_id,
         creado_por_id=ot.creado_por_id,
-        descripcion=ot.descripcion,
         prioridad=ot.prioridad,
         estatus=ot.estatus,
         estatus_equipo=ot.estatus_equipo,
@@ -137,6 +150,7 @@ def a_ot_out(ot: OrdenDeTrabajo, ubicacion) -> OrdenDeTrabajoOut:
         fecha_fin_planif=ot.fecha_fin_planif,
         fecha_cierre=ot.fecha_cierre,
         ubicacion=a_ubicacion_out(ubicacion) if ubicacion else None,
+        tecnico=tecnico_de_ot(ot.tecnico_asignado_id, db),
         pasos=[PasoOut(id=p.id, numero_paso=p.numero_paso, descripcion=p.descripcion, clave_control=p.clave_control, horas_planificadas=p.horas_planificadas, cierre=a_cierre_out(p.cierre)) for p in ot.pasos],
     )
 
@@ -150,7 +164,6 @@ def crear_ot_endpoint(datos: CrearOTRequest, db: Session = Depends(get_db), actu
             tipo_de_orden=datos.tipo_de_orden,
             ubicacion_tecnica_id=datos.ubicacion_tecnica_id,
             tecnico_asignado_id=datos.tecnico_asignado_id,
-            descripcion=datos.descripcion,
             prioridad=datos.prioridad,
             estatus_equipo=datos.estatus_equipo,
             fecha_inic_planif=datos.fecha_inic_planif,
@@ -176,24 +189,24 @@ def crear_ot_endpoint(datos: CrearOTRequest, db: Session = Depends(get_db), actu
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ubicación técnica no encontrada")
     except TecnicoFueraDeGrupo:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="El técnico no existe o no pertenece a tu grupo")
-    return a_ot_out(ot, repositorio_ubicaciones.obtener_por_id(ot.ubicacion_tecnica_id))
+    return a_ot_out(ot, repositorio_ubicaciones.obtener_por_id(ot.ubicacion_tecnica_id), db)
 
 
-def a_lista_out(ots: list[OrdenDeTrabajo], repositorio_ubicaciones: RepositorioUbicacionesTecnicasSQL) -> list[OrdenDeTrabajoOut]:
-    ubicaciones = {u.id: u for u in repositorio_ubicaciones.listar_ubicaciones()}
-    return [a_ot_out(ot, ubicaciones.get(ot.ubicacion_tecnica_id)) for ot in ots]
+def a_lista_out(ots: list[OrdenDeTrabajo], db: Session) -> list[OrdenDeTrabajoOut]:
+    ubicaciones = {u.id: u for u in RepositorioUbicacionesTecnicasSQL(db).listar_ubicaciones()}
+    return [a_ot_out(ot, ubicaciones.get(ot.ubicacion_tecnica_id), db) for ot in ots]
 
 
 @router_ots.get("/mis-ots", response_model=list[OrdenDeTrabajoOut])
 def listar_mis_ots_endpoint(fecha: date | None = None, db: Session = Depends(get_db), actual: UsuarioAutenticado = Depends(requerir_tecnico)):
     ots = listar_ots_tecnico(actual.id, RepositorioOrdenesTrabajoSQL(db), RepositorioTecnicosSQL(db), fecha)
-    return a_lista_out(ots, RepositorioUbicacionesTecnicasSQL(db))
+    return a_lista_out(ots, db)
 
 
 @router_ots.get("/grupo", response_model=list[OrdenDeTrabajoOut])
 def listar_ots_grupo_endpoint(fecha: date | None = None, db: Session = Depends(get_db), actual: UsuarioAutenticado = Depends(requerir_supervisor)):
     ots = listar_ots_supervisor(actual.id, RepositorioOrdenesTrabajoSQL(db), RepositorioTecnicosSQL(db), fecha)
-    return a_lista_out(ots, RepositorioUbicacionesTecnicasSQL(db))
+    return a_lista_out(ots, db)
 
 
 # va antes de "/{ot_id}" para que "exportar" no se lea como el id de una OT
@@ -246,7 +259,7 @@ def ver_detalle_ot_endpoint(ot_id: UUID, db: Session = Depends(get_db), actual: 
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Orden de trabajo no encontrada")
     except SinAccesoAOT:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No tienes acceso a esta orden de trabajo")
-    return a_ot_out(ot, RepositorioUbicacionesTecnicasSQL(db).obtener_por_id(ot.ubicacion_tecnica_id))
+    return a_ot_out(ot, RepositorioUbicacionesTecnicasSQL(db).obtener_por_id(ot.ubicacion_tecnica_id), db)
 
 
 @router_ots.post("/{ot_id}/pasos/{paso_id}/cierre", response_model=OrdenDeTrabajoOut, status_code=status.HTTP_201_CREATED)
@@ -284,4 +297,4 @@ def registrar_cierre_endpoint(ot_id: UUID, paso_id: UUID, datos: CierreIn, db: S
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail="No se puede cerrar un paso antes del día de inicio planificado")
     except FechaCierreFutura:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail="La fecha del cierre no puede estar en el futuro; revisa la hora del celular")
-    return a_ot_out(ot, RepositorioUbicacionesTecnicasSQL(db).obtener_por_id(ot.ubicacion_tecnica_id))
+    return a_ot_out(ot, RepositorioUbicacionesTecnicasSQL(db).obtener_por_id(ot.ubicacion_tecnica_id), db)

@@ -3,11 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../dominio/modelos/grupo.dart';
 import '../../../dominio/modelos/supervisor.dart';
+import '../../../dominio/modelos/tecnico.dart';
 import '../../../nucleo/errores.dart';
 import '../../../nucleo/tema.dart';
 import '../../viewmodels/grupos_vm.dart';
 import '../../viewmodels/supervisores_vm.dart';
 import '../../widgets/barra_navegacion_inferior.dart';
+import '../../widgets/dialogo_datos_acceso.dart';
 import '../../widgets/encabezado_seccion.dart';
 
 class PantallaGrupos extends ConsumerWidget {
@@ -94,6 +96,16 @@ class PantallaGrupos extends ConsumerWidget {
     );
   }
 
+  Future<void> _verTecnicos(BuildContext context, Grupo grupo) {
+    return showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (_) => _TecnicosDelGrupo(grupo: grupo),
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final estado = ref.watch(gruposViewModelProvider);
@@ -134,6 +146,11 @@ class PantallaGrupos extends ConsumerWidget {
                                 TextButton(
                                   onPressed: () => _borrar(context, ref, grupo),
                                   child: const Text('Borrar'),
+                                )
+                              else
+                                TextButton(
+                                  onPressed: () => _verTecnicos(context, grupo),
+                                  child: const Text('Técnicos'),
                                 ),
                             ],
                           );
@@ -195,6 +212,100 @@ class _DialogoNuevoGrupoState extends State<_DialogoNuevoGrupo> {
         TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
         FilledButton(onPressed: () => Navigator.pop(context, (_nombre.text.trim(), _supervisorId)), child: const Text('Crear')),
       ],
+    );
+  }
+}
+
+
+/// Técnicos de un grupo, para que el administrador restablezca la contraseña de quien la olvidó
+class _TecnicosDelGrupo extends ConsumerStatefulWidget {
+  const _TecnicosDelGrupo({required this.grupo});
+  final Grupo grupo;
+
+  @override
+  ConsumerState<_TecnicosDelGrupo> createState() => _TecnicosDelGrupoState();
+}
+
+class _TecnicosDelGrupoState extends ConsumerState<_TecnicosDelGrupo> {
+  late final Future<List<Tecnico>> _tecnicos =
+      ref.read(gruposViewModelProvider.notifier).listarTecnicos(widget.grupo.id);
+
+  Future<void> _restablecer(Tecnico tecnico) async {
+    if (!await confirmarRestablecerPassword(context, tecnico.nombreCompleto) || !mounted) return;
+    try {
+      final datos = await ref.read(gruposViewModelProvider.notifier).restablecerPasswordTecnico(tecnico.id);
+      if (!mounted) return;
+      await mostrarDatosDeAcceso(
+        context,
+        titulo: 'Contraseña restablecida',
+        nombreUsuario: datos.nombreUsuario,
+        passwordInicial: datos.passwordInicial,
+        mensaje: mensajeRestablecida,
+      );
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(mensajeDeError(e))));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * 0.7),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                'Técnicos de ${widget.grupo.nombreDeGrupo}',
+                style: const TextStyle(color: ColoresApp.textoOscuro, fontSize: 17, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 4),
+              const Text(
+                'Si alguien olvidó su contraseña, restablécela y entrégale sus datos de acceso.',
+                style: TextStyle(color: ColoresApp.textoSuave, fontSize: 12),
+              ),
+              const SizedBox(height: 12),
+              Flexible(
+                child: FutureBuilder<List<Tecnico>>(
+                  future: _tecnicos,
+                  builder: (context, resultado) {
+                    if (resultado.hasError) {
+                      return Text(mensajeDeError(resultado.error!), textAlign: TextAlign.center);
+                    }
+                    if (!resultado.hasData) {
+                      return const Padding(
+                        padding: EdgeInsets.all(24),
+                        child: Center(child: CircularProgressIndicator()),
+                      );
+                    }
+                    return ListView(
+                      shrinkWrap: true,
+                      children: [
+                        for (final tecnico in resultado.data!)
+                          ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            title: Text(tecnico.nombreCompleto, style: const TextStyle(fontSize: 14)),
+                            subtitle: Text(
+                              tecnico.activo ? tecnico.nombreUsuario : '${tecnico.nombreUsuario} · Inactivo',
+                              style: const TextStyle(color: ColoresApp.textoSuave, fontSize: 12),
+                            ),
+                            trailing: TextButton(
+                              onPressed: () => _restablecer(tecnico),
+                              child: const Text('Restablecer'),
+                            ),
+                          ),
+                      ],
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

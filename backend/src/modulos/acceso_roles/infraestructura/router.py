@@ -24,7 +24,8 @@ from ..aplicacion.editar_supervisor import editar_supervisor
 from ..aplicacion.gestionar_grupos import GrupoConTecnicos, GrupoNoEncontrado, asignar_supervisor, crear_grupo, eliminar_grupo, listar_grupos
 from ..aplicacion.iniciar_sesion import CredencialesInvalidas, CuentaDeshabilitada, iniciar_sesion
 from ..aplicacion.listar_supervisores import listar_supervisores
-from ..aplicacion.listar_tecnicos import listar_tecnicos
+from ..aplicacion.listar_tecnicos import listar_tecnicos, listar_tecnicos_del_grupo
+from ..aplicacion.restablecer_password import CuentaNoEncontrada, restablecer_password
 from ..aplicacion.ver_perfil import PerfilCompleto, ver_perfil
 
 
@@ -169,6 +170,32 @@ def cambiar_estado_endpoint(
             detail="Técnico no encontrado",
         )
     return {"activo": datos.activo}
+
+
+class PasswordRestablecidaOut(BaseModel):
+    # se muestran al administrador para que se los entregue a la persona
+    nombre_usuario: str
+    password_inicial: str
+
+
+def _restablecer(usuario_id: UUID, db: Session) -> PasswordRestablecidaOut:
+    try:
+        usuario = restablecer_password(usuario_id, RepositorioUsuariosSQL(db))
+    except CuentaNoEncontrada:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cuenta no encontrada")
+    return PasswordRestablecidaOut(nombre_usuario=usuario.nombre_usuario, password_inicial=settings.default_technician_password)
+
+
+@router_tecnicos.post("/{tecnico_id}/restablecer-password", response_model=PasswordRestablecidaOut)
+def restablecer_password_tecnico_endpoint(
+    tecnico_id: UUID,
+    db: Session = Depends(get_db),
+    actual: UsuarioAutenticado = Depends(requerir_administrador),
+):
+    tecnico = RepositorioTecnicosSQL(db).obtener_por_id(tecnico_id)
+    if tecnico is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Técnico no encontrado")
+    return _restablecer(tecnico.usuario_id, db)
 
 
 class PerfilOut(BaseModel):
@@ -427,6 +454,18 @@ def cambiar_estado_supervisor_endpoint(
     return {"activo": datos.activo}
 
 
+@router_supervisores.post("/{supervisor_id}/restablecer-password", response_model=PasswordRestablecidaOut)
+def restablecer_password_supervisor_endpoint(
+    supervisor_id: UUID,
+    db: Session = Depends(get_db),
+    actual: UsuarioAutenticado = Depends(requerir_administrador),
+):
+    supervisor = RepositorioSupervisoresSQL(db).obtener_por_id(supervisor_id)
+    if supervisor is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Supervisor no encontrado")
+    return _restablecer(supervisor.usuario_id, db)
+
+
 class EditarSupervisorRequest(BaseModel):
     horario_entrada: time
     horario_salida: time
@@ -563,3 +602,15 @@ def eliminar_grupo_endpoint(
             status_code=status.HTTP_409_CONFLICT,
             detail="No se puede borrar: el grupo tiene comunicados registrados",
         )
+
+
+@router_grupos.get("/{grupo_id}/tecnicos", response_model=list[TecnicoOut])
+def listar_tecnicos_del_grupo_endpoint(
+    grupo_id: UUID,
+    db: Session = Depends(get_db),
+    actual: UsuarioAutenticado = Depends(requerir_administrador),
+):
+    repositorio_usuarios = RepositorioUsuariosSQL(db)
+    repositorio_tecnicos = RepositorioTecnicosSQL(db)
+    tecnicos = listar_tecnicos_del_grupo(grupo_id, repositorio_tecnicos)
+    return [a_tecnico_out(t, repositorio_usuarios, repositorio_tecnicos) for t in tecnicos]

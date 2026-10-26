@@ -17,6 +17,9 @@ class Settings(BaseSettings):
     openai_timeout_segundos: float = 12
     # carpeta donde se guardan las imágenes de los comunicados (relativa a la carpeta backend)
     comunicados_imagenes_dir: str = "datos/imagenes_comunicados"
+    # notificaciones push (tarjeta 23): clave de la cuenta de servicio de Firebase; nunca se sube a git
+    firebase_credenciales: str = "secrets/firebase.json"
+    notificaciones_intervalo_minutos: float = 5
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 

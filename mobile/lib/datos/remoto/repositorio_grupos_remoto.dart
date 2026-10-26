@@ -1,6 +1,8 @@
 import 'package:dio/dio.dart';
 
+import '../../dominio/modelos/datos_de_acceso.dart';
 import '../../dominio/modelos/grupo.dart';
+import '../../dominio/modelos/tecnico.dart';
 import '../../dominio/repositorios/repositorio_grupos.dart';
 import 'mapeo_json.dart';
 import 'traducir_errores.dart';
@@ -35,6 +37,22 @@ class RepositorioGruposRemoto implements RepositorioGrupos {
   Future<void> eliminar(String grupoId) {
     return traducirErrores(() async {
       await _dio.delete('/grupos/$grupoId');
+    });
+  }
+
+  @override
+  Future<List<Tecnico>> listarTecnicos(String grupoId) {
+    return traducirErrores(() async {
+      final respuesta = await _dio.get('/grupos/$grupoId/tecnicos');
+      return (respuesta.data as List).map((e) => tecnicoDesdeJson(e as Json)).toList();
+    });
+  }
+
+  @override
+  Future<DatosDeAcceso> restablecerPasswordTecnico(String tecnicoId) {
+    return traducirErrores(() async {
+      final respuesta = await _dio.post('/tecnicos/$tecnicoId/restablecer-password');
+      return datosDeAccesoDesdeJson(respuesta.data as Json);
     });
   }
 }

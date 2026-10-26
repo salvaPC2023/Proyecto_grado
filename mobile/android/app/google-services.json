@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "165504351322",
+    "project_id": "espodi-mantenimiento",
+    "storage_bucket": "espodi-mantenimiento.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:165504351322:android:481a4a0c272a50f175ac63",
+        "android_client_info": {
+          "package_name": "bo.edu.ucb.maintenance.maintenance_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA_bpZAEPy2JLMM8DsUdWx_uy6GoMZ-u5w"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

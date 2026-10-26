@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from src.modulos.acceso_roles.infraestructura.orm import TecnicoORM
 
-from ..dominio.modelos import CierrePaso, EstatusOT, OrdenDeTrabajo, PasoOT
+from ..dominio.modelos import CierrePaso, EstatusOT, OrdenDeTrabajo, PasoOT, orden_de_paso
 from ..dominio.puertos import CierreDuplicado, RepositorioOrdenesTrabajo
 from .orm import CierrePasoORM, OrdenDeTrabajoORM, PasoOTORM
 
@@ -45,14 +45,13 @@ def ot_a_dominio(orm: OrdenDeTrabajoORM) -> OrdenDeTrabajo:
         ubicacion_tecnica_id=orm.ubicacion_tecnica_id,
         tecnico_asignado_id=orm.tecnico_asignado_id,
         creado_por_id=orm.creado_por_id,
-        descripcion=orm.descripcion,
         prioridad=orm.prioridad,
         estatus_equipo=orm.estatus_equipo,
         estatus=orm.estatus,
         fecha_inic_planif=orm.fecha_inic_planif,
         fecha_fin_planif=orm.fecha_fin_planif,
         fecha_cierre=orm.fecha_cierre,
-        pasos=[paso_a_dominio(p) for p in orm.pasos],
+        pasos=sorted((paso_a_dominio(p) for p in orm.pasos), key=orden_de_paso),
     )
 
 
@@ -68,7 +67,6 @@ class RepositorioOrdenesTrabajoSQL(RepositorioOrdenesTrabajo):
             ubicacion_tecnica_id=ot.ubicacion_tecnica_id,
             creado_por_id=ot.creado_por_id,
             tecnico_asignado_id=ot.tecnico_asignado_id,
-            descripcion=ot.descripcion,
             prioridad=ot.prioridad,
             estatus=ot.estatus,
             estatus_equipo=ot.estatus_equipo,

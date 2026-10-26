@@ -7,6 +7,7 @@ import '../../../nucleo/tema.dart';
 import '../../viewmodels/grupos_vm.dart';
 import '../../viewmodels/supervisores_vm.dart';
 import '../../widgets/barra_navegacion_inferior.dart';
+import '../../widgets/dialogo_datos_acceso.dart';
 import '../../widgets/encabezado_seccion.dart';
 import 'dialogo_editar_supervisor.dart';
 import 'pantalla_registrar_supervisor.dart';
@@ -54,6 +55,23 @@ class PantallaListaSupervisores extends ConsumerWidget {
     }
   }
 
+  Future<void> _restablecerPassword(BuildContext context, WidgetRef ref, Supervisor supervisor) async {
+    if (!await confirmarRestablecerPassword(context, supervisor.nombreCompleto) || !context.mounted) return;
+    try {
+      final datos = await ref.read(supervisoresViewModelProvider.notifier).restablecerPassword(supervisor.id);
+      if (!context.mounted) return;
+      await mostrarDatosDeAcceso(
+        context,
+        titulo: 'Contraseña restablecida',
+        nombreUsuario: datos.nombreUsuario,
+        passwordInicial: datos.passwordInicial,
+        mensaje: mensajeRestablecida,
+      );
+    } catch (e) {
+      if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(mensajeDeError(e))));
+    }
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final estado = ref.watch(supervisoresViewModelProvider);
@@ -92,6 +110,7 @@ class PantallaListaSupervisores extends ConsumerWidget {
                             supervisor: supervisores[i],
                             onAlternarEstado: () => _alternarEstado(context, ref, supervisores[i]),
                             onEditar: () => _editar(context, ref, supervisores[i]),
+                            onRestablecerPassword: () => _restablecerPassword(context, ref, supervisores[i]),
                           ),
                         ),
                       ),
@@ -106,10 +125,16 @@ class PantallaListaSupervisores extends ConsumerWidget {
 }
 
 class _TarjetaSupervisor extends StatelessWidget {
-  const _TarjetaSupervisor({required this.supervisor, required this.onAlternarEstado, required this.onEditar});
+  const _TarjetaSupervisor({
+    required this.supervisor,
+    required this.onAlternarEstado,
+    required this.onEditar,
+    required this.onRestablecerPassword,
+  });
   final Supervisor supervisor;
   final VoidCallback onAlternarEstado;
   final VoidCallback onEditar;
+  final VoidCallback onRestablecerPassword;
 
   @override
   Widget build(BuildContext context) {
@@ -161,6 +186,8 @@ class _TarjetaSupervisor extends StatelessWidget {
                 onPressed: onAlternarEstado,
                 child: Text(activo ? 'Deshabilitar' : 'Habilitar'),
               ),
+              // si olvidó su contraseña, vuelve a la inicial y elige una nueva al entrar
+              TextButton(onPressed: onRestablecerPassword, child: const Text('Restablecer contraseña')),
             ],
           ),
         ],

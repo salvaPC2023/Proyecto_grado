@@ -21,10 +21,12 @@ class ResultadoImportacion {
     required this.ubicacionesCreadas,
     required this.omitidos,
     required this.errores,
+    this.otsCreadas = 0,
   });
 
   final List<UsuarioImportado> usuariosCreados;
   final int ubicacionesCreadas;
+  final int otsCreadas; // solo en la importación del supervisor
   final List<AvisoImportacion> omitidos;
   final List<AvisoImportacion> errores;
 }

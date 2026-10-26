@@ -56,7 +56,7 @@ class PasoOt {
   });
 
   final String id;
-  final int numeroPaso;
+  final int? numeroPaso; // los pasos de seguridad no llevan número
   final String descripcion;
   final String claveControl;
   final double? horasPlanificadas;
@@ -66,13 +66,20 @@ class PasoOt {
   bool get cerrado => cierre != null;
 }
 
+/// Técnico asignado, tal como se muestra en el cuadro "Coordinación" del detalle
+class TecnicoDeOt {
+  const TecnicoDeOt({required this.nombre, required this.profesion});
+
+  final String nombre;
+  final String profesion;
+}
+
 class OrdenTrabajo {
   const OrdenTrabajo({
     required this.id,
     required this.titulo,
     required this.tipoDeOrden,
     required this.tecnicoAsignadoId,
-    required this.descripcion,
     required this.prioridad,
     required this.estatus,
     required this.estatusEquipo,
@@ -80,6 +87,7 @@ class OrdenTrabajo {
     required this.fechaFinPlanif,
     required this.pasos,
     this.ubicacion,
+    this.tecnico,
     this.fechaCierre,
   });
 
@@ -87,7 +95,6 @@ class OrdenTrabajo {
   final String titulo;
   final String tipoDeOrden;
   final String tecnicoAsignadoId;
-  final String descripcion;
   final int prioridad;
   final String estatus;
   final bool estatusEquipo;
@@ -95,6 +102,7 @@ class OrdenTrabajo {
   final DateTime fechaFinPlanif;
   final DateTime? fechaCierre;
   final UbicacionTecnica? ubicacion;
+  final TecnicoDeOt? tecnico; // puede faltar en una OT guardada en el celular antes de este cambio
   final List<PasoOt> pasos;
 
   double get horasPlanificadas => pasos

@@ -4,17 +4,21 @@ from uuid import UUID
 from src.modulos.acceso_roles.aplicacion.crear_supervisor import crear_supervisor
 from src.modulos.acceso_roles.aplicacion.crear_tecnico import crear_tecnico
 from src.modulos.acceso_roles.dominio.puertos import RepositorioSupervisores, RepositorioTecnicos, RepositorioUsuarios
+from src.modulos.ordenes_trabajo.dominio.puertos import RepositorioOrdenesTrabajo
 from src.modulos.ubicaciones_tecnicas.aplicacion.gestionar_ubicaciones import NivelesIncompletos, crear_ubicacion
 from src.modulos.ubicaciones_tecnicas.dominio.puertos import RepositorioUbicacionesTecnicas, UbicacionDuplicada
 
-from ..dominio.modelos import Aviso, FilaGrupo, FilaPersonal, FilaUbicacion, ResultadoImportacion, UsuarioCreado
+from ..dominio.modelos import Aviso, FilaGrupo, FilaOT, FilaPersonal, FilaUbicacion, ResultadoImportacion, UsuarioCreado
 from ..dominio.puertos import ConsultaPersonal, PlantillaInvalida
 from ..dominio.reglas import horario_de_turno, normalizar, profesion_de, separar_nombre
+from .importar_ots import importar_ots
 
 # si el supervisor no está en la tabla de Grupos, su grupo trabaja en el turno 2
 HORARIO_POR_DEFECTO = (time(7), time(15))
 AYUDA_PERSONAL = "Personal lleva los encabezados: Nombre Completo, Grupo Planificador, Supervisor."
 AYUDA_UBICACIONES = "Ubicaciones Técnicas lleva: Sector, Subsector, Sistema, Subsistema."
+AYUDA_OTS = ("Órdenes de trabajo lleva: OT, Título, Tipo, Ubicación Técnica, Técnico, Prioridad, Inicio, Fin, "
+             "Equipo en Funcionamiento, Clave, Descripción del Paso, Horas.")
 
 
 class SupervisorSinGrupo(Exception):
@@ -158,10 +162,16 @@ def importar_para_mi_grupo(
     repositorio_supervisores: RepositorioSupervisores,
     repositorio_tecnicos: RepositorioTecnicos,
     repositorio_ubicaciones: RepositorioUbicacionesTecnicas,
+    ots: list[FilaOT] | None = None,
+    repositorio_ots: RepositorioOrdenesTrabajo | None = None,
 ) -> ResultadoImportacion:
-    """Supervisor: registra las ubicaciones técnicas y solo a los técnicos de su grupo"""
-    if not personal and not ubicaciones:
-        raise PlantillaInvalida(f"No se encontró la tabla de Personal ni la de Ubicaciones Técnicas. {AYUDA_PERSONAL} {AYUDA_UBICACIONES}")
+    """Supervisor: registra las ubicaciones técnicas, solo a los técnicos de su grupo y, si la plantilla
+    trae la tabla de órdenes de trabajo, sus OT (después del personal, para poder asignarlas a técnicos nuevos)"""
+    if not personal and not ubicaciones and not ots:
+        raise PlantillaInvalida(
+            f"No se encontró la tabla de Personal, la de Ubicaciones Técnicas ni la de Órdenes de trabajo. "
+            f"{AYUDA_PERSONAL} {AYUDA_UBICACIONES} {AYUDA_OTS}"
+        )
 
     grupo_id = repositorio_tecnicos.obtener_grupo_del_supervisor(supervisor_usuario_id)
     if grupo_id is None:
@@ -177,4 +187,10 @@ def importar_para_mi_grupo(
             importacion.omitir(fila.fila, fila.nombre_completo, f"Es de otro grupo (supervisor {fila.supervisor or 'sin indicar'})")
             continue
         importacion.registrar_tecnico(fila, grupo_id)
+
+    if ots:
+        importar_ots(
+            ots, supervisor_usuario_id, repositorio_ots, repositorio_ubicaciones, repositorio_tecnicos,
+            repositorio_supervisores, repositorio_usuarios, resultado=importacion.resultado,
+        )
     return importacion.resultado

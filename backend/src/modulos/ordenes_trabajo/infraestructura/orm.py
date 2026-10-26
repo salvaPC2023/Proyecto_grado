@@ -21,7 +21,6 @@ class OrdenDeTrabajoORM(Base):
     ubicacion_tecnica_id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), ForeignKey("ubicaciones_tecnicas.id"))
     creado_por_id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), ForeignKey("supervisores.id"))
     tecnico_asignado_id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), ForeignKey("tecnicos.id"))
-    descripcion: Mapped[str] = mapped_column(Text)
     prioridad: Mapped[int] = mapped_column(SmallInteger)
     estatus: Mapped[str] = mapped_column(SQLEnum("asignada", "en_progreso", "cerrada", name="estatus_ot_enum", create_type=False))
     estatus_equipo: Mapped[bool] = mapped_column(Boolean)
@@ -38,7 +37,7 @@ class PasoOTORM(Base):
 
     id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True)
     ot_id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), ForeignKey("ordenes_de_trabajo.id"))
-    numero_paso: Mapped[int] = mapped_column(SmallInteger)
+    numero_paso: Mapped[int | None] = mapped_column(SmallInteger, nullable=True)
     descripcion: Mapped[str] = mapped_column(Text)
     clave_control: Mapped[str] = mapped_column(SQLEnum("PM01", "PMNN", name="clave_control_enum", create_type=False))
     horas_planificadas: Mapped[Decimal | None] = mapped_column(Numeric(5, 2), nullable=True)
