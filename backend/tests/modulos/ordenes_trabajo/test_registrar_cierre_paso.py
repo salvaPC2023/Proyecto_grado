@@ -31,11 +31,11 @@ def ot():
     ot_id = uuid4()
     return OrdenDeTrabajo(
         id=ot_id, titulo="Cambiar rodamiento", tipo_de_orden="OE01", ubicacion_tecnica_id=uuid4(), tecnico_asignado_id=TECNICO.id, creado_por_id=uuid4(),
-        descripcion="d", prioridad=2, estatus_equipo=False, estatus="asignada", fecha_inic_planif=datetime(2026, 10, 5, 8), fecha_fin_planif=datetime(2026, 10, 5, 12),
+        prioridad=2, estatus_equipo=False, estatus="asignada", fecha_inic_planif=datetime(2026, 10, 5, 8), fecha_fin_planif=datetime(2026, 10, 5, 12),
         pasos=[
-            PasoOT(id=uuid4(), ot_id=ot_id, numero_paso=1, descripcion="Piense", clave_control="PMNN"),
-            PasoOT(id=uuid4(), ot_id=ot_id, numero_paso=4, descripcion="Desmontar", clave_control="PM01", horas_planificadas=Decimal("1")),
-            PasoOT(id=uuid4(), ot_id=ot_id, numero_paso=5, descripcion="Montar", clave_control="PM01", horas_planificadas=Decimal("1")),
+            PasoOT(id=uuid4(), ot_id=ot_id, numero_paso=None, descripcion="Piense", clave_control="PMNN"),
+            PasoOT(id=uuid4(), ot_id=ot_id, numero_paso=1, descripcion="Desmontar", clave_control="PM01", horas_planificadas=Decimal("1")),
+            PasoOT(id=uuid4(), ot_id=ot_id, numero_paso=2, descripcion="Montar", clave_control="PM01", horas_planificadas=Decimal("1")),
         ],
     )
 
@@ -128,7 +128,7 @@ def test_ot_inexistente_lanza_error(ot):
 
 
 def test_paso_de_otra_ot_lanza_error(ot):
-    paso_ajeno = PasoOT(id=uuid4(), ot_id=uuid4(), numero_paso=4, descripcion="x", clave_control="PM01")
+    paso_ajeno = PasoOT(id=uuid4(), ot_id=uuid4(), numero_paso=1, descripcion="x", clave_control="PM01")
 
     with pytest.raises(PasoNoEncontrado):
         _cerrar(ot, paso_ajeno)

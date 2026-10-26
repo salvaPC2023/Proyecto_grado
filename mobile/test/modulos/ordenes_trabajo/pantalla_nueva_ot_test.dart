@@ -7,7 +7,6 @@ import '../acceso_roles/repositorios_falsos.dart';
 import 'repositorios_falsos.dart';
 
 final campoTitulo = find.widgetWithText(TextField, 'Título (ej. Sobrecalentamiento de transformador)');
-final campoDescripcion = find.widgetWithText(TextField, 'Descripción del trabajo');
 
 Future<void> agregarPaso(WidgetTester tester, {required String descripcion, String? horas}) async {
   await tocar(tester, find.text('Agregar paso de mantenimiento'));
@@ -20,18 +19,18 @@ Future<void> agregarPaso(WidgetTester tester, {required String descripcion, Stri
 }
 
 void main() {
-  testWidgets('pide el título y la descripción', (tester) async {
+  testWidgets('pide el título', (tester) async {
     await montarPantalla(tester, const PantallaNuevaOt(), sesion: perfilSupervisor);
 
     await tocar(tester, find.text('Crear Orden de Trabajo'));
 
-    expect(find.text('Completa el título y la descripción'), findsOneWidget);
+    expect(find.text('Escribe el título de la orden'), findsOneWidget);
+    expect(find.text('Descripción del trabajo'), findsNothing); // la OT ya no lleva descripción general
   });
 
   testWidgets('pide la ubicación técnica', (tester) async {
     await montarPantalla(tester, const PantallaNuevaOt(), sesion: perfilSupervisor);
     await tester.enterText(campoTitulo, 'Cambiar filtro');
-    await tester.enterText(campoDescripcion, 'Filtro de aire');
 
     await tocar(tester, find.text('Crear Orden de Trabajo'));
 
@@ -43,7 +42,6 @@ void main() {
     await montarPantalla(tester, const PantallaNuevaOt(), sesion: perfilSupervisor, ordenes: repositorio);
 
     await tester.enterText(campoTitulo, 'Cambiar filtro');
-    await tester.enterText(campoDescripcion, 'Filtro de aire');
     await tocar(tester, find.text('Toca para elegir entre 2 ubicaciones'));
     await tocar(tester, find.text('TR-01'));
     await tocar(tester, find.byType(DropdownButton<String?>).last); // desplegable de técnicos

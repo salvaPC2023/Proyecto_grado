@@ -17,7 +17,7 @@ OTRO_TECNICO = Tecnico(id=uuid4(), usuario_id=uuid4(), grupo_id=uuid4(), profesi
 def escenario():
     ot = OrdenDeTrabajo(
         id=uuid4(), titulo="OT", tipo_de_orden="OE02", ubicacion_tecnica_id=uuid4(), tecnico_asignado_id=TECNICO.id, creado_por_id=uuid4(),
-        descripcion="d", prioridad=2, estatus_equipo=True, estatus="asignada", fecha_inic_planif=datetime(2026, 10, 5, 8), fecha_fin_planif=datetime(2026, 10, 5, 12),
+        prioridad=2, estatus_equipo=True, estatus="asignada", fecha_inic_planif=datetime(2026, 10, 5, 8), fecha_fin_planif=datetime(2026, 10, 5, 12),
     )
     repositorio_ots = RepositorioOrdenesTrabajoFalso()
     repositorio_ots.crear(ot)

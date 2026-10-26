@@ -21,11 +21,11 @@ def _ot(inicio: datetime, fin: datetime, ubicacion=LLENADORA, titulo="Cambiar ro
     ot_id = uuid4()
     return OrdenDeTrabajo(
         id=ot_id, titulo=titulo, tipo_de_orden="OE02", ubicacion_tecnica_id=ubicacion.id, tecnico_asignado_id=TECNICO,
-        creado_por_id=uuid4(), descripcion="d", prioridad=2, estatus_equipo=True, estatus="asignada",
+        creado_por_id=uuid4(), prioridad=2, estatus_equipo=True, estatus="asignada",
         fecha_inic_planif=inicio, fecha_fin_planif=fin,
         pasos=pasos if pasos is not None else [
-            PasoOT(id=uuid4(), ot_id=ot_id, numero_paso=1, descripcion="Piense de manera inteligente", clave_control="PMNN"),
-            PasoOT(id=uuid4(), ot_id=ot_id, numero_paso=4, descripcion="Desmontar", clave_control="PM01", horas_planificadas=Decimal("1.5")),
+            PasoOT(id=uuid4(), ot_id=ot_id, numero_paso=None, descripcion="Piense de manera inteligente", clave_control="PMNN"),
+            PasoOT(id=uuid4(), ot_id=ot_id, numero_paso=1, descripcion="Desmontar", clave_control="PM01", horas_planificadas=Decimal("1.5")),
         ],
     )
 
@@ -89,7 +89,7 @@ def test_una_fila_por_paso_pm01_sin_los_pasos_de_seguridad():
     filas = _filas(generar_excel([ot], {LLENADORA.id: LLENADORA}, {TECNICO: "Carlos Mamani Quispe"}))
 
     assert len(filas) == 1
-    assert filas[0]["N.º paso"] == 4
+    assert filas[0]["N.º paso"] == 1  # los pasos del supervisor empiezan en 1
     assert filas[0]["Descripción del paso"] == "Desmontar"
 
 

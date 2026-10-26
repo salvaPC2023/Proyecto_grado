@@ -12,7 +12,6 @@ final otJson = {
   'titulo': 'Cambiar filtro',
   'tipo_de_orden': 'OE01',
   'tecnico_asignado_id': 't1',
-  'descripcion': 'Filtro de aire',
   'prioridad': 2,
   'estatus': 'cerrada',
   'estatus_equipo': true,
@@ -20,6 +19,7 @@ final otJson = {
   'fecha_fin_planif': '2026-10-05T12:00:00',
   'fecha_cierre': '2026-10-05T12:30:00',
   'ubicacion': {'id': 'ub1', 'sector': 'Planta Norte', 'subsector': null, 'sistema': null, 'subsistema': null},
+  'tecnico': {'nombre': 'Carlos Mamani', 'profesion': 'mecanico'},
   'pasos': [
     {
       'id': 'p1',
@@ -50,6 +50,8 @@ void main() {
     expect(adaptador.ultima.path, '/ordenes-trabajo/ot1');
     expect(ot.ubicacion!.sector, 'Planta Norte');
     expect(ot.pasos.single.cierre!.tiempoRealTrabajado, 1.5);
+    expect(ot.tecnico!.nombre, 'Carlos Mamani');
+    expect(ot.tecnico!.profesion, 'mecanico');
   });
 
   test('lista mis OTs de una fecha', () async {
@@ -89,7 +91,6 @@ void main() {
       tipoDeOrden: 'OE01',
       ubicacionTecnicaId: 'ub1',
       tecnicoAsignadoId: 't1',
-      descripcion: 'Filtro de aire',
       prioridad: 2,
       estatusEquipo: true,
       fechaInicPlanif: DateTime(2026, 10, 5, 8),
@@ -98,6 +99,7 @@ void main() {
     );
 
     expect(adaptador.ultima.method, 'POST');
+    expect(adaptador.ultima.data.containsKey('descripcion'), isFalse); // la OT ya no lleva descripción general
     expect(adaptador.ultima.data['pasos'], [
       {'descripcion': 'Desmontar', 'clave_control': 'PM01', 'horas_planificadas': 2.0},
     ]);

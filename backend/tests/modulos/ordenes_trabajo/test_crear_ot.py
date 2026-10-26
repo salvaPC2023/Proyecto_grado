@@ -6,7 +6,7 @@ import pytest
 
 from src.modulos.ordenes_trabajo.aplicacion.crear_ot import FechasInvalidas, HorasInvalidas, PasoSolicitado, PrioridadInvalida, SinPasoPM01, SupervisorNoEncontrado, TecnicoFueraDeGrupo, UbicacionNoEncontrada, crear_ot
 from src.modulos.acceso_roles.dominio.modelos import Supervisor
-from src.modulos.ordenes_trabajo.dominio.modelos import PASOS_SEGURIDAD
+from src.modulos.ordenes_trabajo.dominio.modelos import PASOS_SEGURIDAD, PasoOT, orden_de_paso
 from src.modulos.ubicaciones_tecnicas.dominio.modelos import UbicacionTecnica
 from tests.modulos.ordenes_trabajo.repositorios_falsos import RepositorioOrdenesTrabajoFalso, RepositorioSupervisoresFalso, RepositorioTecnicosFalso, RepositorioUbicacionesFalso
 
@@ -43,7 +43,6 @@ def _crear(repositorios, **cambios):
         tipo_de_orden="OE01",
         ubicacion_tecnica_id=UBICACION.id,
         tecnico_asignado_id=TECNICO,
-        descripcion="Revisar y corregir temperatura",
         prioridad=1,
         estatus_equipo=False,
         fecha_inic_planif=datetime(2026, 10, 10, 8, 0),
@@ -71,10 +70,11 @@ def test_los_3_primeros_pasos_son_los_de_seguridad(repositorios):
     assert all(p.clave_control == "PMNN" and p.horas_planificadas is None for p in ot.pasos[:3])
 
 
-def test_los_pasos_del_supervisor_empiezan_en_el_4(repositorios):
+def test_los_pasos_de_seguridad_no_llevan_numero_y_los_del_supervisor_empiezan_en_1(repositorios):
+    # prueba con usuarios del 23/10/2026: antes el primer paso del supervisor era el 4
     ot = _crear(repositorios, pasos=[pmnn(), pm01()])
 
-    assert [p.numero_paso for p in ot.pasos] == [1, 2, 3, 4, 5]
+    assert [p.numero_paso for p in ot.pasos] == [None, None, None, 1, 2]
     assert [p.clave_control for p in ot.pasos[3:]] == ["PMNN", "PM01"]
     assert all(p.ot_id == ot.id for p in ot.pasos)
 
@@ -134,3 +134,14 @@ def test_usuario_que_no_es_supervisor_no_puede_crear(repositorios):
         _crear(repositorios, supervisor_usuario_id=uuid4())
 
     assert repositorios["repositorio_ots"].ots == {}
+
+
+def test_al_leer_la_ot_los_pasos_de_seguridad_van_primero_en_su_orden():
+    # en la base no llevan número, así que el orden se arma con PASOS_SEGURIDAD
+    ot_id = uuid4()
+    paso = lambda numero, texto: PasoOT(id=uuid4(), ot_id=ot_id, numero_paso=numero, descripcion=texto, clave_control="PMNN")
+    desordenados = [paso(2, "Montar"), paso(None, PASOS_SEGURIDAD[2]), paso(1, "Desmontar"), paso(None, PASOS_SEGURIDAD[0]), paso(None, PASOS_SEGURIDAD[1])]
+
+    ordenados = sorted(desordenados, key=orden_de_paso)
+
+    assert [p.descripcion for p in ordenados] == [*PASOS_SEGURIDAD, "Desmontar", "Montar"]

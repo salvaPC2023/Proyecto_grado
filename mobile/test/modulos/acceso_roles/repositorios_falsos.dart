@@ -1,4 +1,5 @@
 import 'package:maintenance_app/dominio/errores.dart';
+import 'package:maintenance_app/dominio/modelos/datos_de_acceso.dart';
 import 'package:maintenance_app/dominio/modelos/grupo.dart';
 import 'package:maintenance_app/dominio/modelos/perfil.dart';
 import 'package:maintenance_app/dominio/modelos/supervisor.dart';
@@ -100,6 +101,16 @@ class RepositorioSupervisoresFalso implements RepositorioSupervisores {
     edicion = (supervisorId, horarioEntrada, horarioSalida, areaDesignada, grupoId);
     return supervisores.firstWhere((s) => s.id == supervisorId);
   }
+
+  String? idRestablecido;
+
+  @override
+  Future<DatosDeAcceso> restablecerPassword(String supervisorId) async {
+    if (error != null) throw error!;
+    idRestablecido = supervisorId;
+    final supervisor = supervisores.firstWhere((s) => s.id == supervisorId);
+    return (nombreUsuario: supervisor.nombreUsuario, passwordInicial: 'ESPODI2026');
+  }
 }
 
 const grupoSuministros = Grupo(
@@ -121,12 +132,28 @@ const grupoTaller = Grupo(
 const grupoVacio = Grupo(id: 'g3', nombreDeGrupo: 'Grupo por error', cantidadTecnicos: 0);
 
 class RepositorioGruposFalso implements RepositorioGrupos {
-  RepositorioGruposFalso({this.grupos = const [grupoSuministros, grupoTaller, grupoVacio], this.error});
+  RepositorioGruposFalso({
+    this.grupos = const [grupoSuministros, grupoTaller, grupoVacio],
+    this.tecnicos = const [tecnicoLuis],
+    this.error,
+  });
 
   final List<Grupo> grupos;
+  final List<Tecnico> tecnicos;
   final ErrorDeAplicacion? error;
 
   String? idEliminado;
+  String? tecnicoRestablecido;
+
+  @override
+  Future<List<Tecnico>> listarTecnicos(String grupoId) async => tecnicos.where((t) => t.grupoId == grupoId).toList();
+
+  @override
+  Future<DatosDeAcceso> restablecerPasswordTecnico(String tecnicoId) async {
+    tecnicoRestablecido = tecnicoId;
+    final tecnico = tecnicos.firstWhere((t) => t.id == tecnicoId);
+    return (nombreUsuario: tecnico.nombreUsuario, passwordInicial: 'ESPODI2026');
+  }
 
   @override
   Future<List<Grupo>> listar() async => grupos;

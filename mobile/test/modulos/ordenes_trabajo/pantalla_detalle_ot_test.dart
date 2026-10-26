@@ -70,6 +70,23 @@ void main() {
     expect(find.text('Cerrada el: '), findsOneWidget);
   });
 
+  testWidgets('muestra el técnico y su ocupación en el cuadro de coordinación', (tester) async {
+    // prueba con usuarios del 23/10/2026: el supervisor pidió separar estos datos del encabezado
+    await montarPantalla(tester, const PantallaDetalleOt(otId: 'ot1'), sesion: perfilSupervisor);
+
+    expect(find.text('Coordinación'), findsOneWidget);
+    expect(find.text('Luis Quispe Mamani'), findsOneWidget);
+    expect(find.text('Eléctrico'), findsOneWidget);
+    expect(find.text('Detenido para intervención'), findsOneWidget);
+  });
+
+  testWidgets('los pasos de seguridad no llevan número y los del supervisor empiezan en 1', (tester) async {
+    await montarPantalla(tester, const PantallaDetalleOt(otId: 'ot1'), sesion: perfilTecnico);
+
+    expect(find.byIcon(Icons.health_and_safety_outlined), findsOneWidget); // el paso de seguridad
+    expect(find.text('1'), findsOneWidget); // el paso PM01 del supervisor
+  });
+
   testWidgets('muestra el error del servidor', (tester) async {
     await montarPantalla(tester, const PantallaDetalleOt(otId: 'ot1'),
         sesion: perfilTecnico,

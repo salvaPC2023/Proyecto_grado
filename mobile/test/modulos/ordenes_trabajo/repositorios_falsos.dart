@@ -51,7 +51,6 @@ OrdenTrabajo crearOt({
     titulo: titulo,
     tipoDeOrden: 'OE01',
     tecnicoAsignadoId: tecnicoId,
-    descripcion: 'Descripción de $titulo',
     prioridad: 2,
     estatus: estatus,
     estatusEquipo: false,
@@ -59,12 +58,13 @@ OrdenTrabajo crearOt({
     fechaFinPlanif: DateTime(2026, 10, 5, 12),
     fechaCierre: fechaCierre,
     ubicacion: ubicacionTransformador,
+    tecnico: const TecnicoDeOt(nombre: 'Luis Quispe Mamani', profesion: 'electrico'),
     pasos: pasos ??
         const [
-          PasoOt(id: 'p1', numeroPaso: 1, descripcion: 'Usar EPP', claveControl: 'PMNN'),
+          PasoOt(id: 'p1', numeroPaso: null, descripcion: 'Usar EPP', claveControl: 'PMNN'),
           PasoOt(
             id: 'p2',
-            numeroPaso: 2,
+            numeroPaso: 1,
             descripcion: 'Cambiar filtro',
             claveControl: 'PM01',
             horasPlanificadas: 2,
@@ -104,7 +104,6 @@ class RepositorioOrdenesTrabajoFalso implements RepositorioOrdenesTrabajo {
     required String tipoDeOrden,
     required String ubicacionTecnicaId,
     required String tecnicoAsignadoId,
-    required String descripcion,
     required int prioridad,
     required bool estatusEquipo,
     required DateTime fechaInicPlanif,

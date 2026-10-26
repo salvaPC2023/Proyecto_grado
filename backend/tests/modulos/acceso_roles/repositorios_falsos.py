@@ -71,6 +71,9 @@ class RepositorioTecnicosFalso(RepositorioTecnicos):
     def listar_por_supervisor(self, supervisor_usuario_id):
         return [t for t in self.tecnicos if self._supervisor_de_tecnico.get(t.id) == supervisor_usuario_id]
 
+    def listar_por_grupo(self, grupo_id):
+        return [t for t in self.tecnicos if t.grupo_id == grupo_id]
+
     def pertenece_a_supervisor(self, tecnico_id, supervisor_usuario_id):
         return self._supervisor_de_tecnico.get(tecnico_id) == supervisor_usuario_id
 

@@ -79,9 +79,12 @@ class RepositorioTecnicosFalso(RepositorioTecnicos):
     def obtener_grupo_del_supervisor(self, supervisor_usuario_id):
         return self._grupo_de_supervisor.get(supervisor_usuario_id)
 
-    def obtener_por_id(self, id): raise NotImplementedError
+    def obtener_por_id(self, id):
+        return next((t for t in self._tecnicos if t.id == id), None)
+
     def crear(self, tecnico): raise NotImplementedError
     def listar_por_supervisor(self, supervisor_usuario_id): raise NotImplementedError
+    def listar_por_grupo(self, grupo_id): raise NotImplementedError
     def obtener_nombre_grupo(self, grupo_id): raise NotImplementedError
 
 

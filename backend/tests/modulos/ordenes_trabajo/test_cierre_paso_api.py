@@ -11,9 +11,11 @@ from src.modulos.acceso_roles.dominio.modelos import Tecnico
 from src.modulos.acceso_roles.infraestructura.dependencias import UsuarioAutenticado, obtener_usuario_actual
 from src.modulos.ordenes_trabajo.dominio.modelos import OrdenDeTrabajo, PasoOT
 from src.modulos.ordenes_trabajo.infraestructura import router
+from tests.modulos.acceso_roles.repositorios_falsos import RepositorioUsuariosFalso, crear_usuario
 from tests.modulos.ordenes_trabajo.repositorios_falsos import RepositorioOrdenesTrabajoFalso, RepositorioTecnicosFalso, RepositorioUbicacionesFalso
 
-TECNICO = Tecnico(id=uuid4(), usuario_id=uuid4(), grupo_id=uuid4(), profesion="mecanico")
+USUARIO_TECNICO = crear_usuario()
+TECNICO = Tecnico(id=uuid4(), usuario_id=USUARIO_TECNICO.id, grupo_id=uuid4(), profesion="mecanico")
 CIERRE = {"resultado_trabajo": "ejecutado", "tiempo_real_trabajado": "1.5", "descripcion_trabajo_realizado": "Se cambió el rodamiento"}
 
 
@@ -23,10 +25,10 @@ def ot():
     ayer = datetime.now() - timedelta(days=1)
     return OrdenDeTrabajo(
         id=ot_id, titulo="Cambiar rodamiento", tipo_de_orden="OE01", ubicacion_tecnica_id=uuid4(), tecnico_asignado_id=TECNICO.id, creado_por_id=uuid4(),
-        descripcion="d", prioridad=2, estatus_equipo=False, estatus="asignada", fecha_inic_planif=ayer, fecha_fin_planif=ayer + timedelta(days=2),
+        prioridad=2, estatus_equipo=False, estatus="asignada", fecha_inic_planif=ayer, fecha_fin_planif=ayer + timedelta(days=2),
         pasos=[
-            PasoOT(id=uuid4(), ot_id=ot_id, numero_paso=1, descripcion="Piense", clave_control="PMNN"),
-            PasoOT(id=uuid4(), ot_id=ot_id, numero_paso=4, descripcion="Desmontar", clave_control="PM01", horas_planificadas=Decimal("1")),
+            PasoOT(id=uuid4(), ot_id=ot_id, numero_paso=None, descripcion="Piense", clave_control="PMNN"),
+            PasoOT(id=uuid4(), ot_id=ot_id, numero_paso=1, descripcion="Desmontar", clave_control="PM01", horas_planificadas=Decimal("1")),
         ],
     )
 
@@ -39,6 +41,7 @@ def cliente(monkeypatch, ot):
     monkeypatch.setattr(router, "RepositorioOrdenesTrabajoSQL", lambda db: repositorio_ots)
     monkeypatch.setattr(router, "RepositorioTecnicosSQL", lambda db: RepositorioTecnicosFalso(tecnicos=[TECNICO]))
     monkeypatch.setattr(router, "RepositorioUbicacionesTecnicasSQL", lambda db: RepositorioUbicacionesFalso([]))
+    monkeypatch.setattr(router, "RepositorioUsuariosSQL", lambda db: RepositorioUsuariosFalso([USUARIO_TECNICO]))
     app.dependency_overrides[get_db] = lambda: None
     app.dependency_overrides[obtener_usuario_actual] = lambda: UsuarioAutenticado(id=TECNICO.usuario_id, rol="tecnico")
     yield TestClient(app)
@@ -55,6 +58,13 @@ def test_tecnico_cierra_el_unico_pm01_y_la_ot_queda_cerrada(cliente, ot):
     assert respuesta.status_code == 201
     assert respuesta.json()["estatus"] == "cerrada"
     assert respuesta.json()["pasos"][1]["cierre"]["trabajo_finalizado"] is True
+
+
+def test_la_ot_incluye_el_nombre_y_la_profesion_del_tecnico(cliente, ot):
+    # se muestran en el cuadro "Coordinación" del detalle de la OT
+    respuesta = cliente.post(_url(ot, ot.pasos[1]), json=CIERRE)
+
+    assert respuesta.json()["tecnico"] == {"nombre": "Juan Perez", "profesion": "mecanico"}
 
 
 def test_paso_ya_cerrado_responde_409(cliente, ot):
