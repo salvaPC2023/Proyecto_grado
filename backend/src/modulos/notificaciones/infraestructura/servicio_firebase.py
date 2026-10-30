@@ -1,3 +1,4 @@
+import json
 import logging
 from pathlib import Path
 
@@ -18,6 +19,8 @@ def _aplicacion() -> firebase_admin.App | None:
         return firebase_admin.get_app()
     except ValueError:
         pass
+    if settings.firebase_credenciales_json:
+        return firebase_admin.initialize_app(credentials.Certificate(json.loads(settings.firebase_credenciales_json)))
     ruta = Path(settings.firebase_credenciales)
     ruta = ruta if ruta.is_absolute() else CARPETA_BACKEND / ruta
     if not ruta.exists():

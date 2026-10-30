@@ -15,11 +15,11 @@ from src.modulos.acceso_roles.infraestructura.repositorio_usuarios import Reposi
 from src.modulos.ubicaciones_tecnicas.infraestructura.repositorio_ubicaciones_tecnicas import RepositorioUbicacionesTecnicasSQL
 from src.modulos.ubicaciones_tecnicas.infraestructura.router import UbicacionOut, a_ubicacion_out
 
-from ..aplicacion.crear_ot import FechasInvalidas, HorasInvalidas, PasoSolicitado, PrioridadInvalida, SinPasoPM01, SupervisorNoEncontrado, TecnicoFueraDeGrupo, UbicacionNoEncontrada, crear_ot
+from ..aplicacion.crear_ot import DescripcionDePasoInvalida, FechasInvalidas, HorasInvalidas, PasoSolicitado, PrioridadInvalida, SinPasoPM01, SupervisorNoEncontrado, TecnicoFueraDeGrupo, UbicacionNoEncontrada, crear_ot
 from ..aplicacion.exportar_ots import RangoInvalido, exportar_ots
 from ..aplicacion.listar_ots_supervisor import listar_ots_supervisor
 from ..aplicacion.listar_ots_tecnico import listar_ots_tecnico
-from ..aplicacion.registrar_cierre_paso import CierreAnticipado, DescripcionVacia, FechaCierreFutura, OTYaCerrada, PasoNoEncontrado, PasoNoRegistrable, PasoYaCerrado, TiempoInvalido, registrar_cierre_paso
+from ..aplicacion.registrar_cierre_paso import CierreAnticipado, DescripcionMuyLarga, DescripcionVacia, FechaCierreFutura, OTVencida, OTYaCerrada, PasoNoEncontrado, PasoNoRegistrable, PasoYaCerrado, TiempoInvalido, registrar_cierre_paso
 from ..aplicacion.ver_detalle_ot import OTNoEncontrada, SinAccesoAOT, ver_detalle_ot
 from ..dominio.modelos import CierrePaso, ClaveControl, EstatusOT, OrdenDeTrabajo, ResultadoTrabajo, TipoOrden
 from .excel_ots import EncabezadoReporte, generar_excel
@@ -183,7 +183,7 @@ def crear_ot_endpoint(datos: CrearOTRequest, db: Session = Depends(get_db), actu
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail="La fecha de fin no puede ser anterior a la de inicio")
     except SinPasoPM01:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail="Se requiere al menos un paso PM01")
-    except HorasInvalidas as error:
+    except (HorasInvalidas, DescripcionDePasoInvalida) as error:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(error))
     except UbicacionNoEncontrada:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ubicación técnica no encontrada")
@@ -289,8 +289,12 @@ def registrar_cierre_endpoint(ot_id: UUID, paso_id: UUID, datos: CierreIn, db: S
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="El paso ya tiene un cierre registrado")
     except PasoNoRegistrable:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail="Solo los pasos PM01 se cierran")
-    except TiempoInvalido:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail="Si el trabajo se ejecutó, el tiempo debe ser mayor a 0; si no se ejecutó, debe ser 0")
+    except TiempoInvalido as error:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(error))
+    except DescripcionMuyLarga:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail="La descripción es demasiado larga")
+    except OTVencida:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail="La OT venció: los pasos pendientes se cerraron como no ejecutados")
     except DescripcionVacia:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail="Describe el trabajo realizado")
     except CierreAnticipado:

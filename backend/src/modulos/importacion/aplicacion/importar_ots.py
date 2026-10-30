@@ -1,7 +1,7 @@
 from uuid import UUID
 
 from src.modulos.acceso_roles.dominio.puertos import RepositorioSupervisores, RepositorioTecnicos, RepositorioUsuarios
-from src.modulos.ordenes_trabajo.aplicacion.crear_ot import FechasInvalidas, HorasInvalidas, PasoSolicitado, PrioridadInvalida, SinPasoPM01, crear_ot
+from src.modulos.ordenes_trabajo.aplicacion.crear_ot import DescripcionDePasoInvalida, FechasInvalidas, HorasInvalidas, PasoSolicitado, PrioridadInvalida, SinPasoPM01, crear_ot
 from src.modulos.ordenes_trabajo.dominio.puertos import RepositorioOrdenesTrabajo
 from src.modulos.ubicaciones_tecnicas.dominio.puertos import RepositorioUbicacionesTecnicas
 
@@ -114,7 +114,7 @@ def importar_ots(
         # las mismas reglas que al crear la OT en la app
         except SinPasoPM01:
             resultado.errores.append(Aviso(primera.fila, dato, "Se requiere al menos un paso PM01"))
-        except HorasInvalidas as error:
+        except (HorasInvalidas, DescripcionDePasoInvalida) as error:
             resultado.errores.append(Aviso(primera.fila, dato, str(error)))
         except PrioridadInvalida:
             resultado.errores.append(Aviso(primera.fila, dato, "La prioridad debe estar entre 1 y 4"))

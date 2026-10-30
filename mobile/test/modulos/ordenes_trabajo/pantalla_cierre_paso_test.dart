@@ -24,6 +24,25 @@ void main() {
     expect(find.text('Ingresa las horas trabajadas (mayores a 0)'), findsOneWidget);
   });
 
+  testWidgets('no acepta más de 12 horas trabajadas en un paso', (tester) async {
+    await montarPantalla(tester, PantallaCierrePaso(otId: 'ot1', paso: pasoPm01), sesion: perfilTecnico);
+
+    await tester.enterText(campoHoras, '99999999');
+    await tester.enterText(campoDescripcion, 'Se cambió el filtro');
+    await tocar(tester, botonEstandarizar);
+
+    expect(find.text('Un paso no puede registrar más de 12 Horas'), findsOneWidget);
+  });
+
+  testWidgets('muestra cuántos caracteres lleva la descripción y su límite', (tester) async {
+    await montarPantalla(tester, PantallaCierrePaso(otId: 'ot1', paso: pasoPm01), sesion: perfilTecnico);
+
+    await tester.enterText(campoDescripcion, 'Se cambió el filtro');
+    await tester.pump();
+
+    expect(find.text('19/2000'), findsOneWidget);
+  });
+
   testWidgets('pide la descripción del trabajo', (tester) async {
     await montarPantalla(tester, PantallaCierrePaso(otId: 'ot1', paso: pasoPm01), sesion: perfilTecnico);
 

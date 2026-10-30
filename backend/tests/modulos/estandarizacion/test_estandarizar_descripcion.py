@@ -127,3 +127,10 @@ def test_el_prompt_usa_los_mismos_titulos_que_la_validacion():
     # si alguien cambia un título en el prompt, la validación rechazaría todas las respuestas
     for titulo in SECCIONES:
         assert titulo in PROMPT_SISTEMA
+
+
+def test_una_respuesta_mas_larga_de_lo_que_se_puede_guardar_se_rechaza():
+    larga = RESPUESTA_CORRECTA + "\n\nObservaciones:\n- " + "texto " * 800
+
+    with pytest.raises(ServicioNoDisponible):
+        estandarizar_descripcion(ORIGINAL, ServicioFalso(larga))

@@ -70,3 +70,22 @@ def test_la_estandarizacion_quita_las_unidades_que_el_tecnico_no_escribio(api, g
 
     assert respuesta.status_code == 200, respuesta.text
     assert "- Agua entrada: 35\n- Agua salida: 29" in respuesta.json()["texto_estandarizado"]
+
+
+def test_con_el_almacen_en_postgres_la_imagen_se_guarda_en_la_base(api, grupo, monkeypatch, sesiones):
+    # despliegue en Render gratuito: el disco del servidor se borra, las imágenes van a la base
+    from sqlalchemy import text
+
+    from src.compartido.configuracion import settings
+
+    monkeypatch.setattr(settings, "comunicados_almacen", "postgres")
+    comunicado = publicar(api, grupo["supervisor"], "Parada de planta", imagen=IMAGEN_PNG)
+
+    imagen = api.cliente.get(f"/api/v1/comunicados/{comunicado['id']}/imagen", headers=grupo["sesion_luis"])
+    assert imagen.content == IMAGEN_PNG
+    with sesiones() as sesion:
+        assert sesion.execute(text("SELECT count(*) FROM imagenes_comunicados")).scalar_one() == 1
+
+    api.cliente.delete(f"/api/v1/comunicados/{comunicado['id']}", headers=grupo["supervisor"])
+    with sesiones() as sesion:
+        assert sesion.execute(text("SELECT count(*) FROM imagenes_comunicados")).scalar_one() == 0

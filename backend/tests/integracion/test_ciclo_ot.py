@@ -124,3 +124,46 @@ def test_el_excel_exportado_contiene_la_ot_y_su_cierre(api, grupo):
     assert "Cambio de rodamientos" in valores
     assert "Se cambió el rodamiento del lado acople" in valores
     assert "Carlos Mamani" in valores
+
+
+def test_una_ot_vencida_se_cierra_sola_y_el_tecnico_ya_no_puede_cerrarla(api, grupo, sesiones):
+    from datetime import timedelta
+
+    from src.modulos.ordenes_trabajo.aplicacion.cerrar_vencidas import cerrar_ots_vencidas
+    from src.modulos.ordenes_trabajo.infraestructura.repositorio_ordenes_trabajo import RepositorioOrdenesTrabajoSQL
+
+    hace_tres_dias = HOY - timedelta(days=3)
+    respuesta = api.cliente.post("/api/v1/ordenes-trabajo", headers=grupo["supervisor"], json={
+        "titulo": "Lubricación olvidada", "tipo_de_orden": "OE01", "ubicacion_tecnica_id": grupo["ubicacion"]["id"],
+        "tecnico_asignado_id": grupo["tecnico"]["id"], "prioridad": 3, "estatus_equipo": True,
+        "fecha_inic_planif": datetime.combine(hace_tres_dias, time(8)).isoformat(),
+        "fecha_fin_planif": datetime.combine(hace_tres_dias, time(12)).isoformat(),
+        "pasos": [{"descripcion": "Lubricar rodamientos", "clave_control": "PM01", "horas_planificadas": "1"}],
+    })
+    ot = respuesta.json()
+    paso = next(p for p in ot["pasos"] if p["clave_control"] == "PM01")
+
+    # aunque la tarea todavía no haya corrido, el técnico ya no puede cerrarla
+    assert cerrar(api, grupo["sesion_tecnico"], ot, paso).status_code == 422
+
+    with sesiones() as sesion:
+        assert cerrar_ots_vencidas(datetime.now(), RepositorioOrdenesTrabajoSQL(sesion)) == 1
+
+    detalle = api.cliente.get(f"/api/v1/ordenes-trabajo/{ot['id']}", headers=grupo["supervisor"]).json()
+    assert detalle["estatus"] == "cerrada"
+    cierre = next(p for p in detalle["pasos"] if p["clave_control"] == "PM01")["cierre"]
+    assert cierre["resultado_trabajo"] == "no_ejecutado"
+    assert cierre["tiempo_real_trabajado"] in ("0.00", "0", 0)
+
+
+def test_no_se_planifica_un_paso_de_mas_de_12_horas(api, grupo):
+    respuesta = api.cliente.post("/api/v1/ordenes-trabajo", headers=grupo["supervisor"], json={
+        "titulo": "Absurda", "tipo_de_orden": "OE01", "ubicacion_tecnica_id": grupo["ubicacion"]["id"],
+        "tecnico_asignado_id": grupo["tecnico"]["id"], "prioridad": 3, "estatus_equipo": True,
+        "fecha_inic_planif": datetime.combine(HOY, time(8)).isoformat(),
+        "fecha_fin_planif": datetime.combine(HOY, time(12)).isoformat(),
+        "pasos": [{"descripcion": "Paso", "clave_control": "PM01", "horas_planificadas": "999"}],
+    })
+
+    assert respuesta.status_code == 422
+    assert "12" in respuesta.json()["detail"]

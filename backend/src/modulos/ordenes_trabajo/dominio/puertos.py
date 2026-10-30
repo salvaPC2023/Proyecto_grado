@@ -27,6 +27,11 @@ class RepositorioOrdenesTrabajo(ABC):
         ...
 
     @abstractmethod
+    def listar_vencidas(self, hasta: datetime) -> list[OrdenDeTrabajo]:
+        """OT sin cerrar cuyo plazo de cierre terminó antes de ese momento"""
+        ...
+
+    @abstractmethod
     def registrar_cierre(self, ot_id: UUID, cierre: CierrePaso, estatus: EstatusOT, fecha_cierre: datetime | None) -> OrdenDeTrabajo:
         """Guarda el cierre y el estado de la OT juntos"""
         ...

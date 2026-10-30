@@ -6,6 +6,8 @@ import pytest
 
 from src.modulos.acceso_roles.dominio.modelos import Tecnico
 from src.modulos.ordenes_trabajo.aplicacion.registrar_cierre_paso import (
+    DescripcionMuyLarga,
+    OTVencida,
     CierreAnticipado,
     DescripcionVacia,
     FechaCierreFutura,
@@ -116,10 +118,18 @@ def test_cerrar_antes_del_dia_de_inicio_lanza_error(ot):
         _cerrar(ot, ot.pasos[1], ahora=datetime(2026, 10, 4, 23, 0))
 
 
-def test_se_permite_cerrar_con_atraso(ot):
-    resultado = _cerrar(ot, ot.pasos[1], ahora=datetime(2026, 10, 9, 8, 0))
+def test_se_permite_cerrar_con_atraso_dentro_del_dia_siguiente_al_fin(ot):
+    # la OT termina el 05/10 a las 12:00; el plazo para cerrar vence el 06/10 a las 12:00
+    resultado = _cerrar(ot, ot.pasos[1], ahora=datetime(2026, 10, 6, 11, 59))
 
     assert resultado.estatus == "en_progreso"
+
+
+def test_pasado_el_plazo_ya_no_se_puede_cerrar(ot):
+    with pytest.raises(OTVencida):
+        _cerrar(ot, ot.pasos[1], ahora=datetime(2026, 10, 6, 12, 0))
+
+
 
 
 def test_ot_inexistente_lanza_error(ot):
@@ -211,3 +221,14 @@ def test_la_regla_del_dia_de_inicio_usa_la_hora_del_cierre(ot):
     with pytest.raises(CierreAnticipado):
         # llega el día de inicio, pero se hizo el día anterior
         _cerrar_con_id(repositorio_ots, ot, ot.pasos[1], uuid4(), fecha=datetime(2026, 10, 4, 18, 0))
+
+
+def test_no_se_registran_mas_de_12_horas_trabajadas(ot):
+    with pytest.raises(TiempoInvalido):
+        _cerrar(ot, ot.pasos[1], tiempo="12.5")
+    assert _cerrar(ot, ot.pasos[1], tiempo="12").estatus == "en_progreso"
+
+
+def test_una_descripcion_de_mas_de_4000_caracteres_se_rechaza(ot):
+    with pytest.raises(DescripcionMuyLarga):
+        _cerrar(ot, ot.pasos[1], descripcion="a" * 4001)

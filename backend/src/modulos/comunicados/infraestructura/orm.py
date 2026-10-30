@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, Enum as SQLEnum, ForeignKey, Index, String, Text
+from sqlalchemy import DateTime, Enum as SQLEnum, ForeignKey, Index, LargeBinary, String, Text
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -27,3 +27,12 @@ class ComunicadoORM(Base):
     imagen: Mapped[str | None] = mapped_column(String(60), nullable=True)
     fecha_envio: Mapped[datetime] = mapped_column(DateTime)
     fecha_expiracion: Mapped[datetime] = mapped_column(DateTime)
+
+
+class ImagenComunicadoORM(Base):
+    """Imagen guardada en la base (COMUNICADOS_ALMACEN=postgres); el comunicado la referencia por su nombre"""
+    __tablename__ = "imagenes_comunicados"
+
+    nombre: Mapped[str] = mapped_column(String(60), primary_key=True)
+    contenido: Mapped[bytes] = mapped_column(LargeBinary)
+    creada: Mapped[datetime] = mapped_column(DateTime)

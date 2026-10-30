@@ -7,6 +7,7 @@ from src.modulos.ordenes_trabajo.dominio.puertos import RepositorioOrdenesTrabaj
 
 from ..dominio.modelos import Notificacion
 from ..dominio.puertos import RepositorioDispositivos, ServicioNotificaciones
+from .avisos import avisar
 
 # Tarjeta 23: una hora antes del fin del turno, a quien le queden pasos PM01 sin cerrar
 ANTICIPACION = timedelta(hours=1)
@@ -82,13 +83,8 @@ def enviar_avisos_de_fin_de_turno(
     enviadas = []
     for grupo, dia in turnos_por_avisar(repositorio_grupos.listar(), desde, hasta):
         for aviso in avisos_del_turno(grupo, dia, repositorio_tecnicos, repositorio_usuarios, repositorio_supervisores, repositorio_ots):
-            tokens = repositorio_dispositivos.tokens_de(aviso.usuario_id)
-            if not tokens:
-                continue  # nunca abrió la app en un celular, o cerró sesión
-            invalidos = servicio.enviar(tokens, aviso.titulo, aviso.cuerpo)
-            if invalidos:
-                repositorio_dispositivos.eliminar(invalidos)
-            enviadas.append(aviso)
+            if avisar(aviso, repositorio_dispositivos, servicio):
+                enviadas.append(aviso)
     return enviadas
 
 

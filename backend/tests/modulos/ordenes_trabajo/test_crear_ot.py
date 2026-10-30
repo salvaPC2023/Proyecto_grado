@@ -4,7 +4,7 @@ from uuid import uuid4
 
 import pytest
 
-from src.modulos.ordenes_trabajo.aplicacion.crear_ot import FechasInvalidas, HorasInvalidas, PasoSolicitado, PrioridadInvalida, SinPasoPM01, SupervisorNoEncontrado, TecnicoFueraDeGrupo, UbicacionNoEncontrada, crear_ot
+from src.modulos.ordenes_trabajo.aplicacion.crear_ot import DescripcionDePasoInvalida, FechasInvalidas, HorasInvalidas, PasoSolicitado, PrioridadInvalida, SinPasoPM01, SupervisorNoEncontrado, TecnicoFueraDeGrupo, UbicacionNoEncontrada, crear_ot
 from src.modulos.acceso_roles.dominio.modelos import Supervisor
 from src.modulos.ordenes_trabajo.dominio.modelos import PASOS_SEGURIDAD, PasoOT, orden_de_paso
 from src.modulos.ubicaciones_tecnicas.dominio.modelos import UbicacionTecnica
@@ -145,3 +145,14 @@ def test_al_leer_la_ot_los_pasos_de_seguridad_van_primero_en_su_orden():
     ordenados = sorted(desordenados, key=orden_de_paso)
 
     assert [p.descripcion for p in ordenados] == [*PASOS_SEGURIDAD, "Desmontar", "Montar"]
+
+
+def test_un_pm01_no_se_planifica_con_mas_de_12_horas(repositorios):
+    with pytest.raises(HorasInvalidas):
+        _crear(repositorios, pasos=[pm01(horas="12.5")])
+    assert _crear(repositorios, pasos=[pm01(horas="12")]).pasos[-1].horas_planificadas == Decimal("12")
+
+
+def test_la_descripcion_de_un_paso_no_pasa_de_500_caracteres(repositorios):
+    with pytest.raises(DescripcionDePasoInvalida):
+        _crear(repositorios, pasos=[pm01(descripcion="a" * 501)])

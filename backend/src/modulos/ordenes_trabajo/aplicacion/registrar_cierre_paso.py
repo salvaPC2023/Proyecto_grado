@@ -4,7 +4,7 @@ from uuid import UUID, uuid4
 
 from src.modulos.acceso_roles.dominio.puertos import RepositorioTecnicos
 
-from ..dominio.modelos import CierrePaso, OrdenDeTrabajo, ResultadoTrabajo
+from ..dominio.modelos import MAX_DESCRIPCION_CIERRE, MAX_HORAS_POR_PASO, CierrePaso, OrdenDeTrabajo, ResultadoTrabajo
 from ..dominio.puertos import CierreDuplicado, RepositorioOrdenesTrabajo
 from .ver_detalle_ot import OTNoEncontrada, SinAccesoAOT
 
@@ -39,6 +39,14 @@ class CierreAnticipado(Exception):
 
 class FechaCierreFutura(Exception):
     pass
+
+
+class DescripcionMuyLarga(Exception):
+    pass
+
+
+class OTVencida(Exception):
+    """Pasó el plazo para cerrar: los pasos pendientes se cierran solos como no ejecutados"""
 
 
 # margen para que un reloj del celular un poco adelantado no rechace el cierre
@@ -86,13 +94,20 @@ def registrar_cierre_paso(
 
     ejecutado = resultado_trabajo == "ejecutado"
     if (ejecutado and tiempo_real_trabajado <= 0) or (not ejecutado and tiempo_real_trabajado != 0):
-        raise TiempoInvalido()
+        raise TiempoInvalido("Si el trabajo se ejecutó, el tiempo debe ser mayor a 0; si no se ejecutó, debe ser 0")
+    if tiempo_real_trabajado > MAX_HORAS_POR_PASO:
+        raise TiempoInvalido(f"Un paso no puede registrar más de {MAX_HORAS_POR_PASO} horas trabajadas")
     if not descripcion_trabajo_realizado.strip():
         raise DescripcionVacia()
+    if len(descripcion_trabajo_realizado.strip()) > MAX_DESCRIPCION_CIERRE:
+        raise DescripcionMuyLarga()
     if momento > ahora + TOLERANCIA_RELOJ:
         raise FechaCierreFutura()
     if momento.date() < ot.fecha_inic_planif.date():
         raise CierreAnticipado()
+    # se compara con la hora en que el técnico cerró: un cierre hecho a tiempo sin señal se acepta al llegar
+    if momento >= ot.vencimiento:
+        raise OTVencida()
 
     # un PM01 no ejecutado también cuenta como cerrado
     quedan_pendientes = any(p.clave_control == "PM01" and p.cierre is None and p.id != paso.id for p in ot.pasos)

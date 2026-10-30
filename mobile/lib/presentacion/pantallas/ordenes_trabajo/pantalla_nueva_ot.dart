@@ -986,6 +986,9 @@ class _DialogoPasoState extends State<_DialogoPaso> {
       if (horas == null || horas <= 0) {
         return setState(() => _error = 'Los pasos PM01 requieren horas mayores a 0');
       }
+      if (horas > maxHorasPorPaso) {
+        return setState(() => _error = 'Un paso PM01 no puede planificarse con más de ${formatoHoras(maxHorasPorPaso)}');
+      }
     }
     Navigator.of(context).pop(
       PasoNuevo(descripcion: descripcion, claveControl: _clave, horasPlanificadas: horas),
@@ -1023,6 +1026,7 @@ class _DialogoPasoState extends State<_DialogoPaso> {
             controller: _descripcion,
             autofocus: true,
             maxLines: 2,
+            maxLength: maxDescripcionPaso,
             decoration: const InputDecoration(labelText: 'Descripción'),
           ),
           if (_clave == 'PM01')

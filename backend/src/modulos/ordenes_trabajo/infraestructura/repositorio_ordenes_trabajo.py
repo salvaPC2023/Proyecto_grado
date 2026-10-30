@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from src.modulos.acceso_roles.infraestructura.orm import TecnicoORM
 
-from ..dominio.modelos import CierrePaso, EstatusOT, OrdenDeTrabajo, PasoOT, orden_de_paso
+from ..dominio.modelos import PLAZO_DE_CIERRE, CierrePaso, EstatusOT, OrdenDeTrabajo, PasoOT, orden_de_paso
 from ..dominio.puertos import CierreDuplicado, RepositorioOrdenesTrabajo
 from .orm import CierrePasoORM, OrdenDeTrabajoORM, PasoOTORM
 
@@ -116,6 +116,12 @@ class RepositorioOrdenesTrabajoSQL(RepositorioOrdenesTrabajo):
     def listar_por_grupo(self, grupo_id: UUID, fecha: date | None = None) -> list[OrdenDeTrabajo]:
         consulta = select(OrdenDeTrabajoORM).join(TecnicoORM, OrdenDeTrabajoORM.tecnico_asignado_id == TecnicoORM.id).where(TecnicoORM.grupo_id == grupo_id)
         return self.ejecutar(consulta, fecha)
+
+    def listar_vencidas(self, hasta: datetime) -> list[OrdenDeTrabajo]:
+        consulta = select(OrdenDeTrabajoORM).where(
+            OrdenDeTrabajoORM.estatus != "cerrada", OrdenDeTrabajoORM.fecha_fin_planif <= hasta - PLAZO_DE_CIERRE,
+        )
+        return [ot_a_dominio(o) for o in self._sesion.scalars(consulta).all()]
 
     def ejecutar(self, consulta, fecha: date | None) -> list[OrdenDeTrabajo]:
         if fecha is not None:

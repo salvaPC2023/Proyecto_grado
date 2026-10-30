@@ -1,3 +1,9 @@
+// Los mismos límites que valida el backend (pruebas con usuarios, 29/10/2026)
+const maxHorasPorPaso = 12.0; // planificadas por el supervisor o trabajadas por el técnico
+const maxDescripcionPaso = 500; // descripción de un paso de la OT
+const maxDescripcionRedactada = 2000; // lo que escribe el técnico; también es el máximo para estandarizar
+const maxDescripcionCierre = 4000; // el texto estandarizado puede quedar algo más largo
+
 class UbicacionTecnica {
   const UbicacionTecnica({
     required this.id,

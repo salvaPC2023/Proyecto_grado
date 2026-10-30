@@ -26,3 +26,33 @@ def test_el_celular_queda_registrado_y_pasa_a_quien_inicia_sesion_despues(api, s
 
 def test_sin_sesion_no_se_registra_un_celular(api):
     assert api.cliente.put("/api/v1/notificaciones/dispositivo", json={"token": "celular-1"}).status_code in (401, 403)
+
+
+class ServicioQueAnota:
+    """Reemplaza a Firebase: anota lo que se habría enviado"""
+    enviados: list = []
+
+    def enviar(self, tokens, titulo, cuerpo):
+        ServicioQueAnota.enviados.append((tokens, titulo, cuerpo))
+        return []
+
+
+def test_el_comunicado_personal_llega_como_notificacion_y_el_general_no(api, monkeypatch):
+    from datetime import datetime, timedelta
+
+    from src.modulos.comunicados.infraestructura import router as router_comunicados
+
+    monkeypatch.setattr(router_comunicados, "ServicioNotificacionesFirebase", ServicioQueAnota)
+    ServicioQueAnota.enviados = []
+    _, supervisor = api.crear_supervisor("Fernando", "Rojas", "Grupo 1")
+    tecnico, sesion_tecnico = api.crear_tecnico(supervisor, "Carlos", "Mamani")
+    api.cliente.put("/api/v1/notificaciones/dispositivo", headers=sesion_tecnico, json={"token": "celular-carlos"})
+    expira = (datetime.now() + timedelta(days=2)).isoformat()
+
+    general = {"titulo": "Parada de planta", "categoria": "general", "texto": "Mañana", "fecha_expiracion": expira}
+    assert api.cliente.post("/api/v1/comunicados", headers=supervisor, data=general).status_code == 201
+    assert ServicioQueAnota.enviados == []
+
+    personal = {**general, "titulo": "Revisa tu cierre", "tecnico_id": tecnico["id"]}
+    assert api.cliente.post("/api/v1/comunicados", headers=supervisor, data=personal).status_code == 201
+    assert ServicioQueAnota.enviados == [(["celular-carlos"], "Comunicado personal", "Fernando Rojas: Revisa tu cierre")]

@@ -99,7 +99,6 @@ En el navegador:
 ```terminal
 flutter run -d edge
 ```
-
 En el emulador Android:
 
 ```terminal
@@ -157,3 +156,7 @@ flutter test --coverage
 ```
 
 El resultado queda en mobile/coverage/lcov.info. Para verlo línea por línea en VS Code se usa la extensión Coverage Gutters.
+
+### APK
+
+flutter build apk --release --dart-define=API_URL=https://ruby-frosty-cozily.ngrok-free.dev/api/v1

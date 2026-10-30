@@ -53,6 +53,10 @@ class _PantallaCierrePasoState extends ConsumerState<PantallaCierrePaso> {
       _avisar('Ingresa las horas trabajadas (mayores a 0)');
       return null;
     }
+    if (horas > maxHorasPorPaso) {
+      _avisar('Un paso no puede registrar más de ${formatoHoras(maxHorasPorPaso)}');
+      return null;
+    }
     return horas;
   }
 
@@ -195,6 +199,8 @@ class _PantallaCierrePasoState extends ConsumerState<PantallaCierrePaso> {
                           enabled: !_revisando && !estandarizando,
                           minLines: 4,
                           maxLines: 6,
+                          // el contador "123/2000" se muestra debajo del campo
+                          maxLength: maxDescripcionRedactada,
                           decoration: _decoracion('Qué se hizo, mediciones y observaciones'),
                         ),
                       ],
@@ -227,6 +233,7 @@ class _PantallaCierrePasoState extends ConsumerState<PantallaCierrePaso> {
                             enabled: !guardando,
                             minLines: 8,
                             maxLines: 16,
+                            maxLength: maxDescripcionCierre,
                             decoration: _decoracion(''),
                           ),
                           const SizedBox(height: 8),

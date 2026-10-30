@@ -1,6 +1,8 @@
 import logging
 import re
 
+from src.modulos.ordenes_trabajo.dominio.modelos import MAX_DESCRIPCION_CIERRE
+
 from ..dominio.estructura import cumple_estructura
 from ..dominio.mediciones import conserva_mediciones, quitar_unidades_agregadas
 from ..dominio.puertos import ServicioEstandarizacion, ServicioNoDisponible
@@ -38,6 +40,8 @@ def motivo_de_rechazo(texto: str, resultado: str) -> str | None:
     """Por qué no se acepta la respuesta del modelo, o None si se acepta"""
     if not resultado:
         return "respuesta vacía"
+    if len(resultado) > MAX_DESCRIPCION_CIERRE:
+        return f"la respuesta pasa de {MAX_DESCRIPCION_CIERRE} caracteres"
     if not cumple_estructura(resultado):
         return "la respuesta no sigue la plantilla (Equipo intervenido, Actividades realizadas, Observaciones)"
     originales, nuevos = set(numeros_de(texto)), set(numeros_de(resultado))

@@ -26,6 +26,9 @@ class RepositorioOrdenesTrabajoFalso(RepositorioOrdenesTrabajo):
         self.fecha_recibida = fecha
         return [ot for ot in self.ots.values() if self._grupo_de_tecnico.get(ot.tecnico_asignado_id) == grupo_id]
 
+    def listar_vencidas(self, hasta):
+        return [ot for ot in self.ots.values() if ot.estatus != "cerrada" and ot.vencimiento <= hasta]
+
     def registrar_cierre(self, ot_id, cierre, estatus, fecha_cierre):
         ot = self.ots[ot_id]
         paso = next(p for p in ot.pasos if p.id == cierre.paso_ot_id)

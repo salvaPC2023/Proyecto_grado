@@ -17,6 +17,7 @@ from src.modulos.estandarizacion.infraestructura.router import router_descripcio
 from src.modulos.importacion.infraestructura.router import router_importacion as importacion_router
 from src.modulos.comunicados.infraestructura.router import router_comunicados as comunicados_router
 from src.modulos.notificaciones.infraestructura.planificador import revisar_turnos_periodicamente
+from src.modulos.ordenes_trabajo.infraestructura.tareas import cerrar_vencidas_periodicamente
 from src.modulos.notificaciones.infraestructura.router import router_notificaciones as notificaciones_router
 
 registro = logging.getLogger("uvicorn.error")
@@ -36,8 +37,11 @@ async def ciclo_de_vida(_: FastAPI):
             registro.info("Administrador inicial creado: %s", settings.admin_usuario_inicial)
     # avisos de pasos sin cerrar una hora antes del fin de cada turno
     revisiones = asyncio.create_task(revisar_turnos_periodicamente())
+    # pasos PM01 que quedaron sin cerrar un día después del fin de su OT
+    vencidas = asyncio.create_task(cerrar_vencidas_periodicamente())
     yield
     revisiones.cancel()
+    vencidas.cancel()
 
 
 app = FastAPI(title="Maintenance App API", version="0.1.0", lifespan=ciclo_de_vida)

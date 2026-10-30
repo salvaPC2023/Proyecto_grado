@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime
 from uuid import UUID
 
@@ -10,6 +11,9 @@ from src.modulos.acceso_roles.infraestructura.dependencias import UsuarioAutenti
 from src.modulos.acceso_roles.infraestructura.repositorio_supervisores import RepositorioSupervisoresSQL
 from src.modulos.acceso_roles.infraestructura.repositorio_tecnicos import RepositorioTecnicosSQL
 from src.modulos.acceso_roles.infraestructura.repositorio_usuarios import RepositorioUsuariosSQL
+from src.modulos.notificaciones.aplicacion.avisos import avisar, aviso_de_comunicado_personal
+from src.modulos.notificaciones.infraestructura.repositorio_dispositivos import RepositorioDispositivosSQL
+from src.modulos.notificaciones.infraestructura.servicio_firebase import ServicioNotificacionesFirebase
 
 from ..aplicacion.gestionar_comunicados import (
     ComunicadoNoEncontrado, ComunicadoVacio, ExpiracionInvalida, ImagenInvalida, NoEsElAutor, SupervisorSinGrupo,
@@ -17,10 +21,15 @@ from ..aplicacion.gestionar_comunicados import (
 )
 from ..dominio.imagenes import TAMANO_MAXIMO
 from ..dominio.modelos import Categoria, Comunicado
+from src.compartido.configuracion import settings
+
+from ..dominio.puertos import AlmacenImagenes
 from .almacen_disco import AlmacenImagenesDisco
+from .almacen_postgres import AlmacenImagenesPostgres
 from .repositorio_comunicados import RepositorioComunicadosSQL
 
 router_comunicados = APIRouter(prefix="/comunicados", tags=["comunicados"])
+registro = logging.getLogger("uvicorn.error")
 
 TIPOS_IMAGEN = {"jpg": "image/jpeg", "png": "image/png"}
 
@@ -73,6 +82,23 @@ def a_comunicado_out(comunicado: Comunicado, nombres: _Nombres) -> ComunicadoOut
     )
 
 
+def _avisar_al_destinatario(comunicado: Comunicado, nombres: _Nombres, db: Session) -> None:
+    """Notificación push al celular del técnico; si Firebase falla, el comunicado ya quedó publicado igual"""
+    tecnico = RepositorioTecnicosSQL(db).obtener_por_id(comunicado.tecnico_id)
+    if tecnico is None:
+        return
+    aviso = aviso_de_comunicado_personal(tecnico.usuario_id, nombres.supervisor(comunicado.supervisor_id), comunicado.titulo)
+    try:
+        avisar(aviso, RepositorioDispositivosSQL(db), ServicioNotificacionesFirebase())
+    except Exception:
+        registro.exception("No se pudo notificar el comunicado personal")
+
+
+def _almacen(db: Session) -> AlmacenImagenes:
+    """En la PC las imágenes van a una carpeta; en un servidor sin disco persistente, a la base de datos"""
+    return AlmacenImagenesPostgres(db) if settings.comunicados_almacen == "postgres" else AlmacenImagenesDisco()
+
+
 def _error(codigo: int, detalle: str) -> HTTPException:
     return HTTPException(status_code=codigo, detail=detalle)
 
@@ -93,7 +119,7 @@ async def publicar_comunicado_endpoint(
     try:
         comunicado = publicar_comunicado(
             actual.id, titulo, categoria, fecha_expiracion,
-            RepositorioComunicadosSQL(db), RepositorioSupervisoresSQL(db), RepositorioTecnicosSQL(db), AlmacenImagenesDisco(),
+            RepositorioComunicadosSQL(db), RepositorioSupervisoresSQL(db), RepositorioTecnicosSQL(db), _almacen(db),
             ahora=datetime.now(), texto=texto, imagen=contenido, tecnico_id=tecnico_id,
         )
     except SupervisorSinGrupo:
@@ -108,7 +134,10 @@ async def publicar_comunicado_endpoint(
         raise _error(status.HTTP_422_UNPROCESSABLE_CONTENT, error.mensaje)
     except TecnicoAjeno:
         raise _error(status.HTTP_400_BAD_REQUEST, "El técnico no es de tu grupo")
-    return a_comunicado_out(comunicado, _Nombres(db))
+    nombres = _Nombres(db)
+    if comunicado.es_personal:
+        _avisar_al_destinatario(comunicado, nombres, db)
+    return a_comunicado_out(comunicado, nombres)
 
 
 @router_comunicados.get("", response_model=list[ComunicadoOut])
@@ -122,7 +151,7 @@ def listar_comunicados_endpoint(db: Session = Depends(get_db), actual: UsuarioAu
 @router_comunicados.delete("/{comunicado_id}", status_code=status.HTTP_204_NO_CONTENT)
 def retirar_comunicado_endpoint(comunicado_id: UUID, db: Session = Depends(get_db), actual: UsuarioAutenticado = Depends(requerir_supervisor)):
     try:
-        retirar_comunicado(comunicado_id, actual.id, RepositorioComunicadosSQL(db), RepositorioSupervisoresSQL(db), AlmacenImagenesDisco())
+        retirar_comunicado(comunicado_id, actual.id, RepositorioComunicadosSQL(db), RepositorioSupervisoresSQL(db), _almacen(db))
     except ComunicadoNoEncontrado:
         raise _error(status.HTTP_404_NOT_FOUND, "Comunicado no encontrado")
     except NoEsElAutor:
@@ -135,7 +164,7 @@ def ver_imagen_endpoint(comunicado_id: UUID, db: Session = Depends(get_db), actu
     try:
         contenido, extension = obtener_imagen(
             comunicado_id, actual.id, actual.rol,
-            RepositorioComunicadosSQL(db), RepositorioSupervisoresSQL(db), RepositorioTecnicosSQL(db), AlmacenImagenesDisco(),
+            RepositorioComunicadosSQL(db), RepositorioSupervisoresSQL(db), RepositorioTecnicosSQL(db), _almacen(db),
         )
     except ComunicadoNoEncontrado:
         raise _error(status.HTTP_404_NOT_FOUND, "Imagen no encontrada")

@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timedelta
 from decimal import Decimal
 from typing import Literal
 from uuid import UUID
@@ -9,6 +9,14 @@ EstatusOT = Literal["asignada", "en_progreso", "cerrada"]
 ClaveControl = Literal["PM01", "PMNN"]
 ResultadoTrabajo = Literal["ejecutado", "no_ejecutado"]
 PASOS_SEGURIDAD = ("Piense de manera inteligente", "Vea, diga, haga algo", "Se tiene habilidades adecuadas para la tarea")
+
+# límites acordados tras las pruebas con usuarios (29/10/2026): evitan valores absurdos
+MAX_HORAS_POR_PASO = Decimal("12")  # planificadas por el supervisor o trabajadas por el técnico
+MAX_DESCRIPCION_PASO = 500  # descripción de un paso escrita por el supervisor
+MAX_DESCRIPCION_CIERRE = 4000  # lo que escribe el técnico, o el texto estandarizado que es algo más largo
+# un día después del fin planificado, los PM01 sin cerrar se cierran solos como no ejecutados
+PLAZO_DE_CIERRE = timedelta(days=1)
+DESCRIPCION_CIERRE_AUTOMATICO = "Cerrado automáticamente: no se registró antes del vencimiento de la OT."
 
 
 @dataclass
@@ -56,3 +64,8 @@ class OrdenDeTrabajo:
     fecha_fin_planif: datetime
     fecha_cierre: datetime | None = None
     pasos: list[PasoOT] = field(default_factory=list)
+
+    @property
+    def vencimiento(self) -> datetime:
+        """Desde este momento el técnico ya no puede cerrar pasos: los pendientes se cierran solos"""
+        return self.fecha_fin_planif + PLAZO_DE_CIERRE

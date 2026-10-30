@@ -6,7 +6,7 @@ from uuid import UUID, uuid4
 from src.modulos.acceso_roles.dominio.puertos import RepositorioSupervisores, RepositorioTecnicos
 from src.modulos.ubicaciones_tecnicas.dominio.puertos import RepositorioUbicacionesTecnicas
 
-from ..dominio.modelos import PASOS_SEGURIDAD, ClaveControl, OrdenDeTrabajo, PasoOT, TipoOrden
+from ..dominio.modelos import MAX_DESCRIPCION_PASO, MAX_HORAS_POR_PASO, PASOS_SEGURIDAD, ClaveControl, OrdenDeTrabajo, PasoOT, TipoOrden
 from ..dominio.puertos import RepositorioOrdenesTrabajo
 
 
@@ -38,6 +38,10 @@ class TecnicoFueraDeGrupo(Exception):
     pass
 
 
+class DescripcionDePasoInvalida(Exception):
+    pass
+
+
 @dataclass
 class PasoSolicitado:
     descripcion: str
@@ -50,6 +54,10 @@ def validar_pasos(pasos: list[PasoSolicitado]) -> None:
         raise SinPasoPM01()
 
     for paso in pasos:
+        if not paso.descripcion.strip() or len(paso.descripcion) > MAX_DESCRIPCION_PASO:
+            raise DescripcionDePasoInvalida(f"La descripción de cada paso debe tener entre 1 y {MAX_DESCRIPCION_PASO} caracteres")
+        if paso.clave_control == "PM01" and paso.horas_planificadas is not None and paso.horas_planificadas > MAX_HORAS_POR_PASO:
+            raise HorasInvalidas(f"Un paso PM01 no puede planificarse con más de {MAX_HORAS_POR_PASO} horas")
         if paso.clave_control == "PM01" and (
             paso.horas_planificadas is None or paso.horas_planificadas <= 0
         ):
